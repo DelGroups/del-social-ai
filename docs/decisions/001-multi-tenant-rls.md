@@ -55,8 +55,8 @@ How it works:
 | Schema per tenant | Migrations must run N times, pooling and cross-tenant ops get complicated, and it doesn't fit one small VPS. |
 | Database per tenant | Strongest isolation but the highest operational cost. Worth revisiting only for a large customer with a contractual requirement. |
 
-## Rollout (not yet done; each step needs Alireza's approval)
+## Rollout
 
-1. Run `alembic upgrade head` on the server as the owner (`MIGRATION_DATABASE_URL`).
-2. Enable login for the app role: `ALTER ROLE del_app LOGIN PASSWORD '<random>'`.
-3. Switch the API's `DATABASE_URL` from the owner account to `del_app`, then redeploy.
+1. ✅ 2026-09-25: backup taken, then `alembic upgrade head` run on production as the owner.
+2. ✅ 2026-09-25: `del_app` login enabled with a random password, stored only in the server's `.env` (`APP_DB_PASSWORD`).
+3. The API's `DATABASE_URL` uses `del_app` (docker-compose.yml). The api container no longer receives the owner's credentials. Migrations run separately with `docker compose run --rm migrate`.
