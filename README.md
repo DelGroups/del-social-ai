@@ -62,6 +62,25 @@ curl https://api.del-groups.com/ready    # -> {"status":"ok",...}  (local: curl 
 
 In `.env`, set `APP_DOMAIN=app.localhost`, `API_DOMAIN=api.localhost` and `AI_DOMAIN=ai.localhost`. Caddy then uses its own local CA, and no public DNS is needed.
 
+## Database & tests
+
+Tenant isolation uses Postgres Row-Level Security; see [ADR 001](docs/decisions/001-multi-tenant-rls.md).
+
+```bash
+cd apps/api
+pip install -e ".[dev]"
+
+# Tests need a throwaway DB whose name contains "test" (superuser URL)
+export TEST_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/del_social_test
+pytest -v
+
+# Migrations run as the DB owner
+export MIGRATION_DATABASE_URL=...
+alembic upgrade head
+```
+
+CI (`.github/workflows/test.yml`) runs the full suite against a fresh Postgres 16 on every push to `main` and on every PR.
+
 ## Operations
 
 | Task | Command |

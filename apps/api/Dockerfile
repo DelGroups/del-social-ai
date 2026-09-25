@@ -14,6 +14,8 @@ RUN mkdir del_social && touch del_social/__init__.py \
     && rm -rf del_social build *.egg-info
 
 COPY del_social ./del_social
+COPY alembic.ini ./
+COPY migrations ./migrations
 
 RUN useradd --system --uid 10001 app
 USER app
