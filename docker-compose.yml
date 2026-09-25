@@ -77,12 +77,22 @@ services:
 
   # --- Application ---
 
+  # Least privilege: the api gets only the variables it needs and connects as
+  # the restricted del_app role, so Postgres RLS always applies (ADR 001).
+  # It never receives the database owner's credentials.
   api:
     build: ./apps/api
     restart: unless-stopped
-    env_file: .env
     environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      APP_ENV: ${APP_ENV:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-}
+      CLAUDE_MODEL_FAST: ${CLAUDE_MODEL_FAST:-}
+      CLAUDE_MAX_TOKENS: ${CLAUDE_MAX_TOKENS:-}
+      DATABASE_URL: postgresql+asyncpg://${APP_DB_USER:-del_app}:${APP_DB_PASSWORD:?APP_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
     expose:
       - "8000"
@@ -92,6 +102,19 @@ services:
       redis:
         condition: service_healthy
     networks: [frontend, backend]
+    logging: *default-logging
+
+  # One-off migrations as the database owner:  docker compose run --rm migrate
+  migrate:
+    profiles: ["tools"]
+    build: ./apps/api
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      MIGRATION_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks: [backend]
     logging: *default-logging
 
   web:

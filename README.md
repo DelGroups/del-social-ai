@@ -88,6 +88,7 @@ CI (`.github/workflows/test.yml`) runs the full suite against a fresh Postgres 1
 | Logs | `docker compose logs -f caddy` |
 | psql shell | `docker compose exec postgres psql -U $POSTGRES_USER $POSTGRES_DB` |
 | Backup DB | `docker compose exec -T postgres pg_dump -U $POSTGRES_USER $POSTGRES_DB > backup.sql` |
+| Run DB migrations (as owner) | `docker compose run --rm migrate` |
 | Reload Caddyfile | `docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile` |
 | Stop | `docker compose down` (add `-v` to **delete all data**) |
 
