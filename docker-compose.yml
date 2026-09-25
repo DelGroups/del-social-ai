@@ -65,7 +65,9 @@ services:
       - "443:443"
       - "443:443/udp" # HTTP/3
     environment:
-      DOMAIN: ${DOMAIN:?DOMAIN is required}
+      APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN is required}
+      API_DOMAIN: ${API_DOMAIN:?API_DOMAIN is required}
+      AI_DOMAIN: ${AI_DOMAIN:?AI_DOMAIN is required}
       ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL is required}
     volumes:
       - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro

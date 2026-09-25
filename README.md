@@ -1,6 +1,12 @@
 # DEL SOCIAL AI
 
-AI-assisted social media platform for DEL Groups, served at **https://ai.del-groups.com**.
+AI-assisted social media platform for DEL Groups.
+
+| Host | Serves |
+|---|---|
+| https://app.del-groups.com | Next.js panel |
+| https://api.del-groups.com | FastAPI (API, webhooks, media) |
+| https://ai.del-groups.com | Redirects to the panel |
 
 ## Status: Phase 0 (skeleton)
 
@@ -21,8 +27,9 @@ docker-compose.yml
 ## Architecture
 
 ```
-internet ──► Caddy :80/:443 ──┬─ /api/*  ──► api:8000  (FastAPI) ──┬─► Postgres 16
-                              └─ /*      ──► web:3000  (Next.js)   └─► Redis 7
+internet ──► Caddy :80/:443 ──┬─ api.del-groups.com ──► api:8000 (FastAPI) ──┬─► Postgres 16
+                              ├─ app.del-groups.com ──► web:3000 (Next.js)  └─► Redis 7
+                              └─ ai.del-groups.com  ──► 301 → app
 ```
 
 - Caddy provisions and renews Let's Encrypt certificates on its own. HTTP is redirected to HTTPS.
@@ -32,7 +39,7 @@ internet ──► Caddy :80/:443 ──┬─ /api/*  ──► api:8000  (Fast
 ## Prerequisites
 
 - Docker Engine 24+ with the Compose v2 plugin
-- Production: a DNS **A/AAAA record** for `ai.del-groups.com` pointing to the server, with ports **80 and 443** open
+- Production: DNS **A records** for `app`, `api` and `ai.del-groups.com` pointing to the server, with ports **80 and 443** open
 
 ## Setup
 
@@ -47,12 +54,12 @@ docker compose up -d
 
 # 3. Verify
 docker compose ps                        # postgres and redis should be "healthy"
-curl -k https://localhost/healthz        # -> ok   (with DOMAIN=localhost)
+curl https://api.del-groups.com/healthz  # -> ok   (local: curl -k https://api.localhost/healthz)
 ```
 
 ### Local development
 
-In `.env`, set `DOMAIN=localhost`. Caddy then uses its own local CA, and no public DNS is needed.
+In `.env`, set `APP_DOMAIN=app.localhost`, `API_DOMAIN=api.localhost` and `AI_DOMAIN=ai.localhost`. Caddy then uses its own local CA, and no public DNS is needed.
 Until the apps exist, every route except `/healthz` returns 502. This is expected.
 
 ### Once the apps exist (Phase 1+)

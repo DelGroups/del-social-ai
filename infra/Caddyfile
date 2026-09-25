@@ -1,11 +1,14 @@
 # DEL SOCIAL AI — edge proxy
-# DOMAIN defaults to ai.del-groups.com; set DOMAIN=localhost for local dev (self-signed TLS).
+#   APP_DOMAIN  app.del-groups.com  → Next.js panel
+#   API_DOMAIN  api.del-groups.com  → FastAPI (API, webhooks, media)
+#   AI_DOMAIN   ai.del-groups.com   → redirects to the panel
+# For local dev use app.localhost / api.localhost / ai.localhost (self-signed TLS).
 
 {
 	email {$ACME_EMAIL}
 }
 
-{$DOMAIN:ai.del-groups.com} {
+(common) {
 	encode zstd gzip
 
 	header {
@@ -21,18 +24,32 @@
 		respond "ok" 200
 	}
 
-	# FastAPI
-	handle /api/* {
-		reverse_proxy api:8000
-	}
-
-	# Next.js panel
-	handle {
-		reverse_proxy web:3000
-	}
-
 	log {
 		output stdout
 		format json
+	}
+}
+
+{$APP_DOMAIN:app.del-groups.com} {
+	import common
+
+	handle {
+		reverse_proxy web:3000
+	}
+}
+
+{$API_DOMAIN:api.del-groups.com} {
+	import common
+
+	handle {
+		reverse_proxy api:8000
+	}
+}
+
+{$AI_DOMAIN:ai.del-groups.com} {
+	import common
+
+	handle {
+		redir https://{$APP_DOMAIN:app.del-groups.com}{uri} permanent
 	}
 }
