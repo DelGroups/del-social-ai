@@ -1,7 +1,6 @@
 # DEL SOCIAL AI — Phase 0 stack
 #
-#   docker compose up -d                  # postgres + redis + caddy
-#   docker compose --profile app up -d    # + api + web (once apps/*/Dockerfile exist)
+#   docker compose up -d --build     # postgres + redis + caddy + api + web
 #
 # All secrets come from .env (copy .env.example). Required vars fail fast.
 
@@ -76,10 +75,9 @@ services:
     networks: [frontend]
     logging: *default-logging
 
-  # --- Placeholders: enabled with `--profile app` once the apps have Dockerfiles ---
+  # --- Application ---
 
   api:
-    profiles: ["app"]
     build: ./apps/api
     restart: unless-stopped
     env_file: .env
@@ -97,16 +95,18 @@ services:
     logging: *default-logging
 
   web:
-    profiles: ["app"]
-    build: ./apps/web
+    build:
+      context: ./apps/web
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL is required}
     restart: unless-stopped
     environment:
-      NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      API_INTERNAL_URL: http://api:8000 # server-side calls stay inside Docker
     expose:
       - "3000"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     networks: [frontend]
     logging: *default-logging
 

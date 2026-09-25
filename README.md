@@ -10,12 +10,12 @@ AI-assisted social media platform for DEL Groups.
 
 ## Status: Phase 0 (skeleton)
 
-Infrastructure only. The app directories are empty placeholders.
+Infrastructure plus minimal app shells: the API exposes `/health` and `/ready`, and the panel shows a system-status page.
 
 ```
 apps/
-  api/        FastAPI backend       (empty)
-  web/        Next.js panel         (empty)
+  api/        FastAPI backend       (health/readiness only)
+  web/        Next.js panel         (status page only)
 infra/
   Caddyfile   TLS + reverse proxy
 docs/         Project docs
@@ -34,7 +34,7 @@ internet ──► Caddy :80/:443 ──┬─ api.del-groups.com ──► api:
 
 - Caddy provisions and renews Let's Encrypt certificates on its own. HTTP is redirected to HTTPS.
 - Postgres and Redis are published on `127.0.0.1` only, so they are never reachable from outside the host.
-- `api` and `web` sit behind the `app` Compose profile until they have Dockerfiles.
+- `api` and `web` are built from `apps/*/Dockerfile` and run as non-root users.
 
 ## Prerequisites
 
@@ -49,26 +49,18 @@ cp .env.example .env
 # Replace every CHANGE_ME (generate values with: openssl rand -hex 32).
 # DATABASE_URL and REDIS_URL must use the same passwords.
 
-# 2. Start the infrastructure
-docker compose up -d
+# 2. Build and start everything
+docker compose up -d --build
 
 # 3. Verify
-docker compose ps                        # postgres and redis should be "healthy"
-curl https://api.del-groups.com/healthz  # -> ok   (local: curl -k https://api.localhost/healthz)
+docker compose ps                        # all 5 services should be "healthy" / "running"
+curl https://api.del-groups.com/ready    # -> {"status":"ok",...}  (local: curl -k https://api.localhost/ready)
+# open https://app.del-groups.com         # status page, every row ✅
 ```
 
 ### Local development
 
 In `.env`, set `APP_DOMAIN=app.localhost`, `API_DOMAIN=api.localhost` and `AI_DOMAIN=ai.localhost`. Caddy then uses its own local CA, and no public DNS is needed.
-Until the apps exist, every route except `/healthz` returns 502. This is expected.
-
-### Once the apps exist (Phase 1+)
-
-Add `apps/api/Dockerfile` (listening on port 8000) and `apps/web/Dockerfile` (listening on port 3000). Then run:
-
-```bash
-docker compose --profile app up -d --build
-```
 
 ## Operations
 

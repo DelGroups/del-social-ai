@@ -1,0 +1,38 @@
+/* Theme tokens — see CLAUDE.md "Design". Midnight is the default. */
+:root,
+[data-theme="midnight"] {
+  --bg: #0b1422;
+  --surface: #121e30;
+  --text: #e8edf5;
+  --accent: #ff7a1a;
+}
+[data-theme="daylight"] {
+  --bg: #f7f7f4;
+  --surface: #ffffff;
+  --text: #13233a;
+  --accent: #f26b0f;
+}
+[data-theme="graphite"] {
+  --bg: #101113;
+  --surface: #18191c;
+  --text: #ededed;
+  --accent: #7c8cff;
+}
+[data-theme="sage"] {
+  --bg: #f4f6f3;
+  --surface: #ffffff;
+  --text: #1e2a24;
+  --accent: #2f8f6b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
