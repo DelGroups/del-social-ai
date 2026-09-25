@@ -136,7 +136,8 @@ async def test_app_role_cannot_bypass_rls(admin, migrated_db):
 async def test_orm_models_respect_rls(migrated_db, tenants):
     engine = make_engine(migrated_db)
     try:
-        async with AsyncSession(engine) as session, session.begin():
+        # expire_on_commit=False: objects stay readable after the transaction ends
+        async with AsyncSession(engine, expire_on_commit=False) as session, session.begin():
             await session.execute(text(f"SET LOCAL ROLE {APP_ROLE}"))
             await set_tenant(session, tenants["a"])
             users = (await session.scalars(select(User))).all()
