@@ -1,0 +1,38 @@
+# DEL SOCIAL AI — edge proxy
+# DOMAIN defaults to ai.del-groups.com; set DOMAIN=localhost for local dev (self-signed TLS).
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN:ai.del-groups.com} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# Proxy liveness check (does not touch upstreams)
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# FastAPI
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	# Next.js panel
+	handle {
+		reverse_proxy web:3000
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}
