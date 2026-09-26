@@ -430,7 +430,13 @@
       "tilted": "əyri"
     },
     "mergeInto": "Birləşdir…",
-    "mergeConfirm": "“{from}” məhsulunun bütün şəkilləri “{into}” məhsuluna köçürülsün və “{from}” silinsin?"
+    "mergeConfirm": "“{from}” məhsulunun bütün şəkilləri “{into}” məhsuluna köçürülsün və “{from}” silinsin?",
+    "correct": "Düzəlt",
+    "corrected": "insan tərəfindən düzəldilib",
+    "aTitle": "Məhsulun adı",
+    "correctHint": "Şəkil analitikinin səhvini düzəldin (məs. \"qulpsuz\" yazıb, amma qulplar var). Postlar sizin düzəlişinizdən istifadə edir, yenidən təhlil də onu saxlayır.",
+    "commaHint": "Vergüllə ayırın",
+    "saveCorrection": "Düzəlişi saxla"
   },
   "posts": {
     "title": "Postlar",

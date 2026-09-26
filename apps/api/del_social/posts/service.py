@@ -55,11 +55,20 @@ def build_brief(post_id: uuid.UUID, product: Product | None, assets: list[MediaA
     analyses = [a.analysis or {} for a in assets]
     first = analyses[0] if analyses else {}
     name = product.name if product else (first.get("title_az") or "Məhsul")
-    features = [f for a in analyses for f in (a.get("features") or [])]
     hashtags = [h for a in analyses for h in (a.get("hashtags") or [])]
     extra = []
     if notes.strip():
         extra.append(notes.strip())
+    seen = [
+        f"Photo {i + 1}: " + ", ".join((a.get("features") or []) + (a.get("materials_visible") or []))
+        for i, a in enumerate(analyses)
+        if a.get("features") or a.get("materials_visible")
+    ]
+    if seen:
+        extra.append(
+            "Visible in the photos (from the Photo Analyst; mention only features that do not contradict "
+            "each other across photos, and never claim a material that is not listed): " + " | ".join(seen)
+        )
     if len(assets) > 1:
         extra.append(f"This is a carousel post with {len(assets)} photos of the same product.")
     if hashtags:
@@ -70,7 +79,7 @@ def build_brief(post_id: uuid.UUID, product: Product | None, assets: list[MediaA
         goal="leads",
         product_category=(first.get("category") or (product.category if product else None) or None),
         photo=_join([a.description or (a.analysis or {}).get("description_az", "") for a in assets], 500),
-        key_message=_join(features, 500, ", ") or None,
+        key_message=None,
         notes=_join(extra, 1000, "\n") or None,
     )
 

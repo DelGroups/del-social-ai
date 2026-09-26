@@ -430,7 +430,13 @@
       "tilted": "tilted"
     },
     "mergeInto": "Merge into…",
-    "mergeConfirm": "Move all photos of “{from}” into “{into}” and remove “{from}”?"
+    "mergeConfirm": "Move all photos of “{from}” into “{into}” and remove “{from}”?",
+    "correct": "Correct",
+    "corrected": "corrected by a person",
+    "aTitle": "Product name",
+    "correctHint": "Fix what the Photo Analyst got wrong (e.g. it said \"handleless\" but there are handles). Posts use your correction, and re-analysis keeps it.",
+    "commaHint": "Comma-separated",
+    "saveCorrection": "Save correction"
   },
   "posts": {
     "title": "Posts",
