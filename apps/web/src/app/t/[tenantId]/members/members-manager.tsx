@@ -1,12 +1,13 @@
 "use client";
 
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { CopyField } from "@/components/client";
 import { Alert, Button, Card, Field, Input, Select } from "@/components/ui";
 import { ApiError, api } from "@/lib/client-api";
+import { formatDate } from "@/lib/prefs";
 import {
   type Invitation,
   type Member,
@@ -26,7 +27,6 @@ type Props = {
 
 export function MembersManager({ tenantId, myAccountId, myRole, members, invitations }: Props) {
   const t = useTranslations();
-  const format = useFormatter();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<{ email: string; url: string } | null>(null);
@@ -36,7 +36,7 @@ export function MembersManager({ tenantId, myAccountId, myRole, members, invitat
   // Admins can't create, change or remove owners (the API enforces the same rule)
   const assignableRoles = ROLES.filter((r) => r !== "owner" || canManageOwners(myRole));
   const canTouch = (m: Member) => manage && (m.role !== "owner" || canManageOwners(myRole));
-  const date = (iso: string) => format.dateTime(new Date(iso), { dateStyle: "medium" });
+  const date = formatDate;
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
