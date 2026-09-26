@@ -52,5 +52,5 @@ async def write_options(
         user=_user_message(profile, brief, revision),
         output=CopyOutput,
         tier=Tier.DEFAULT,
-        max_tokens=6000,
+        max_tokens=16000,  # a ceiling, not a cost: includes the model's thinking
     )

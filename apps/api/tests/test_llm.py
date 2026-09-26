@@ -72,6 +72,7 @@ class FakeAnthropic:
         self.requests: list[dict] = []
         self.status = 200
         self.text = json.dumps({"text": "Salam! Привет!", "hashtags": ["#DelFurniture"]})
+        self.stop_reason = "end_turn"
 
     def handle(self, request: httpx2.Request) -> httpx2.Response:
         body = json.loads(request.content)
@@ -81,7 +82,7 @@ class FakeAnthropic:
         return httpx2.Response(200, json={
             "id": "msg_test", "type": "message", "role": "assistant", "model": body["model"],
             "content": [{"type": "text", "text": self.text}],
-            "stop_reason": "end_turn", "stop_sequence": None,
+            "stop_reason": self.stop_reason, "stop_sequence": None,
             "usage": {"input_tokens": 1200, "output_tokens": 300,
                       "cache_creation_input_tokens": 0, "cache_read_input_tokens": 800},
         })
@@ -247,3 +248,21 @@ async def test_usage_report(client, admin, tenants, session_for):
     assert (await client.get(f"/tenants/{tenants['a']}/usage?month=soon", headers=owner)).status_code == 422
     viewer = await session_for(tenants["a_viewer"])
     assert (await client.get(f"/tenants/{tenants['a']}/usage", headers=viewer)).status_code == 403
+
+
+async def test_cut_off_output_still_records_tokens(fakes, admin, tenants):
+    llm, fa, _ = fakes
+    fa.stop_reason = "max_tokens"
+    fa.text = '{"text": "Salam'
+    with pytest.raises(LLMError, match="cut off"):
+        await call(llm, tenants["a"])
+    row = await admin.fetchrow("SELECT * FROM llm_calls WHERE tenant_id = $1", tenants["a"])
+    assert row["status"] == "error" and row["output_tokens"] == 300 and row["cost_usd"] > 0
+
+
+async def test_invalid_output_error_names_the_field(fakes, admin, tenants):
+    llm, fa, _ = fakes
+    fa.text = json.dumps({"text": "no hashtags field"})
+    with pytest.raises(LLMError, match="hashtags"):
+        await call(llm, tenants["a"])
+    assert await admin.fetchval("SELECT input_tokens FROM llm_calls WHERE tenant_id = $1", tenants["a"]) == 1200

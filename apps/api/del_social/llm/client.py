@@ -17,7 +17,8 @@ from decimal import Decimal
 from typing import Generic, TypeVar
 
 import anthropic
-from pydantic import BaseModel
+from anthropic.lib._parse._transform import transform_schema
+from pydantic import BaseModel, ValidationError
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from del_social.core.config import Settings
@@ -72,6 +73,24 @@ def _usage(resp: object) -> Usage:
     )
 
 
+def _validate(resp: object, output: type[T]) -> tuple[T | None, str | None]:
+    """The JSON text block → output model, or a short reason (never the content itself)."""
+    stop = getattr(resp, "stop_reason", None)
+    text = "".join(b.text for b in getattr(resp, "content", []) if getattr(b, "type", None) == "text")
+    if stop == "max_tokens":
+        return None, "Output cut off at max_tokens"
+    if stop == "refusal":
+        return None, "The model refused this request"
+    if not text:
+        return None, f"No structured output (stop_reason={stop})"
+    try:
+        return output.model_validate_json(text), None
+    except ValidationError as e:
+        first = e.errors()[0]
+        where = ".".join(str(x) for x in first.get("loc", ()))
+        return None, f"Invalid structured output at {where or 'root'}: {first.get('type')}"
+
+
 class LLM:
     def __init__(
         self,
@@ -103,22 +122,22 @@ class LLM:
         parsed: T | None = None
         error: str | None = None
         try:
-            resp = await self._client.messages.parse(
+            # create() + our own validation (not messages.parse): usage and stop_reason are kept
+            # even when the output is cut off or invalid, so every token is accounted for.
+            resp = await self._client.messages.create(
                 model=model,
                 max_tokens=max_tokens,
                 system=[{"type": "text", "text": prompt.text, "cache_control": {"type": "ephemeral"}}],
                 messages=[{"role": "user", "content": user}],
-                output_format=output,
+                output_config={"format": {"type": "json_schema", "schema": transform_schema(output)}},
             )
-            parsed = resp.parsed_output
-            if parsed is None:
-                error = f"No structured output (stop_reason={getattr(resp, 'stop_reason', None)})"
+            parsed, error = _validate(resp, output)
         except anthropic.APIStatusError as e:
             error = f"Anthropic API error {e.status_code}"
+            if e.status_code == 400 and "credit" in str(e).lower():
+                error += " (credit balance too low)"
         except anthropic.APIConnectionError:
             error = "Anthropic API could not be reached"
-        except ValueError as e:  # the model's JSON failed our schema validation
-            error = f"Invalid structured output: {type(e).__name__}"
         latency_ms = int((time.monotonic() - t0) * 1000)
         usage = _usage(resp)
         cost = cost_usd(model, usage)
