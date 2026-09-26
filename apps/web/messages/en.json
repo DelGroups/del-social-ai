@@ -381,6 +381,52 @@
     "deleteProductConfirm": "Delete this product? Its photos stay in the library.",
     "previewLandscape": "Wide 1.91:1",
     "useOnPosts": "Use on posts",
-    "postLogo": "Used on posts"
+    "postLogo": "Used on posts",
+    "analyzing": "Analysing…",
+    "analysisFailed": "Analysis failed",
+    "analysisTitle": "Photo Analyst",
+    "analyzingLong": "The Photo Analyst is looking at this photo. It fills in the title, description, tags, product, focus point and hashtags by itself.",
+    "notAnalyzed": "Not analysed yet.",
+    "analyze": "Analyse",
+    "reanalyze": "Analyse again",
+    "analyzeAll": "Analyse all photos",
+    "analyzeAllHint": "Photos uploaded before the Photo Analyst existed, or while it was unavailable.",
+    "analyzeAllDone": "{count} photos queued for analysis.",
+    "looksLike": {
+      "render": "3D render",
+      "photo": "Camera photo",
+      "unclear": "Render or photo: unclear"
+    },
+    "aCategory": "Category",
+    "aRoom": "Room",
+    "aStyle": "Style",
+    "aColors": "Colours",
+    "aMaterials": "Visible materials",
+    "aFeatures": "Features",
+    "aBestFormat": "Best format",
+    "aHashtags": "Suggested hashtags",
+    "aQuality": "Photo problems found",
+    "formats": {
+      "feed": "Instagram 4:5",
+      "square": "Square 1:1",
+      "landscape": "Wide 1.91:1"
+    },
+    "productAction": {
+      "created": "A new product was created for this photo.",
+      "joined": "Added to an existing product (same model)."
+    },
+    "quality": {
+      "dark": "too dark",
+      "overexposed": "too bright",
+      "noisy": "noise",
+      "blurry": "blurry",
+      "reflections": "reflections",
+      "clutter": "clutter",
+      "low_resolution": "low resolution",
+      "watermark": "watermark",
+      "text_on_image": "text on image",
+      "people": "people",
+      "tilted": "tilted"
+    }
   }
 }

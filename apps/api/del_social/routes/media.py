@@ -18,7 +18,7 @@ from del_social.core.config import get_settings
 from del_social.core.db import set_tenant
 from del_social.core.deps import TenantContext, get_db, get_engine, get_http, require_permission
 from del_social.llm import LLM, build_llm
-from del_social.media import editing, images
+from del_social.media import analysis, editing, images
 from del_social.media.fal import FalClient
 from del_social.media.storage import MediaNotConfigured, MediaStore, signed_url, verify
 from del_social.routes.products import get_product
@@ -53,6 +53,17 @@ def get_translator(engine: AsyncEngine = Depends(get_engine), http: httpx.AsyncC
     return build_llm(s, engine, http) if s.anthropic_api_key else None
 
 
+def get_analyst(engine: AsyncEngine = Depends(get_engine), http: httpx.AsyncClient = Depends(get_http)) -> LLM | None:
+    """The Photo Analyst's LLM; None when no Anthropic key is set (photos then stay unanalysed)."""
+    s = get_settings()
+    return build_llm(s, engine, http) if s.anthropic_api_key else None
+
+
+def _schedule_analysis(background: BackgroundTasks, engine: AsyncEngine, llm: LLM, store: MediaStore,
+                       tenant_id: uuid.UUID, asset_id: uuid.UUID) -> None:
+    background.add_task(analysis.run_analysis, engine=engine, llm=llm, store=store, tenant_id=tenant_id, asset_id=asset_id)
+
+
 class MediaOut(BaseModel):
     asset_id: uuid.UUID
     kind: Kind
@@ -74,6 +85,7 @@ class MediaOut(BaseModel):
     product_id: uuid.UUID | None
     position: int  # order within the product; 0 = cover
     default_logo: bool
+    analysis: dict | None  # Photo Analyst: status, title, features, colours, hashtags, quality, best format…
     publishable: bool  # ready, not a reference, and (for AI edits) approved by a human
     created_at: datetime
     urls: dict[str, str]  # signed, valid ~24h: thumb, feed, square (+ -logo variants)
@@ -168,6 +180,7 @@ async def list_media(
 
 @router.post("", response_model=MediaOut, status_code=status.HTTP_201_CREATED)
 async def upload(
+    background: BackgroundTasks,
     file: UploadFile = File(...),
     kind: Kind = Form("photo"),
     source: Source = Form("own"),
@@ -176,7 +189,9 @@ async def upload(
     tags: str = Form("", max_length=1000),  # comma-separated
     ctx: TenantContext = Depends(can_manage),
     db: AsyncSession = Depends(get_db),
+    engine: AsyncEngine = Depends(get_engine),
     store: MediaStore = Depends(get_store),
+    analyst: LLM | None = Depends(get_analyst),
 ) -> MediaOut:
     data = await file.read(images.MAX_UPLOAD_BYTES + 1)
     try:
@@ -216,9 +231,16 @@ async def upload(
         uploaded_by=ctx.account.account_id,
     )
     await run_in_threadpool(store.save_original, ctx.tenant_id, asset.asset_id, data)
-    db.add(asset)
-    await db.flush()
-    await db.refresh(asset)
+    if analyst is not None and kind == "photo":
+        asset.analysis = {"status": "queued"}
+    # Committed before the analysis job starts (background tasks run before get_db commits)
+    async with AsyncSession(engine, expire_on_commit=False) as own, own.begin():
+        await set_tenant(own, ctx.tenant_id)
+        own.add(asset)
+        await own.flush()
+        await own.refresh(asset)
+    if analyst is not None and kind == "photo":
+        _schedule_analysis(background, engine, analyst, store, ctx.tenant_id, asset.asset_id)
     return _out(asset, has_logo or kind == "logo")
 
 
@@ -278,6 +300,59 @@ async def set_default_logo(
     await db.flush()
     await db.refresh(asset)
     return _out(asset, True)
+
+
+@router.post("/{asset_id}/analyze", response_model=MediaOut, status_code=status.HTTP_202_ACCEPTED)
+async def analyze(
+    asset_id: uuid.UUID,
+    background: BackgroundTasks,
+    ctx: TenantContext = Depends(can_manage),
+    db: AsyncSession = Depends(get_db),
+    engine: AsyncEngine = Depends(get_engine),
+    store: MediaStore = Depends(get_store),
+    analyst: LLM | None = Depends(get_analyst),
+) -> MediaOut:
+    """Run (or re-run) the Photo Analyst on one photo."""
+    if analyst is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "The Photo Analyst is not configured on the server")
+    asset = await _get(db, asset_id)
+    if asset.kind != "photo" or asset.status != "ready":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only finished photos can be analysed")
+    async with AsyncSession(engine, expire_on_commit=False) as own, own.begin():
+        await set_tenant(own, ctx.tenant_id)
+        row = await own.get(MediaAsset, asset_id)
+        row.analysis = {"status": "queued"}
+        await own.flush()
+        await own.refresh(row)
+    _schedule_analysis(background, engine, analyst, store, ctx.tenant_id, asset_id)
+    return _out(row, await _current_logo(db) is not None)
+
+
+class AnalyzeAllOut(BaseModel):
+    queued: int
+
+
+@router.post("/analyze-all", response_model=AnalyzeAllOut, status_code=status.HTTP_202_ACCEPTED)
+async def analyze_all(
+    background: BackgroundTasks,
+    ctx: TenantContext = Depends(can_manage),
+    db: AsyncSession = Depends(get_db),
+    engine: AsyncEngine = Depends(get_engine),
+    store: MediaStore = Depends(get_store),
+    analyst: LLM | None = Depends(get_analyst),
+) -> AnalyzeAllOut:
+    """Analyse every finished photo that has no analysis yet (e.g. photos uploaded before the analyst existed)."""
+    if analyst is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "The Photo Analyst is not configured on the server")
+    ids = (await db.scalars(
+        select(MediaAsset.asset_id).where(
+            MediaAsset.kind == "photo", MediaAsset.status == "ready", MediaAsset.deleted_at.is_(None),
+            MediaAsset.analyzed_at.is_(None), MediaAsset.parent_asset_id.is_(None),
+        ).order_by(MediaAsset.created_at)
+    )).all()
+    for asset_id in ids:
+        _schedule_analysis(background, engine, analyst, store, ctx.tenant_id, asset_id)
+    return AnalyzeAllOut(queued=len(ids))
 
 
 # --- AI edits (ADR 005): configured per photo ---

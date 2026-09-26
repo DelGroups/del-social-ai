@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Alert, Button, Card, Field, Input, Select } from "@/components/ui";
 import { ApiError, api } from "@/lib/client-api";
-import type { MediaAsset, MediaSource, ProductInfo, Recipe, RecipeStep } from "@/lib/types";
+import type { MediaAsset, MediaSource, PhotoAnalysis, ProductInfo, Recipe, RecipeStep } from "@/lib/types";
 
 // Photos larger than this are scaled down in the browser before upload: posts are
 // published at 1080 px, and smaller uploads pass the panel's proxy quickly.
@@ -68,7 +68,9 @@ export function MediaLibrary({ tenantId, assets, products, canManage }: Props) {
   const shown = filter ? byProduct.filter((p) => p.tags.includes(filter)) : byProduct;
   const activeProduct = products.find((p) => p.product_id === productFilter) ?? null;
   const current = assets.find((a) => a.asset_id === selected) ?? null;
-  const pending = assets.some((a) => a.status === "pending");
+  const pending = assets.some(
+    (a) => a.status === "pending" || a.analysis?.status === "queued" || a.analysis?.status === "running",
+  );
 
   // AI edits finish in the background: refresh until none is pending
   useEffect(() => {
@@ -213,6 +215,26 @@ export function MediaLibrary({ tenantId, assets, products, canManage }: Props) {
       />
 
       <Card title={activeProduct ? t("productPhotos", { name: activeProduct.name, count: shown.length }) : t("photosTitle", { count: photos.length })}>
+        {canManage && photos.some((p) => !p.analysis && !p.parent_asset_id && p.status === "ready") && (
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <Button
+              variant="ghost"
+              onClick={async () => {
+                try {
+                  const r = await api<{ queued: number }>(`/tenants/${tenantId}/media/analyze-all`, { method: "POST" });
+                  setError(null);
+                  alert(t("analyzeAllDone", { count: r.queued }));
+                } catch (err) {
+                  setError(err instanceof ApiError ? err.message : tc("error"));
+                }
+                router.refresh();
+              }}
+            >
+              {t("analyzeAll")}
+            </Button>
+            <span className="text-xs text-muted">{t("analyzeAllHint")}</span>
+          </div>
+        )}
         {allTags.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2 text-xs">
             <Chip active={!filter} onClick={() => setFilter("")} label={t("allTags")} />
@@ -241,6 +263,12 @@ export function MediaLibrary({ tenantId, assets, products, canManage }: Props) {
                 )}
                 <div className="space-y-1 p-2 text-xs">
                   <Badges asset={a} />
+                  {a.analysis && a.analysis.status !== "done" && (
+                    <p className={a.analysis.status === "failed" ? "text-danger" : "text-accent"}>
+                      {a.analysis.status === "failed" ? t("analysisFailed") : t("analyzing")}
+                    </p>
+                  )}
+                  {a.analysis?.title_az && <p className="font-medium">{a.analysis.title_az}</p>}
                   <p className="line-clamp-2">{a.description || <span className="text-muted">{t("noDescription")}</span>}</p>
                   <p className="truncate text-muted">{a.tags.join(" · ")}</p>
                 </div>
@@ -507,7 +535,7 @@ function PhotoEditor({
   const [enhance, setEnhance] = useState(asset.enhance);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
-  const [preview, setPreview] = useState<Format>("feed");
+  const [preview, setPreview] = useState<Format>(asset.analysis?.best_format ?? "feed");
 
   const parent = asset.parent_asset_id ? assets.find((a) => a.asset_id === asset.parent_asset_id) : null;
   const edits = assets.filter((a) => a.parent_asset_id === asset.asset_id);
@@ -698,6 +726,10 @@ function PhotoEditor({
         )}
       </div>
 
+      {!asset.parent_asset_id && (
+        <AnalysisPanel tenantId={tenantId} asset={asset} canManage={canManage} onDone={() => router.refresh()} />
+      )}
+
       {canManage && !asset.parent_asset_id && (
         <RecipeEditor tenantId={tenantId} asset={asset} assets={assets} onDone={() => router.refresh()} />
       )}
@@ -722,6 +754,108 @@ function PhotoEditor({
         </div>
       )}
     </Card>
+  );
+}
+
+function AnalysisPanel({
+  tenantId,
+  asset,
+  canManage,
+  onDone,
+}: {
+  tenantId: string;
+  asset: MediaAsset;
+  canManage: boolean;
+  onDone: () => void;
+}) {
+  const t = useTranslations("media");
+  const tc = useTranslations("common");
+  const [error, setError] = useState<string | null>(null);
+  const a: PhotoAnalysis | null = asset.analysis;
+  const rows: [string, string | undefined][] = a
+    ? [
+        ["aCategory", a.category],
+        ["aRoom", a.room ?? undefined],
+        ["aStyle", a.style?.join(", ")],
+        ["aColors", a.colors?.join(", ")],
+        ["aMaterials", a.materials_visible?.join(", ")],
+        ["aFeatures", a.features?.join(", ")],
+      ]
+    : [];
+
+  async function rerun() {
+    setError(null);
+    try {
+      await api(`/tenants/${tenantId}/media/${asset.asset_id}/analyze`, { method: "POST" });
+      onDone();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : tc("error"));
+    }
+  }
+
+  return (
+    <div className="mt-6 space-y-3 rounded-md border border-border p-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-sm font-medium">{t("analysisTitle")}</p>
+        {a?.status === "done" && a.looks_like && <span className="text-xs text-muted">{t(`looksLike.${a.looks_like}`)}</span>}
+        {canManage && a?.status !== "queued" && a?.status !== "running" && (
+          <Button variant="ghost" className="ml-auto px-2 py-1 text-xs" onClick={rerun}>
+            {a ? t("reanalyze") : t("analyze")}
+          </Button>
+        )}
+      </div>
+      {error && <Alert tone="error">{error}</Alert>}
+      {!a && <p className="text-sm text-muted">{t("notAnalyzed")}</p>}
+      {(a?.status === "queued" || a?.status === "running") && <Alert>{t("analyzingLong")}</Alert>}
+      {a?.status === "failed" && <Alert tone="error">{a.error ?? t("analysisFailed")}</Alert>}
+      {a?.status === "done" && (
+        <div className="space-y-3 text-sm">
+          {a.title_az && <p className="font-medium">{a.title_az}</p>}
+          {a.product_action && <p className="text-xs text-accent">{t(`productAction.${a.product_action}`)}</p>}
+          <dl className="grid gap-x-4 gap-y-1 sm:grid-cols-2">
+            {rows
+              .filter(([, v]) => v)
+              .map(([k, v]) => (
+                <div key={k} className="flex gap-2">
+                  <dt className="text-muted">{t(k)}:</dt>
+                  <dd>{v}</dd>
+                </div>
+              ))}
+            {a.best_format && (
+              <div className="flex gap-2">
+                <dt className="text-muted">{t("aBestFormat")}:</dt>
+                <dd>{t(`formats.${a.best_format}`)}</dd>
+              </div>
+            )}
+          </dl>
+          {a.hashtags && a.hashtags.length > 0 && (
+            <div>
+              <p className="text-xs text-muted">{t("aHashtags")}</p>
+              <p className="text-accent">{a.hashtags.join(" ")}</p>
+            </div>
+          )}
+          {a.quality_issues && a.quality_issues.length > 0 && (
+            <div>
+              <p className="text-xs text-muted">{t("aQuality")}</p>
+              <div className="flex flex-wrap gap-1">
+                {a.quality_issues.map((q) => (
+                  <span key={q} className="rounded-full border border-danger px-2 py-0.5 text-xs text-danger">
+                    {t(`quality.${q}`)}
+                  </span>
+                ))}
+              </div>
+              {a.suggested_edits && a.suggested_edits.length > 0 && (
+                <ul className="mt-1 list-disc ps-5 text-xs text-muted">
+                  {a.suggested_edits.map((s) => (
+                    <li key={s}>{s}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
