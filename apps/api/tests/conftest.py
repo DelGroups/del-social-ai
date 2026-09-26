@@ -12,10 +12,15 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import asyncio
+
 import asyncpg
 import pytest
+from redis.asyncio import Redis
+from sqlalchemy.engine import make_url
+from sqlalchemy.ext.asyncio import AsyncEngine
 
-from del_social.core.db import APP_ROLE
+from del_social.core.db import APP_ROLE, make_engine
 
 API_DIR = Path(__file__).resolve().parents[1]
 
@@ -48,6 +53,46 @@ def migrated_db(db_url: str) -> str:
     return db_url
 
 
+APP_TEST_PASSWORD = "del_app_test"
+
+
+@pytest.fixture(scope="session")
+def app_db_url(migrated_db: str) -> str:
+    """URL for the restricted del_app role, as the API uses in production (test cluster only)."""
+
+    async def enable_login() -> None:
+        conn = await asyncpg.connect(plain_dsn(migrated_db))
+        try:
+            await conn.execute(f"ALTER ROLE {APP_ROLE} LOGIN PASSWORD '{APP_TEST_PASSWORD}'")
+        finally:
+            await conn.close()
+
+    asyncio.run(enable_login())
+    url = make_url(migrated_db).set(username=APP_ROLE, password=APP_TEST_PASSWORD)
+    return url.render_as_string(hide_password=False)
+
+
+@pytest.fixture
+async def app_engine(app_db_url: str) -> AsyncIterator[AsyncEngine]:
+    engine = make_engine(app_db_url)
+    try:
+        yield engine
+    finally:
+        await engine.dispose()
+
+
+@pytest.fixture
+async def redis() -> AsyncIterator[Redis]:
+    url = os.environ.get("TEST_REDIS_URL")
+    if not url:
+        pytest.fail("TEST_REDIS_URL is not set; auth tests need a real Redis")
+    client = Redis.from_url(url)
+    try:
+        yield client
+    finally:
+        await client.aclose()
+
+
 @pytest.fixture
 async def admin(migrated_db: str) -> AsyncIterator[asyncpg.Connection]:
     conn = await asyncpg.connect(plain_dsn(migrated_db))
@@ -66,9 +111,10 @@ async def account_factory(admin: asyncpg.Connection) -> AsyncIterator:
         account_id = uuid.uuid4()
         await admin.execute(
             "INSERT INTO accounts (account_id, email, password_hash, is_active, is_platform_admin)"
-            " VALUES ($1, $2, 'not-a-real-hash', $3, $4)",
+            " VALUES ($1, $2, $3, $4, $5)",
             account_id,
             email or f"{account_id}@acc.test",
+            fields.get("password_hash", "not-a-real-hash"),
             fields.get("is_active", True),
             fields.get("is_platform_admin", False),
         )

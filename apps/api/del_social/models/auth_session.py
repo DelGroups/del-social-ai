@@ -1,3 +1,4 @@
+import ipaddress
 import uuid
 from datetime import datetime
 
@@ -33,4 +34,4 @@ class AuthSession(Base):
     )
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     user_agent: Mapped[str | None] = mapped_column(Text)
-    ip: Mapped[str | None] = mapped_column(INET)
+    ip: Mapped[ipaddress.IPv4Address | ipaddress.IPv6Address | None] = mapped_column(INET)
