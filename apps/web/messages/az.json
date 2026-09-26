@@ -225,5 +225,15 @@
       "ru": "Yalnız rus dili",
       "alternate": "Azərbaycan və rus dilində növbə ilə"
     }
+  },
+  "usage": {
+    "title": "Süni intellekt istifadəsi · {month}",
+    "calls": "{count} sorğu",
+    "empty": "Bu ay hələ sorğu olmayıb.",
+    "agent": "Agent",
+    "callsCol": "Sorğular",
+    "tokens": "Tokenlər (giriş / çıxış)",
+    "cost": "Xərc",
+    "errors": "{count} uğursuz"
   }
 }

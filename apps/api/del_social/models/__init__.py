@@ -4,6 +4,7 @@ from del_social.models.base import Base
 from del_social.models.brand_profile import BrandProfileVersion
 from del_social.models.connection import Channel, Connection, ConnectionStatus
 from del_social.models.invitation import Invitation
+from del_social.models.llm_call import LlmCall
 from del_social.models.membership import MemberRole, Membership
 from del_social.models.password_reset import PasswordReset
 from del_social.models.tenant import Tenant
@@ -18,6 +19,7 @@ __all__ = [
     "Connection",
     "ConnectionStatus",
     "Invitation",
+    "LlmCall",
     "MemberRole",
     "Membership",
     "PasswordReset",

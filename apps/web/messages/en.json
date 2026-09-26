@@ -225,5 +225,15 @@
       "ru": "Russian only",
       "alternate": "Alternate Azerbaijani and Russian posts"
     }
+  },
+  "usage": {
+    "title": "AI usage · {month}",
+    "calls": "{count, plural, one {# call} other {# calls}}",
+    "empty": "No AI calls yet this month.",
+    "agent": "Agent",
+    "callsCol": "Calls",
+    "tokens": "Tokens in / out",
+    "cost": "Cost",
+    "errors": "{count} failed"
   }
 }

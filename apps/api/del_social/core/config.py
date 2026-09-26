@@ -20,6 +20,19 @@ class Settings(BaseSettings):
     meta_graph_version: str = "v23.0"
     meta_login_config_id: str = ""  # set when the app uses "Facebook Login for Business"
 
+    # LLMs (docs/phase-1-plan.md §4, §9). Model ids are config, not code.
+    anthropic_api_key: str = ""
+    claude_model_fast: str = "claude-haiku-4-5-20251001"  # classify, first-pass checks
+    claude_model_default: str = "claude-sonnet-5"  # most agents
+    claude_model_strategy: str = "claude-opus-5-5"  # weekly planning
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_host: str = "https://cloud.langfuse.com"
+
+    @property
+    def langfuse_configured(self) -> bool:
+        return bool(self.langfuse_public_key and self.langfuse_secret_key)
+
     @property
     def meta_configured(self) -> bool:
         return bool(self.meta_app_id and self.meta_app_secret)
