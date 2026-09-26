@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     database_url: str
     redis_url: str
     allowed_origins: str = ""
+    app_base_url: str = "http://localhost:3000"  # panel URL used in invitation/reset links
 
     @property
     def asyncpg_dsn(self) -> str:

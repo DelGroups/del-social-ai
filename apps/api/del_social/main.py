@@ -8,6 +8,7 @@ from redis.asyncio import Redis
 
 from del_social import __version__
 from del_social.core.config import get_settings
+from del_social.routes import auth, platform, tenants
 
 settings = get_settings()
 
@@ -27,6 +28,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth.router)
+app.include_router(tenants.router)
+app.include_router(platform.router)
 
 
 @app.get("/")

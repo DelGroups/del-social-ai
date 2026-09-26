@@ -18,6 +18,7 @@ DEFINER_FUNCTIONS = (
     "auth_my_memberships",
     "auth_invitation_by_token",
     "auth_password_reset_by_token",
+    "auth_tenant_members",
 )
 
 
@@ -85,15 +86,38 @@ async def test_tenant_context_alone_does_not_expose_accounts(admin, tenants):
         assert await conn.fetchval("SELECT count(*) FROM accounts") == 0
 
 
-async def test_cannot_escalate_other_account(admin, tenants):
+@pytest.mark.parametrize("column", ["is_platform_admin", "is_active", "email"])
+async def test_app_cannot_change_protected_columns_even_on_own_account(admin, tenants, column):
+    """Column-level grants (0003): a bug in the app can't self-escalate or change identity."""
+    value = {"is_platform_admin": "true", "is_active": "false", "email": "'x@evil.test'"}[column]
+    with pytest.raises(asyncpg.InsufficientPrivilegeError):
+        async with as_app(admin, account_id=tenants["a_owner"]) as conn:
+            await conn.execute(
+                f"UPDATE accounts SET {column} = {value} WHERE account_id = $1", tenants["a_owner"]
+            )
+
+
+async def test_app_cannot_create_platform_admin(admin, tenants):
+    new_id = uuid.uuid4()
+    with pytest.raises(asyncpg.InsufficientPrivilegeError):
+        async with as_app(admin, account_id=new_id) as conn:
+            await conn.execute(
+                "INSERT INTO accounts (account_id, email, password_hash, is_platform_admin)"
+                " VALUES ($1, $2, 'x', true)",
+                new_id,
+                f"{new_id}@evil.test",
+            )
+
+
+async def test_cannot_change_other_accounts_password(admin, tenants):
     async with as_app(admin, account_id=tenants["a_owner"]) as conn:
-        await conn.execute(
-            "UPDATE accounts SET is_platform_admin = true WHERE account_id = $1",
-            tenants["b_owner"],
+        result = await conn.execute(
+            "UPDATE accounts SET password_hash = 'pwned' WHERE account_id = $1", tenants["b_owner"]
         )
+    assert result == "UPDATE 0"
     assert await admin.fetchval(
-        "SELECT is_platform_admin FROM accounts WHERE account_id = $1", tenants["b_owner"]
-    ) is False
+        "SELECT password_hash FROM accounts WHERE account_id = $1", tenants["b_owner"]
+    ) != "pwned"
 
 
 async def test_cannot_insert_account_for_someone_else(admin, tenants):
@@ -287,3 +311,20 @@ async def test_definer_functions_are_hardened(admin, migrated_db):
         assert await admin.fetchval(
             "SELECT has_function_privilege($1, $2::oid, 'EXECUTE')", APP_ROLE, r["oid"]
         ), f"{name}: del_app cannot execute"
+
+
+# --- auth_tenant_members ---
+
+
+async def test_tenant_members_lists_current_tenant_only(admin, tenants):
+    async with as_app(admin, tenant_id=tenants["a"]) as conn:
+        rows = await conn.fetch("SELECT account_id, email, role::text FROM auth_tenant_members()")
+        other = await conn.fetch("SELECT * FROM auth_tenant_members() WHERE account_id = $1", tenants["b_owner"])
+    assert {(r["account_id"], r["role"]) for r in rows} == {
+        (tenants["a_owner"], "owner"),
+        (tenants["a_viewer"], "viewer"),
+    }
+    assert all(r["email"] for r in rows)
+    assert other == []
+    async with as_app(admin) as conn:
+        assert await conn.fetch("SELECT * FROM auth_tenant_members()") == []
