@@ -44,7 +44,7 @@ async def cleanup(admin):
         "DELETE FROM memberships WHERE account_id IN (SELECT account_id FROM accounts WHERE email = ANY($1))",
         state["emails"],
     )
-    for table in ("eval_items", "eval_runs", "llm_calls", "brand_profiles", "connections", "invitations", "memberships", "tenant_secrets", "tenants"):
+    for table in ("media_assets", "eval_items", "eval_runs", "llm_calls", "brand_profiles", "connections", "invitations", "memberships", "tenant_secrets", "tenants"):
         await admin.execute(f"DELETE FROM {table} WHERE tenant_id = ANY($1::uuid[])", state["tenants"])
     await admin.execute("DELETE FROM accounts WHERE email = ANY($1)", state["emails"])
 

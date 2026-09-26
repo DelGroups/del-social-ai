@@ -31,6 +31,9 @@ os.environ.setdefault("DATABASE_URL", os.environ.get("TEST_DATABASE_URL", "postg
 os.environ.setdefault("REDIS_URL", os.environ.get("TEST_REDIS_URL", "redis://unused:6379/15"))
 os.environ.setdefault("APP_BASE_URL", "https://app.test")
 os.environ.setdefault("APP_ENV", "test")
+os.environ.setdefault("SECRET_KEY", "test-secret-key")
+os.environ.setdefault("MEDIA_PUBLIC_URL", "https://api.test")
+os.environ.setdefault("MEDIA_ROOT", os.path.join(os.environ.get("TMPDIR", "/tmp"), f"del-media-test-{os.getpid()}"))
 
 
 def plain_dsn(url: str) -> str:
@@ -169,7 +172,7 @@ async def tenants(admin: asyncpg.Connection, account_factory) -> AsyncIterator[d
         yield ids
     finally:
         tids = [a, b]
-        for table in ("eval_items", "eval_runs", "llm_calls", "brand_profiles", "connections", "invitations", "memberships", "tenant_secrets", "tenants"):
+        for table in ("media_assets", "eval_items", "eval_runs", "llm_calls", "brand_profiles", "connections", "invitations", "memberships", "tenant_secrets", "tenants"):
             await admin.execute(f"DELETE FROM {table} WHERE tenant_id = ANY($1::uuid[])", tids)
 
 
@@ -204,7 +207,7 @@ def cookie(token: str) -> dict[str, str]:
 @pytest.fixture
 async def client(app_engine, redis) -> AsyncIterator[httpx.AsyncClient]:
     # Imported here: del_social.main reads settings at import, after the env defaults above
-    from del_social.core.deps import allowed_origins, get_db, get_redis
+    from del_social.core.deps import allowed_origins, get_db, get_engine, get_redis
     from del_social.main import app
 
     async def db_override() -> AsyncIterator[AsyncSession]:
@@ -212,6 +215,7 @@ async def client(app_engine, redis) -> AsyncIterator[httpx.AsyncClient]:
             yield session
 
     app.dependency_overrides[get_db] = db_override
+    app.dependency_overrides[get_engine] = lambda: app_engine
     app.dependency_overrides[get_redis] = lambda: redis
     app.dependency_overrides[allowed_origins] = lambda: [ORIGIN]
     b = uuid.uuid4().bytes  # fresh client IP per test so IP rate limits don't leak across tests
