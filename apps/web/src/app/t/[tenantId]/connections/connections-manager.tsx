@@ -1,11 +1,12 @@
 "use client";
 
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Alert, Button, Card, Field, Input } from "@/components/ui";
 import { ApiError, api } from "@/lib/client-api";
+import { formatDateTime } from "@/lib/prefs";
 import type { ChannelInfo, ChannelName, Connection, PageOption } from "@/lib/types";
 
 // Brand names: the same in every language
@@ -38,12 +39,11 @@ type Props = {
 
 export function ConnectionsManager({ tenantId, manage, channels, notice, pick }: Props) {
   const t = useTranslations();
-  const format = useFormatter();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const base = `/tenants/${tenantId}/connections`;
-  const date = (iso: string) => format.dateTime(new Date(iso), { dateStyle: "medium", timeStyle: "short" });
+  const date = formatDateTime;
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
