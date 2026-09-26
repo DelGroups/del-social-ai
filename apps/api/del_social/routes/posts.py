@@ -52,6 +52,7 @@ class PostPatch(BaseModel):
     format: Format | None = None
     with_logo: bool | None = None
     channels: list[ChannelName] | None = Field(default=None, min_length=1)
+    asset_ids: list[uuid.UUID] | None = Field(default=None, min_length=1, max_length=10)  # order; first = cover
 
 
 class PublishIn(BaseModel):
@@ -204,6 +205,14 @@ async def update_post(
         if not body.caption.strip():
             raise HTTPException(422, "The caption is empty")
         post.caption = body.caption.strip()
+    if body.asset_ids is not None:
+        if len(set(body.asset_ids)) != len(body.asset_ids):
+            raise HTTPException(422, "A photo appears twice")
+        for asset_id in body.asset_ids:
+            asset = await db.get(MediaAsset, asset_id)  # RLS: this tenant only
+            if asset is None or not service.publishable(asset):
+                raise HTTPException(status.HTTP_409_CONFLICT, "Only publishable photos can be in a post")
+        post.asset_ids = list(body.asset_ids)
     for key in ("format", "with_logo", "channels"):
         value = getattr(body, key)
         if value is not None:

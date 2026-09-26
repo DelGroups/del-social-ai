@@ -479,7 +479,12 @@
       "publishing": "publishing",
       "published": "published",
       "partly_published": "partly published"
-    }
+    },
+    "orderHint": "Photo order in the post (the first is the cover). Use the arrows, remove ✕ or add another photo of the product, then save.",
+    "cover": "cover",
+    "addPhoto": "add photo",
+    "saveOrder": "Save photo order",
+    "orderSaved": "Photo order saved"
   },
   "pageSetup": {
     "title": "Page setup",
