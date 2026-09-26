@@ -19,7 +19,7 @@ from del_social.agents.brand_guardian.checks import Finding, check_option
 from del_social.agents.common import Brief, assemble_caption, brand_context, brief_block
 from del_social.agents.copywriter import CopyOption
 from del_social.knowledge.brand_profile import BrandProfile
-from del_social.llm import LLM, LLMResult, Tier, load_prompt
+from del_social.llm import LLM, Effort, LLMResult, Tier, load_prompt
 
 AGENT = "brand_guardian"
 Verdict = Literal["pass", "fix", "block"]
@@ -82,6 +82,9 @@ async def review(
         output=GuardianOutput,
         tier=Tier.DEFAULT,
         max_tokens=16000,  # a ceiling, not a cost: includes the model's thinking
+        # Checking against explicit rules needs less thinking than writing. The Guardian eval
+        # suite must stay fully correct with this setting before it changes.
+        effort=Effort.MEDIUM,
     )
     by_index = {r.index: r for r in result.output.reviews}
     verdicts = []
@@ -101,12 +104,13 @@ async def review(
     return verdicts, result
 
 
-def revision_request(options: list[CopyOption], verdicts: list[OptionVerdict]) -> str:
-    """The findings as a block for the Copywriter's next attempt."""
-    lines = []
-    for i, (o, v) in enumerate(zip(options, verdicts)):
-        if v.verdict == "pass":
-            lines.append(f"Option {i} ({o.angle}): no problems, keep it unchanged.")
-        else:
-            lines.append(f"Option {i} ({o.angle}): " + " ".join(f"[{f['severity']}] {f['message']}" for f in v.findings))
-    return "<revision_request>\n" + "\n".join(lines) + "\n</revision_request>"
+def revision_request(flagged: list[tuple[CopyOption, OptionVerdict]]) -> str:
+    """Only the flagged options, each with its text and findings, for the Copywriter's rewrite."""
+    parts = []
+    for n, (o, v) in enumerate(flagged, 1):
+        problems = "\n".join(f"- [{f['severity']}] {f['message']}" for f in v.findings)
+        parts.append(
+            f"Option {n} (angle: {o.angle})\ncaption_az: {o.caption_az}\ncaption_ru: {o.caption_ru}\n"
+            f"hashtags: {' '.join(o.hashtags)}\nProblems:\n{problems}"
+        )
+    return "<revision_request>\n" + "\n\n".join(parts) + "\n</revision_request>"

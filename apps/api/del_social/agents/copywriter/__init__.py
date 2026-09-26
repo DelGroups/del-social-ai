@@ -2,14 +2,16 @@
 
 Tools: none (reads the brand profile and the brief it is given). Model tier: default (Sonnet).
 It never writes prices, phone numbers or links; code adds contact details (agents.common).
+Revisions rewrite only the options the Brand Guardian flagged.
 """
+import json
 import uuid
 
 from pydantic import BaseModel, Field
 
 from del_social.agents.common import Brief, brand_context, brief_block
 from del_social.knowledge.brand_profile import BrandProfile
-from del_social.llm import LLM, LLMResult, Tier, load_prompt
+from del_social.llm import LLM, LLMError, LLMResult, Tier, load_prompt
 
 AGENT = "copywriter"
 
@@ -30,27 +32,55 @@ class CopyOutput(BaseModel):
     )
 
 
-def _user_message(profile: BrandProfile, brief: Brief, revision: str | None) -> str:
-    parts = [brand_context(profile), brief_block(brief)]
-    if revision:
-        parts.append(revision)
-    parts.append("Write the three options now.")
-    return "\n\n".join(parts)
+class RevisedOptions(BaseModel):
+    options: list[CopyOption] = Field(description="One rewritten option per option in <revision_request>, same order")
 
 
 async def write_options(
-    llm: LLM,
-    tenant_id: uuid.UUID | None,
-    profile: BrandProfile,
-    brief: Brief,
-    revision: str | None = None,
+    llm: LLM, tenant_id: uuid.UUID | None, profile: BrandProfile, brief: Brief
 ) -> LLMResult[CopyOutput]:
-    """revision: the Brand Guardian's findings on the previous attempt, as a <revision_request> block."""
+    user = "\n\n".join([brand_context(profile), brief_block(brief), "Write the three options now."])
     return await llm.structured(
         tenant_id=tenant_id,
         prompt=load_prompt(AGENT),
-        user=_user_message(profile, brief, revision),
+        user=user,
         output=CopyOutput,
         tier=Tier.DEFAULT,
         max_tokens=16000,  # a ceiling, not a cost: includes the model's thinking
     )
+
+
+async def revise_options(
+    llm: LLM,
+    tenant_id: uuid.UUID | None,
+    profile: BrandProfile,
+    brief: Brief,
+    kept: list[CopyOption],
+    revision_request: str,
+    count: int,
+) -> LLMResult[RevisedOptions]:
+    """Rewrite only the options the Brand Guardian flagged; the kept ones are context, not rewritten."""
+    kept_block = (
+        "<kept_options>\nAlready approved by the Brand Guardian. Do not rewrite them; keep your new options "
+        "distinct from their angles.\n"
+        + json.dumps([{"angle": o.angle, "caption_az": o.caption_az} for o in kept], ensure_ascii=False, indent=1)
+        + "\n</kept_options>"
+    )
+    user = "\n\n".join([
+        brand_context(profile),
+        brief_block(brief),
+        kept_block,
+        revision_request,
+        f"Rewrite exactly {count} option(s) now, in the order of the revision request.",
+    ])
+    result = await llm.structured(
+        tenant_id=tenant_id,
+        prompt=load_prompt(AGENT),
+        user=user,
+        output=RevisedOptions,
+        tier=Tier.DEFAULT,
+        max_tokens=16000,
+    )
+    if len(result.output.options) != count:
+        raise LLMError(f"Expected {count} revised option(s), got {len(result.output.options)}")
+    return result

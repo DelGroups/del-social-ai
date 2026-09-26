@@ -266,3 +266,17 @@ async def test_invalid_output_error_names_the_field(fakes, admin, tenants):
     with pytest.raises(LLMError, match="hashtags"):
         await call(llm, tenants["a"])
     assert await admin.fetchval("SELECT input_tokens FROM llm_calls WHERE tenant_id = $1", tenants["a"]) == 1200
+
+
+async def test_effort_is_sent_and_recorded(fakes, admin, tenants):
+    from del_social.llm import Effort
+
+    llm, fa, _ = fakes
+    r = await llm.structured(
+        tenant_id=tenants["a"], prompt=load_prompt("system_check"), user="x", output=Caption, effort=Effort.MEDIUM
+    )
+    assert fa.requests[0]["body"]["output_config"]["effort"] == "medium"
+    ref = await admin.fetchval("SELECT prompt_ref FROM llm_calls WHERE trace_id = $1", r.trace_id)
+    assert ref.endswith("+medium")
+    await call(llm, tenants["a"])
+    assert "effort" not in fa.requests[1]["body"]["output_config"]

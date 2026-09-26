@@ -33,6 +33,14 @@ log = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
 
 
+class Effort(enum.StrEnum):
+    """How much the model thinks (output_config.effort). None = the model's default."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
 class Tier(enum.StrEnum):
     FAST = "fast"
     DEFAULT = "default"
@@ -113,8 +121,10 @@ class LLM:
         output: type[T],
         tier: Tier = Tier.DEFAULT,
         max_tokens: int = 4096,
+        effort: Effort | None = None,
     ) -> LLMResult[T]:
         model = model_for(self._settings, tier)
+        prompt_ref = prompt.ref + (f"+{effort.value}" if effort else "")
         trace_id = uuid.uuid4().hex  # also a valid OpenTelemetry trace id
         started = datetime.now(UTC)
         t0 = time.monotonic()
@@ -129,7 +139,7 @@ class LLM:
                 max_tokens=max_tokens,
                 system=[{"type": "text", "text": prompt.text, "cache_control": {"type": "ephemeral"}}],
                 messages=[{"role": "user", "content": user}],
-                output_config={"format": {"type": "json_schema", "schema": transform_schema(output)}},
+                output_config=self._output_config(output, effort),
             )
             parsed, error = _validate(resp, output)
         except anthropic.APIStatusError as e:
@@ -144,7 +154,7 @@ class LLM:
         if cost is None:
             log.warning("no price for model %s; cost recorded as NULL", model)
 
-        await self._record(tenant_id, prompt, model, usage, cost, latency_ms, error, trace_id)
+        await self._record(tenant_id, prompt, prompt_ref, model, usage, cost, latency_ms, error, trace_id)
         if self._tracer is not None:
             await self._tracer.send(
                 TraceRecord(
@@ -153,7 +163,7 @@ class LLM:
                     agent=prompt.agent,
                     prompt_name=prompt.agent,
                     prompt_version=prompt.version,
-                    prompt_ref=prompt.ref,
+                    prompt_ref=prompt_ref,
                     model=model,
                     input=user,
                     output=parsed.model_dump_json() if parsed is not None else None,
@@ -168,10 +178,18 @@ class LLM:
             raise LLMError(error or "No output")
         return LLMResult(parsed, model, usage, cost, latency_ms, trace_id)
 
+    @staticmethod
+    def _output_config(output: type[BaseModel], effort: Effort | None) -> dict:
+        config: dict = {"format": {"type": "json_schema", "schema": transform_schema(output)}}
+        if effort is not None:
+            config["effort"] = effort.value
+        return config
+
     async def _record(
         self,
         tenant_id: uuid.UUID | None,
         prompt: Prompt,
+        prompt_ref: str,
         model: str,
         usage: Usage,
         cost: Decimal | None,
@@ -188,7 +206,7 @@ class LLM:
                 LlmCall(
                     tenant_id=tenant_id,
                     agent=prompt.agent,
-                    prompt_ref=prompt.ref,
+                    prompt_ref=prompt_ref,
                     model=model,
                     status="error" if error else "ok",
                     input_tokens=usage.input_tokens,
