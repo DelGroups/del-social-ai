@@ -169,7 +169,7 @@ async def tenants(admin: asyncpg.Connection, account_factory) -> AsyncIterator[d
         yield ids
     finally:
         tids = [a, b]
-        for table in ("connections", "invitations", "memberships", "tenant_secrets", "tenants"):
+        for table in ("brand_profiles", "connections", "invitations", "memberships", "tenant_secrets", "tenants"):
             await admin.execute(f"DELETE FROM {table} WHERE tenant_id = ANY($1::uuid[])", tids)
 
 

@@ -8,6 +8,7 @@ class Permission(enum.StrEnum):
     VIEW = "view"
     APPROVE_CONTENT = "approve_content"
     MANAGE_CONNECTIONS = "manage_connections"
+    MANAGE_BRAND = "manage_brand"  # brand profile (what the agents know about the company)
     MANAGE_MEMBERS = "manage_members"  # invite/remove admins, approvers, viewers
     MANAGE_OWNERS = "manage_owners"  # invite/remove/promote owners
     MANAGE_TENANT = "manage_tenant"  # tenant settings, billing, deletion
@@ -15,7 +16,7 @@ class Permission(enum.StrEnum):
 
 _VIEWER = frozenset({Permission.VIEW})
 _APPROVER = _VIEWER | {Permission.APPROVE_CONTENT}
-_ADMIN = _APPROVER | {Permission.MANAGE_CONNECTIONS, Permission.MANAGE_MEMBERS}
+_ADMIN = _APPROVER | {Permission.MANAGE_CONNECTIONS, Permission.MANAGE_BRAND, Permission.MANAGE_MEMBERS}
 _OWNER = frozenset(Permission)
 
 ROLE_PERMISSIONS: dict[MemberRole, frozenset[Permission]] = {

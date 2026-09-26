@@ -46,7 +46,8 @@
     "welcome": "Welcome to {tenant}",
     "yourRole": "Your role: {role}",
     "comingSoon": "Your AI social media team (strategy, content, approvals, publishing) arrives in Phase 1. For now you can manage who has access.",
-    "connections": "Connections"
+    "connections": "Connections",
+    "brand": "Brand"
   },
   "members": {
     "title": "Members",
@@ -140,5 +141,89 @@
     "metaNopages": "No Facebook pages were found for this Meta account. Make sure you manage the page and allowed access to it.",
     "metaSession": "The sign-in was started from a different account or browser. Please try again.",
     "metaForbidden": "You no longer have permission to manage connections."
+  },
+  "brand": {
+    "title": "Brand profile",
+    "intro": "Everything your AI team knows about the company. Each save creates a new version; the agents always use the latest one.",
+    "noVersion": "Not saved yet. Suggested defaults are shown.",
+    "version": "Version {version} · saved {date} by {email}",
+    "readOnly": "Only owners and admins can edit the brand profile.",
+    "save": "Save new version",
+    "saved": "Saved as version {version}.",
+    "listHint": "One item per line",
+    "blocksHint": "Paste whole posts. Separate posts with a line containing only ---",
+    "pricesRule": "Rule for now: posts never mention prices or discounts unless you write them in the brief yourself.",
+    "sections": {
+      "basics": "Company",
+      "audience": "Audience",
+      "products": "Products",
+      "voice": "Voice and language",
+      "rules": "Rules",
+      "hashtags": "Hashtags",
+      "examples": "Example posts",
+      "occasions": "Occasions"
+    },
+    "f": {
+      "basics": {
+        "company_name": "Company name",
+        "description": "What the company does",
+        "cities": "Cities served",
+        "showroom_address": "Showroom address",
+        "working_hours": "Working hours",
+        "website": "Website",
+        "phone": "Phone",
+        "whatsapp": "WhatsApp"
+      },
+      "audience": {
+        "description": "Who buys and why",
+        "segments": "Customer groups"
+      },
+      "products": {
+        "categories": "Product categories",
+        "materials": "Materials",
+        "usps": "What makes the products different"
+      },
+      "voice": {
+        "tone_words": "Tone words (e.g. warm, confident, simple)",
+        "formality": "Form of address",
+        "emoji": "Emoji",
+        "caption_length": "Caption length",
+        "notes": "Other notes about the voice"
+      },
+      "languages": {
+        "mode": "Caption language"
+      },
+      "never": {
+        "words": "Never use these words",
+        "topics": "Never touch these topics",
+        "competitors": "Competitors (never mention)"
+      },
+      "claims": "Claims we can prove (warranty, materials, delivery…)",
+      "ctas": "Calls to action",
+      "hashtags": {
+        "branded": "Brand hashtags",
+        "pool": "Allowed hashtags",
+        "max_per_post": "Max hashtags per post"
+      },
+      "examples": {
+        "good": "Posts we like",
+        "bad": "Posts we don't like"
+      },
+      "occasions": "Dates the brand marks"
+    },
+    "opt": {
+      "formal": "Formal (siz / вы)",
+      "friendly": "Friendly (sən / ты)",
+      "none": "None",
+      "few": "A few",
+      "many": "Many",
+      "short": "Short",
+      "medium": "Medium",
+      "long": "Long",
+      "az_ru_same_caption": "Azerbaijani + Russian in one caption",
+      "az": "Azerbaijani only",
+      "ru": "Russian only",
+      "alternate": "Alternate Azerbaijani and Russian posts"
+    }
   }
 }

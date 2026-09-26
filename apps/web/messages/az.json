@@ -46,7 +46,8 @@
     "welcome": "Xoş gəlmisiniz: {tenant}",
     "yourRole": "Rolunuz: {role}",
     "comingSoon": "Sosial media üzrə süni intellekt komandanız (strategiya, məzmun, təsdiqlər, paylaşım) 1-ci mərhələdə gələcək. Hələlik kimin giriş hüququ olduğunu idarə edə bilərsiniz.",
-    "connections": "Bağlantılar"
+    "connections": "Bağlantılar",
+    "brand": "Brend"
   },
   "members": {
     "title": "Üzvlər",
@@ -140,5 +141,89 @@
     "metaNopages": "Bu Meta hesabında Facebook səhifəsi tapılmadı. Səhifəni idarə etdiyinizə və ona giriş icazəsi verdiyinizə əmin olun.",
     "metaSession": "Giriş başqa hesabdan və ya brauzerdən başladılıb. Yenidən cəhd edin.",
     "metaForbidden": "Bağlantıları idarə etmək icazəniz artıq yoxdur."
+  },
+  "brand": {
+    "title": "Brend profili",
+    "intro": "Süni intellekt komandanızın şirkət haqqında bildiyi hər şey. Hər yadda saxlama yeni versiya yaradır; agentlər həmişə ən sonuncudan istifadə edir.",
+    "noVersion": "Hələ yadda saxlanmayıb. Tövsiyə olunan ilkin dəyərlər göstərilir.",
+    "version": "Versiya {version} · {date} · {email}",
+    "readOnly": "Brend profilini yalnız sahiblər və adminlər dəyişə bilər.",
+    "save": "Yeni versiyanı yadda saxla",
+    "saved": "Versiya {version} kimi yadda saxlanıldı.",
+    "listHint": "Hər sətirdə bir element",
+    "blocksHint": "Postları tam yapışdırın. Postları yalnız --- olan sətirlə ayırın",
+    "pricesRule": "Hazırkı qayda: postlarda qiymət və endirim yazılmır, yalnız siz özünüz tapşırıqda yazsanız.",
+    "sections": {
+      "basics": "Şirkət",
+      "audience": "Auditoriya",
+      "products": "Məhsullar",
+      "voice": "Ton və dil",
+      "rules": "Qaydalar",
+      "hashtags": "Heşteqlər",
+      "examples": "Nümunə postlar",
+      "occasions": "Xüsusi günlər"
+    },
+    "f": {
+      "basics": {
+        "company_name": "Şirkətin adı",
+        "description": "Şirkət nə ilə məşğuldur",
+        "cities": "Xidmət göstərilən şəhərlər",
+        "showroom_address": "Salonun ünvanı",
+        "working_hours": "İş saatları",
+        "website": "Veb sayt",
+        "phone": "Telefon",
+        "whatsapp": "WhatsApp"
+      },
+      "audience": {
+        "description": "Kim alır və niyə",
+        "segments": "Müştəri qrupları"
+      },
+      "products": {
+        "categories": "Məhsul kateqoriyaları",
+        "materials": "Materiallar",
+        "usps": "Məhsulları fərqləndirən nədir"
+      },
+      "voice": {
+        "tone_words": "Ton sözləri (məs. səmimi, inamlı, sadə)",
+        "formality": "Müraciət forması",
+        "emoji": "Emoji",
+        "caption_length": "Mətnin uzunluğu",
+        "notes": "Ton haqqında digər qeydlər"
+      },
+      "languages": {
+        "mode": "Mətnin dili"
+      },
+      "never": {
+        "words": "Bu sözlər heç vaxt işlədilməsin",
+        "topics": "Bu mövzulara toxunulmasın",
+        "competitors": "Rəqiblər (heç vaxt adı çəkilməsin)"
+      },
+      "claims": "Sübut edə biləcəyimiz iddialar (zəmanət, material, çatdırılma…)",
+      "ctas": "Hərəkətə çağırışlar",
+      "hashtags": {
+        "branded": "Brend heşteqləri",
+        "pool": "İcazə verilən heşteqlər",
+        "max_per_post": "Bir postda maksimum heşteq"
+      },
+      "examples": {
+        "good": "Bəyəndiyimiz postlar",
+        "bad": "Bəyənmədiyimiz postlar"
+      },
+      "occasions": "Brendin qeyd etdiyi günlər"
+    },
+    "opt": {
+      "formal": "Rəsmi (siz / вы)",
+      "friendly": "Səmimi (sən / ты)",
+      "none": "Yoxdur",
+      "few": "Az",
+      "many": "Çox",
+      "short": "Qısa",
+      "medium": "Orta",
+      "long": "Uzun",
+      "az_ru_same_caption": "Azərbaycan + rus dili bir mətndə",
+      "az": "Yalnız Azərbaycan dili",
+      "ru": "Yalnız rus dili",
+      "alternate": "Azərbaycan və rus dilində növbə ilə"
+    }
   }
 }
