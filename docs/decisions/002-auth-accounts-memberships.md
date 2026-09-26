@@ -41,8 +41,9 @@ The few steps that must happen *before* we know who the caller is go through nar
 | `auth_session_account(token_hash)` | `account_id` if the session is valid, else nothing | every authenticated request |
 | `auth_my_memberships()` | tenants and roles of `app.account_id` | tenant switcher after login |
 | `auth_invitation_by_token(token_hash)` | the invitation's tenant name, email, role and state | accepting an invitation |
+| `auth_password_reset_by_token(token_hash)` | `account_id` if the reset link is valid and unused | using a reset link |
 
-`del_app` gets `EXECUTE` on these and **no** blanket read access to the global tables.
+`EXECUTE` on these is revoked from `PUBLIC` and granted to `del_app` only. `del_app` gets **no** blanket read access to the global tables.
 
 ### Request flow
 
@@ -114,7 +115,7 @@ RLS protects against **application bugs**: a forgotten filter, a wrong tenant id
 ## Consequences
 
 **Benefits**
-- Login works under RLS without any role that bypasses it. The pre-login database surface is four small, testable functions.
+- Login works under RLS without any role that bypasses it. The pre-login database surface is five small, testable functions.
 - One person can hold access to many companies, which fits agencies and our own team.
 - Sessions can be revoked instantly. There are no JWT secrets to rotate and no refresh-token logic.
 - No external email service or cost in Phase 0.
@@ -132,7 +133,7 @@ RLS protects against **application bugs**: a forgotten filter, a wrong tenant id
 | Keep `users` per tenant (same email = separate users) | Separate passwords per company for the same person, and login still has to guess the tenant |
 | Tenant chosen before login (subdomain or tenant slug) | Extra step for every user, and it doesn't solve multi-company access |
 | JWT access + refresh tokens | Harder to revoke, and more moving parts, with no benefit on a single server |
-| A second DB role that bypasses RLS for auth | A whole connection with full access to auth tables, where four narrow functions are enough |
+| A second DB role that bypasses RLS for auth | A whole connection with full access to auth tables, where five narrow functions are enough |
 | Google sign-in now | Not every Azerbaijani SME has Google business accounts. Deferred, and addable later as an extra login method on `accounts` |
 
 ## Implementation plan (small PRs, each merged by Alireza after green CI)
