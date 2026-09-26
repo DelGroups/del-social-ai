@@ -36,6 +36,7 @@ class MediaAsset(Base):
     edit: Mapped[dict | None] = mapped_column(JSONB)  # AI edit: kind, request, prompt, model, cost_usd, error
     status: Mapped[str] = mapped_column(Text, server_default="ready")  # pending | ready | failed
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # AI edits need a human OK
+    edit_recipe: Mapped[dict | None] = mapped_column(JSONB)  # this photo's own AI edit settings
     uploaded_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("accounts.account_id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

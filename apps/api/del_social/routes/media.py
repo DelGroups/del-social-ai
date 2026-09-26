@@ -17,12 +17,11 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from del_social.core.config import get_settings
 from del_social.core.db import set_tenant
 from del_social.core.deps import TenantContext, get_db, get_engine, get_http, require_permission
-from del_social.knowledge.brand_profile import BrandProfile, ImageEditing
 from del_social.llm import LLM, build_llm
 from del_social.media import editing, images
 from del_social.media.fal import FalClient
 from del_social.media.storage import MediaNotConfigured, MediaStore, signed_url, verify
-from del_social.models import BrandProfileVersion, MediaAsset
+from del_social.models import MediaAsset
 from del_social.tenants.permissions import Permission
 
 router = APIRouter(prefix="/tenants/{tenant_id}/media", tags=["media"])
@@ -34,7 +33,7 @@ can_manage = require_permission(Permission.MANAGE_MEDIA)
 Kind = Literal["photo", "logo"]
 Source = Literal["own", "render", "licensed", "reference"]
 PUBLIC_VARIANTS = ("thumb", "full", "feed", "square", "feed-logo", "square-logo")
-EDIT_FIELDS = ("kind", "request", "subject", "reference_asset_id", "error", "cost_usd", "model")
+EDIT_FIELDS = ("kinds", "recipe", "error", "cost_usd", "cost_complete", "models")
 
 
 def get_store() -> MediaStore:
@@ -68,8 +67,9 @@ class MediaOut(BaseModel):
     source: Source
     parent_asset_id: uuid.UUID | None
     status: Literal["pending", "ready", "failed"]
-    edit: dict | None  # kind, request, subject, reference_asset_id, error, cost_usd, model
+    edit: dict | None  # for AI results: kinds, recipe, error, cost_usd, cost_complete, models
     approved_at: datetime | None
+    recipe: dict | None  # this photo's saved AI edit settings
     publishable: bool  # ready, not a reference, and (for AI edits) approved by a human
     created_at: datetime
     urls: dict[str, str]  # signed, valid ~24h: thumb, feed, square (+ -logo variants)
@@ -82,13 +82,6 @@ class MediaPatch(BaseModel):
     focal_y: float | None = Field(default=None, ge=0, le=1)
     enhance: bool | None = None
     source: Source | None = None
-
-
-class EditIn(BaseModel):
-    kind: editing.EditKind
-    request: str = Field(default="", max_length=500)  # e.g. "a bright Scandinavian living room"
-    subject: str = Field(default="", max_length=200)  # which object, e.g. "the wardrobe"
-    reference_asset_id: uuid.UUID | None = None  # a second library image: style or product reference
 
 
 def _clean_tags(tags: list[str]) -> list[str]:
@@ -116,9 +109,11 @@ def _out(asset: MediaAsset, has_logo: bool) -> MediaOut:
         and asset.source != "reference"
         and (asset.parent_asset_id is None or asset.approved_at is not None)
     )
-    fields = {c: getattr(asset, c) for c in MediaOut.model_fields if c not in ("urls", "publishable", "edit")}
+    fields = {c: getattr(asset, c) for c in MediaOut.model_fields if c not in ("urls", "publishable", "edit", "recipe")}
     edit = {k: v for k, v in (asset.edit or {}).items() if k in EDIT_FIELDS} if asset.edit else None
-    return MediaOut.model_validate({**fields, "edit": edit, "urls": urls, "publishable": publishable})
+    return MediaOut.model_validate(
+        {**fields, "edit": edit, "recipe": asset.edit_recipe, "urls": urls, "publishable": publishable}
+    )
 
 
 async def _current_logo(db: AsyncSession) -> MediaAsset | None:
@@ -233,18 +228,47 @@ async def delete(
     await run_in_threadpool(store.delete, asset.tenant_id, asset.asset_id)
 
 
-# --- AI edits (ADR 005) ---
+# --- AI edits (ADR 005): configured per photo ---
 
 
-async def _image_editing(db: AsyncSession) -> ImageEditing:
-    row = await db.scalar(select(BrandProfileVersion).order_by(BrandProfileVersion.version.desc()).limit(1))
-    return BrandProfile.model_validate(row.data).image_editing if row else ImageEditing()
+async def _references(db: AsyncSession, recipe: editing.Recipe) -> dict[uuid.UUID, str]:
+    """Reference photos in the recipe → their source. They must be finished photos of this tenant."""
+    out: dict[uuid.UUID, str] = {}
+    for ref_id in recipe.references():
+        ref = await _get(db, ref_id)
+        if ref.kind != "photo" or ref.status != "ready":
+            raise HTTPException(status.HTTP_409_CONFLICT, "A reference must be a finished photo")
+        out[ref_id] = ref.source
+    return out
+
+
+async def _editable(db: AsyncSession, asset_id: uuid.UUID) -> MediaAsset:
+    asset = await _get(db, asset_id)
+    if asset.kind != "photo" or asset.status != "ready":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only finished photos can be edited")
+    return asset
+
+
+@router.put("/{asset_id}/recipe", response_model=MediaOut)
+async def save_recipe(
+    asset_id: uuid.UUID,
+    recipe: editing.Recipe,
+    ctx: TenantContext = Depends(can_manage),
+    db: AsyncSession = Depends(get_db),
+) -> MediaOut:
+    """Save this photo's edit settings without running them."""
+    asset = await _editable(db, asset_id)
+    await _references(db, recipe)
+    asset.edit_recipe = recipe.model_dump(mode="json")
+    await db.flush()
+    await db.refresh(asset)
+    return _out(asset, await _current_logo(db) is not None)
 
 
 @router.post("/{asset_id}/edits", response_model=MediaOut, status_code=status.HTTP_202_ACCEPTED)
-async def request_edit(
+async def apply_recipe(
     asset_id: uuid.UUID,
-    body: EditIn,
+    recipe: editing.Recipe,
     background: BackgroundTasks,
     ctx: TenantContext = Depends(can_manage),
     db: AsyncSession = Depends(get_db),
@@ -253,26 +277,23 @@ async def request_edit(
     fal: FalClient | None = Depends(get_fal),
     translator: LLM | None = Depends(get_translator),
 ) -> MediaOut:
+    """Save this photo's settings and make one new version with every enabled edit."""
     if fal is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "AI image editing is not configured on the server")
-    if not editing.allowed(await _image_editing(db), body.kind):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "This edit is turned off in the brand profile")
-    parent = await _get(db, asset_id)
-    if parent.kind != "photo" or parent.status != "ready":
-        raise HTTPException(status.HTTP_409_CONFLICT, "Only finished photos can be edited")
-    reference = await _get(db, body.reference_asset_id) if body.reference_asset_id else None
-    # Enhance needs no words; a swap or background with a reference photo is described by that photo
-    described_by_photo = reference is not None and body.kind in (editing.EditKind.SWAP, editing.EditKind.BACKGROUND)
-    if body.kind is not editing.EditKind.ENHANCE and not body.request.strip() and not described_by_photo:
-        raise HTTPException(422, "Describe the change")
-    if reference is not None and (reference.kind != "photo" or reference.status != "ready"):
-        raise HTTPException(status.HTTP_409_CONFLICT, "The reference must be a finished photo")
+    try:
+        editing.validate(recipe)
+    except editing.RecipeError as e:
+        raise HTTPException(422, str(e)) from None
+    parent = await _editable(db, asset_id)
+    reference_sources = await _references(db, recipe)
+    recipe_json = recipe.model_dump(mode="json")
+    parent.edit_recipe = recipe_json
     child_id = uuid.uuid4()
     child = MediaAsset(
         asset_id=child_id,
         tenant_id=ctx.tenant_id,
         kind="photo",
-        filename=f"{parent.filename} · {body.kind.value}"[:200],
+        filename=f"{parent.filename} · AI"[:200],
         format="JPEG",
         width=parent.width,
         height=parent.height,
@@ -283,15 +304,10 @@ async def request_edit(
         focal_x=parent.focal_x,
         focal_y=parent.focal_y,
         enhance=parent.enhance,
-        source=editing.result_source(body.kind, parent.source, reference.source if reference else None),
+        source=editing.result_source(recipe, parent.source, reference_sources),
         parent_asset_id=parent.asset_id,
         status="pending",
-        edit={
-            "kind": body.kind.value,
-            "request": body.request.strip(),
-            "subject": body.subject.strip(),
-            "reference_asset_id": str(reference.asset_id) if reference else None,
-        },
+        edit={"kinds": [k.value for k in recipe.kinds()], "recipe": recipe_json},
         uploaded_by=ctx.account.account_id,
     )
     # Committed in its own transaction before the job starts: background tasks run before the

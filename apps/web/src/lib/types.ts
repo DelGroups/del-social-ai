@@ -159,7 +159,15 @@ export const canApprove = (role: Role) => role !== "viewer";
 
 export type MediaSource = "own" | "render" | "licensed" | "reference";
 export type EditKind = "enhance" | "remove" | "background" | "recolor" | "swap";
-export type ImageEditingSettings = BrandProfileData["image_editing"];
+export type RecipeStep = { on: boolean; request: string; reference_asset_id: string | null };
+export type Recipe = {
+  subject: string;
+  enhance: boolean;
+  remove: RecipeStep;
+  background: RecipeStep;
+  recolor: RecipeStep;
+  swap: RecipeStep;
+};
 
 export type MediaAsset = {
   asset_id: string;
@@ -176,8 +184,9 @@ export type MediaAsset = {
   source: MediaSource;
   parent_asset_id: string | null;
   status: "pending" | "ready" | "failed";
-  edit: { kind: EditKind; request?: string; subject?: string; error?: string; cost_usd?: string | null } | null;
+  edit: { kinds: EditKind[]; recipe?: Recipe; error?: string; cost_usd?: string | null; cost_complete?: boolean } | null;
   approved_at: string | null;
+  recipe: Recipe | null;
   publishable: boolean;
   created_at: string;
   urls: Record<string, string>; // signed, ~24h: thumb, feed, square, feed-logo, square-logo

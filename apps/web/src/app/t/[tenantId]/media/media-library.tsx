@@ -6,19 +6,21 @@ import { useEffect, useRef, useState } from "react";
 
 import { Alert, Button, Card, Field, Input, Select } from "@/components/ui";
 import { ApiError, api } from "@/lib/client-api";
-import type { EditKind, ImageEditingSettings, MediaAsset, MediaSource } from "@/lib/types";
+import type { MediaAsset, MediaSource, Recipe, RecipeStep } from "@/lib/types";
 
 // Photos larger than this are scaled down in the browser before upload: posts are
 // published at 1080 px, and smaller uploads pass the panel's proxy quickly.
 const MAX_SIDE = 3200;
 const RESIZABLE = ["image/jpeg", "image/png", "image/webp"];
 const SOURCES: MediaSource[] = ["own", "render", "licensed", "reference"];
-const EDIT_TOGGLE: Record<EditKind, keyof ImageEditingSettings> = {
-  enhance: "enhance",
-  remove: "remove_objects",
-  background: "background",
-  recolor: "recolor",
-  swap: "swap_product",
+const EMPTY_STEP: RecipeStep = { on: false, request: "", reference_asset_id: null };
+const EMPTY_RECIPE: Recipe = {
+  subject: "",
+  enhance: false,
+  remove: EMPTY_STEP,
+  background: EMPTY_STEP,
+  recolor: EMPTY_STEP,
+  swap: EMPTY_STEP,
 };
 
 async function shrinkIfLarge(file: File): Promise<File> {
@@ -43,9 +45,9 @@ async function uploadFile(tenantId: string, file: File, fields: Record<string, s
   if (!res.ok) throw new ApiError(res.status, typeof data?.detail === "string" ? data.detail : res.statusText);
 }
 
-type Props = { tenantId: string; assets: MediaAsset[]; canManage: boolean; editing: ImageEditingSettings };
+type Props = { tenantId: string; assets: MediaAsset[]; canManage: boolean };
 
-export function MediaLibrary({ tenantId, assets, canManage, editing }: Props) {
+export function MediaLibrary({ tenantId, assets, canManage }: Props) {
   const t = useTranslations("media");
   const tc = useTranslations("common");
   const router = useRouter();
@@ -208,7 +210,6 @@ export function MediaLibrary({ tenantId, assets, canManage, editing }: Props) {
           assets={assets}
           hasLogo={Boolean(logo)}
           canManage={canManage}
-          editing={editing}
           onSelect={setSelected}
         />
       )}
@@ -238,7 +239,9 @@ function Badges({ asset }: { asset: MediaAsset }) {
           {t(`sources.${asset.source}`)}
         </span>
       )}
-      {asset.parent_asset_id && <span className={`${badge} border-accent text-accent`}>AI · {t(`kinds.${asset.edit?.kind ?? "enhance"}`)}</span>}
+      {asset.parent_asset_id && (
+        <span className={`${badge} border-accent text-accent`}>AI · {(asset.edit?.kinds ?? []).map((k) => t(`kinds.${k}`)).join(", ")}</span>
+      )}
       {asset.parent_asset_id && asset.status === "ready" && !asset.approved_at && (
         <span className={`${badge} border-danger text-danger`}>{t("needsApproval")}</span>
       )}
@@ -252,7 +255,6 @@ function PhotoEditor({
   assets,
   hasLogo,
   canManage,
-  editing,
   onSelect,
 }: {
   tenantId: string;
@@ -260,7 +262,6 @@ function PhotoEditor({
   assets: MediaAsset[];
   hasLogo: boolean;
   canManage: boolean;
-  editing: ImageEditingSettings;
   onSelect: (id: string | null) => void;
 }) {
   const t = useTranslations("media");
@@ -336,8 +337,12 @@ function PhotoEditor({
             {parent.urls.thumb && <img src={parent.urls.thumb} alt={t("before")} className="w-full rounded border border-border" />}
             <img src={asset.urls.thumb} alt={t("after")} className="w-full rounded border border-accent" />
           </div>
-          {asset.edit?.request && <p className="text-xs text-muted">“{asset.edit.request}”</p>}
-          {asset.edit?.cost_usd && <p className="text-xs text-muted">${asset.edit.cost_usd}</p>}
+          {asset.edit?.cost_usd && (
+            <p className="text-xs text-muted">
+              ${asset.edit.cost_usd}
+              {asset.edit.cost_complete === false ? ` + ${t("costUnknownPart")}` : ""}
+            </p>
+          )}
           {canManage && !asset.approved_at && (
             <div className="flex items-center gap-3">
               <Button
@@ -449,7 +454,7 @@ function PhotoEditor({
       </div>
 
       {canManage && !asset.parent_asset_id && (
-        <AiEdit tenantId={tenantId} asset={asset} assets={assets} editing={editing} onDone={() => router.refresh()} />
+        <RecipeEditor tenantId={tenantId} asset={asset} assets={assets} onDone={() => router.refresh()} />
       )}
 
       {edits.length > 0 && (
@@ -465,7 +470,7 @@ function PhotoEditor({
                     {e.status === "pending" ? t("editing") : t("editFailed")}
                   </div>
                 )}
-                <div className="p-1">{t(`kinds.${e.edit?.kind ?? "enhance"}`)}</div>
+                <div className="p-1">{(e.edit?.kinds ?? []).map((k) => t(`kinds.${k}`)).join(", ")}</div>
               </button>
             ))}
           </div>
@@ -475,43 +480,37 @@ function PhotoEditor({
   );
 }
 
-function AiEdit({
+const STEPS = ["remove", "background", "recolor", "swap"] as const;
+type StepKey = (typeof STEPS)[number];
+
+function RecipeEditor({
   tenantId,
   asset,
   assets,
-  editing,
   onDone,
 }: {
   tenantId: string;
   asset: MediaAsset;
   assets: MediaAsset[];
-  editing: ImageEditingSettings;
   onDone: () => void;
 }) {
   const t = useTranslations("media");
   const tc = useTranslations("common");
-  const enabled = (Object.keys(EDIT_TOGGLE) as EditKind[]).filter((k) => editing[EDIT_TOGGLE[k]]);
-  const [kind, setKind] = useState<EditKind | "">(enabled[0] ?? "");
-  const [request, setRequest] = useState("");
-  const [subject, setSubject] = useState("");
-  const [reference, setReference] = useState("");
+  const [recipe, setRecipe] = useState<Recipe>({ ...EMPTY_RECIPE, ...(asset.recipe ?? {}) });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
-
-  if (enabled.length === 0) return <p className="mt-6 text-sm text-muted">{t("aiOff")}</p>;
   const others = assets.filter((a) => a.kind === "photo" && a.status === "ready" && a.asset_id !== asset.asset_id);
-  const usesReference = kind === "background" || kind === "swap";
+  const anyOn = recipe.enhance || STEPS.some((k) => recipe[k].on);
 
-  async function submit() {
+  const setStep = (key: StepKey, patch: Partial<RecipeStep>) =>
+    setRecipe((r) => ({ ...r, [key]: { ...r[key], ...patch } }));
+
+  async function send(path: string, method: "PUT" | "POST", done: string) {
     setBusy(true);
     setMessage(null);
     try {
-      await api(`/tenants/${tenantId}/media/${asset.asset_id}/edits`, {
-        method: "POST",
-        body: { kind, request, subject, reference_asset_id: usesReference && reference ? reference : null },
-      });
-      setRequest("");
-      setMessage({ tone: "success", text: t("editStarted") });
+      await api(`/tenants/${tenantId}/media/${asset.asset_id}/${path}`, { method, body: recipe });
+      setMessage({ tone: "success", text: done });
       onDone();
     } catch (err) {
       setMessage({ tone: "error", text: err instanceof ApiError ? err.message : tc("error") });
@@ -522,52 +521,71 @@ function AiEdit({
 
   return (
     <div className="mt-6 space-y-4 rounded-md border border-border p-4">
-      <p className="text-sm font-medium">{t("aiTitle")}</p>
-      <div className="grid gap-4 md:grid-cols-2">
-        <Field label={t("aiKind")}>
-          <Select value={kind} onChange={(e) => setKind(e.target.value as EditKind)} className="w-full">
-            {enabled.map((k) => (
-              <option key={k} value={k}>
-                {t(`kinds.${k}`)}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        {kind !== "enhance" && kind !== "remove" && (
-          <Field label={t("aiSubject")} hint={t("aiSubjectHint")}>
-            <Input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={200} />
-          </Field>
-        )}
-        {kind !== "enhance" && (
-          <div className="md:col-span-2">
-            <Field label={t("aiRequest")} hint={t(`aiRequestHint.${kind}`)}>
-              <textarea
-                value={request}
-                onChange={(e) => setRequest(e.target.value)}
-                rows={2}
-                maxLength={500}
-                className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-accent focus:outline-none"
-              />
-            </Field>
-          </div>
-        )}
-        {usesReference && (
-          <Field label={t("aiReference")} hint={t("aiReferenceHint")}>
-            <Select value={reference} onChange={(e) => setReference(e.target.value)} className="w-full">
-              <option value="">—</option>
-              {others.map((o) => (
-                <option key={o.asset_id} value={o.asset_id}>
-                  {o.description || o.filename}
-                  {o.source === "reference" ? ` (${t("sources.reference")})` : ""}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        )}
+      <div>
+        <p className="text-sm font-medium">{t("recipeTitle")}</p>
+        <p className="text-xs text-muted">{t("recipeHint")}</p>
       </div>
+      <Field label={t("aiSubject")} hint={t("aiSubjectHint")}>
+        <Input value={recipe.subject} onChange={(e) => setRecipe((r) => ({ ...r, subject: e.target.value }))} maxLength={200} />
+      </Field>
+
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={recipe.enhance} onChange={(e) => setRecipe((r) => ({ ...r, enhance: e.target.checked }))} />
+        <span className="font-medium">{t("kinds.enhance")}</span>
+        <span className="text-xs text-muted">{t("enhanceAiHint")}</span>
+      </label>
+
+      {STEPS.map((key) => {
+        const step = recipe[key];
+        const withReference = key === "background" || key === "swap";
+        return (
+          <div key={key} className={`space-y-2 rounded-md border p-3 ${step.on ? "border-accent" : "border-border"}`}>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={step.on} onChange={(e) => setStep(key, { on: e.target.checked })} />
+              <span className="font-medium">{t(`kinds.${key}`)}</span>
+            </label>
+            {step.on && (
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className={withReference ? "" : "md:col-span-2"}>
+                  <Field label={t("aiRequest")} hint={t(`aiRequestHint.${key}`)}>
+                    <textarea
+                      value={step.request}
+                      onChange={(e) => setStep(key, { request: e.target.value })}
+                      rows={2}
+                      maxLength={500}
+                      className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-accent focus:outline-none"
+                    />
+                  </Field>
+                </div>
+                {withReference && (
+                  <Field label={t("aiReference")} hint={t(`aiReferenceHint.${key}`)}>
+                    <Select
+                      value={step.reference_asset_id ?? ""}
+                      onChange={(e) => setStep(key, { reference_asset_id: e.target.value || null })}
+                      className="w-full"
+                    >
+                      <option value="">—</option>
+                      {others.map((o) => (
+                        <option key={o.asset_id} value={o.asset_id}>
+                          {o.description || o.filename}
+                          {o.source === "reference" ? ` (${t("sources.reference")})` : ""}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={submit} disabled={busy || !kind}>
+        <Button onClick={() => send("edits", "POST", t("editStarted"))} disabled={busy || !anyOn}>
           {t("aiSubmit")}
+        </Button>
+        <Button variant="ghost" onClick={() => send("recipe", "PUT", t("recipeSaved"))} disabled={busy}>
+          {t("recipeSave")}
         </Button>
         <span className="text-xs text-muted">{t("aiCostHint")}</span>
       </div>
