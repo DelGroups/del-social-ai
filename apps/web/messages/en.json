@@ -163,7 +163,8 @@
       "rules": "Rules",
       "hashtags": "Hashtags",
       "examples": "Example posts",
-      "occasions": "Occasions"
+      "occasions": "Occasions",
+      "image_editing": "AI photo editing"
     },
     "f": {
       "basics": {
@@ -212,7 +213,14 @@
         "bad": "Posts we don't like"
       },
       "occasions": "Dates the brand marks",
-      "terminology": "Our terminology: the correct word, and what not to write (one per line, e.g. \"Membran fasad — not: membran örtüklü MDF fasad\")"
+      "terminology": "Our terminology: the correct word, and what not to write (one per line, e.g. \"Membran fasad — not: membran örtüklü MDF fasad\")",
+      "image_editing": {
+        "enhance": "Improve quality (resolution, noise, sharpness)",
+        "remove_objects": "Remove items from a photo",
+        "background": "Change the product's surroundings",
+        "recolor": "Change the product's colour or finish (design unchanged)",
+        "swap_product": "Replace the product with a similar one"
+      }
     },
     "opt": {
       "formal": "Formal (siz / вы)",
@@ -227,7 +235,8 @@
       "az": "Azerbaijani only",
       "ru": "Russian only",
       "alternate": "Alternate Azerbaijani and Russian posts"
-    }
+    },
+    "imageEditingHint": "Each edit creates a new version of the photo; the original is always kept, and an edited photo is used in posts only after someone approves it. Edits cost a few cents each."
   },
   "usage": {
     "title": "AI usage · {month}",
@@ -306,6 +315,51 @@
     "saved": "Saved",
     "close": "Close",
     "delete": "Delete",
-    "deleteConfirm": "Delete this photo? Posts that already used it are not affected."
+    "deleteConfirm": "Delete this photo? Posts that already used it are not affected.",
+    "source": "Source",
+    "sourceHint": "Own work and licensed photos can be published. Renders are published as visualisations, never as finished projects. References (e.g. saved from Pinterest) are for inspiration only: they are never published, and edits made with someone else's product stay references.",
+    "sources": {
+      "own": "Our work",
+      "render": "Render / visualisation",
+      "licensed": "Licensed",
+      "reference": "Reference (not published)"
+    },
+    "kinds": {
+      "enhance": "Quality",
+      "remove": "Remove items",
+      "background": "Surroundings",
+      "recolor": "Colour",
+      "swap": "Swap product"
+    },
+    "editing": "AI is editing…",
+    "editingLong": "The AI edit is running. This usually takes under a minute; the page refreshes by itself.",
+    "editFailed": "Edit failed",
+    "needsApproval": "needs approval",
+    "beforeAfter": "Before and after",
+    "before": "Before",
+    "after": "After",
+    "approve": "Approve this edit",
+    "approved": "Approved: posts may now use this image",
+    "approveHint": "Check that the product looks right and nothing odd was added.",
+    "notPublishable": "This image can't be published yet (reference, or an AI edit waiting for approval).",
+    "editsOfThis": "AI edits of this photo ({count})",
+    "aiOff": "AI photo editing is off. Owners and admins can turn each kind on in Brand → AI photo editing.",
+    "aiTitle": "AI edit (creates a new version; the original stays)",
+    "aiKind": "Edit",
+    "aiSubject": "Which object",
+    "aiSubjectHint": "e.g. \"the wardrobe\" (optional)",
+    "aiRequest": "What should change",
+    "aiRequestHint": {
+      "background": "e.g. \"a bright modern living room with light oak floor\". Any language.",
+      "remove": "e.g. \"the chair on the left and the cables\". Any language.",
+      "recolor": "e.g. \"walnut veneer\" or \"matte sage green\". Any language.",
+      "swap": "e.g. \"a modern grey corner sofa\", or leave empty and pick a reference photo.",
+      "enhance": ""
+    },
+    "aiReference": "Reference photo (optional)",
+    "aiReferenceHint": "Surroundings: the room style to follow. Swap: the product to insert.",
+    "aiSubmit": "Start AI edit",
+    "aiCostHint": "A few cents per edit.",
+    "editStarted": "Started. The new version appears below when it's ready."
   }
 }

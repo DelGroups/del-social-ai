@@ -4,11 +4,11 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import func, select
+from sqlalchemy import Numeric, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from del_social.core.deps import TenantContext, get_db, require_permission
-from del_social.models import LlmCall
+from del_social.models import LlmCall, MediaAsset
 from del_social.tenants.permissions import Permission
 
 router = APIRouter(prefix="/tenants/{tenant_id}/usage", tags=["usage"])
@@ -70,6 +70,25 @@ async def usage(
         AgentUsage(agent=a, calls=c, errors=e, input_tokens=i, output_tokens=o, cost_usd=Decimal(cost))
         for a, c, e, i, o, cost in rows
     ]
+    # AI image edits (fal.ai), priced per output megapixel by code (media/editing.py)
+    edits = (
+        await db.execute(
+            select(
+                func.count(),
+                func.count().filter(MediaAsset.status == "failed"),
+                func.coalesce(func.sum(cast(MediaAsset.edit["cost_usd"].astext, Numeric)), 0),
+            ).where(
+                MediaAsset.parent_asset_id.is_not(None),
+                MediaAsset.created_at >= start,
+                MediaAsset.created_at < end,
+            )
+        )
+    ).one()
+    if edits[0]:
+        by_agent.append(
+            AgentUsage(agent="image_editor", calls=edits[0], errors=edits[1], input_tokens=0, output_tokens=0,
+                       cost_usd=Decimal(edits[2]))
+        )
     return UsageOut(
         month=label,
         calls=sum(a.calls for a in by_agent),

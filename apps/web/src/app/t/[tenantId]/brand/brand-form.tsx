@@ -10,7 +10,7 @@ import { formatDateTime } from "@/lib/prefs";
 import type { BrandProfileData, BrandProfileOut } from "@/lib/types";
 
 // Mirrors apps/api/del_social/knowledge/brand_profile.py. Labels: messages brand.f.<path>
-type Kind = "text" | "textarea" | "list" | "blocks" | "select" | "number";
+type Kind = "text" | "textarea" | "list" | "blocks" | "select" | "number" | "bool";
 type Spec = { path: string; kind: Kind; options?: string[] };
 
 const SECTIONS: { key: string; fields: Spec[] }[] = [
@@ -80,6 +80,16 @@ const SECTIONS: { key: string; fields: Spec[] }[] = [
     ],
   },
   { key: "occasions", fields: [{ path: "occasions", kind: "list" }] },
+  {
+    key: "image_editing",
+    fields: [
+      { path: "image_editing.enhance", kind: "bool" },
+      { path: "image_editing.remove_objects", kind: "bool" },
+      { path: "image_editing.background", kind: "bool" },
+      { path: "image_editing.recolor", kind: "bool" },
+      { path: "image_editing.swap_product", kind: "bool" },
+    ],
+  },
 ];
 
 const BLOCK_SEPARATOR = /\n\s*---\s*\n/;
@@ -106,6 +116,7 @@ function fromText(kind: Kind, text: string): unknown {
   if (kind === "list") return text.split("\n").map((s) => s.trim()).filter(Boolean);
   if (kind === "blocks") return text.split(BLOCK_SEPARATOR).map((s) => s.trim()).filter(Boolean);
   if (kind === "number") return Number(text) || 0;
+  if (kind === "bool") return text === "true";
   return text;
 }
 
@@ -150,6 +161,18 @@ export function BrandForm({ tenantId, canEdit, initial }: Props) {
   }
 
   function input(s: Spec) {
+    if (s.kind === "bool") {
+      return (
+        <input
+          type="checkbox"
+          name={s.path}
+          disabled={!canEdit}
+          checked={getPath(data as Obj, s.path) === true}
+          onChange={(e) => update(s, String(e.target.checked))}
+          className="h-4 w-4"
+        />
+      );
+    }
     const common = { name: s.path, disabled: !canEdit, value: textOf(s) };
     if (s.kind === "select") {
       return (
@@ -202,6 +225,7 @@ export function BrandForm({ tenantId, canEdit, initial }: Props) {
 
       {SECTIONS.map((section) => (
         <Card key={section.key} title={t(`sections.${section.key}`)}>
+          {section.key === "image_editing" && <p className="mb-4 text-sm text-muted">{t("imageEditingHint")}</p>}
           <div className="grid gap-4 md:grid-cols-2">
             {section.fields.map((s) => (
               <div key={s.path} className={s.kind === "text" || s.kind === "select" || s.kind === "number" ? "" : "md:col-span-2"}>

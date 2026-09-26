@@ -19,6 +19,13 @@ class Settings(BaseSettings):
     media_root: str = "/data/media"
     media_public_url: str = "http://localhost:8000"  # https://api.del-groups.com in production
 
+    # AI image editing via fal.ai (ADR 005). Models are config, not code.
+    fal_key: str = ""
+    image_edit_model: str = "fal-ai/flux-2-pro/edit"
+    image_enhance_model: str = "fal-ai/topaz/upscale/image"
+    image_edit_poll_seconds: float = 3.0
+    image_edit_timeout_seconds: float = 300.0
+
     # Channel connections (ADR 003). Empty = that feature is shown as "not configured".
     token_vault_key: str = ""  # 32 random bytes, hex or base64: openssl rand -hex 32
     meta_app_id: str = ""

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, Text, func, text
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from del_social.models.base import Base
@@ -30,6 +30,12 @@ class MediaAsset(Base):
     focal_x: Mapped[float] = mapped_column(Float, server_default="0.5")
     focal_y: Mapped[float] = mapped_column(Float, server_default="0.5")
     enhance: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
+    # own | render (visualisation) | licensed | reference (inspiration only, never published)
+    source: Mapped[str] = mapped_column(Text, server_default="own")
+    parent_asset_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("media_assets.asset_id", ondelete="RESTRICT"))
+    edit: Mapped[dict | None] = mapped_column(JSONB)  # AI edit: kind, request, prompt, model, cost_usd, error
+    status: Mapped[str] = mapped_column(Text, server_default="ready")  # pending | ready | failed
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # AI edits need a human OK
     uploaded_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("accounts.account_id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

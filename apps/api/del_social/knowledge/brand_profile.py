@@ -109,6 +109,16 @@ DEFAULT_OCCASIONS = [
 ]
 
 
+class ImageEditing(_Section):
+    """AI photo edits the company allows (ADR 005). All off by default."""
+
+    background: bool = False  # replace the product's surroundings
+    remove_objects: bool = False  # remove items from the photo
+    enhance: bool = False  # upscale, denoise, sharpen
+    recolor: bool = False  # change the product's colour/finish, keep its design
+    swap_product: bool = False  # replace the product with a similar one
+
+
 class BrandProfile(_Section):
     basics: Basics = Field(default_factory=Basics)
     audience: Audience = Field(default_factory=Audience)
@@ -123,5 +133,6 @@ class BrandProfile(_Section):
     hashtags: Hashtags = Field(default_factory=Hashtags)
     examples: Examples = Field(default_factory=Examples)
     occasions: list[Item] = Field(default_factory=lambda: list(DEFAULT_OCCASIONS), max_length=40)
+    image_editing: ImageEditing = Field(default_factory=ImageEditing)
     # Phase 1 rule (plan §2): posts never mention prices or discounts unless a human writes them in the brief
     mention_prices: bool = False

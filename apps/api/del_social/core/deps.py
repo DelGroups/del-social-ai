@@ -46,6 +46,11 @@ def _redis() -> Redis:
     return Redis.from_url(get_settings().redis_url)
 
 
+def get_engine() -> AsyncEngine:
+    """For work that outlives the request (background jobs open their own sessions)."""
+    return _engine()
+
+
 async def get_db() -> AsyncIterator[AsyncSession]:
     """The whole request runs in one transaction, so set_config scoping covers every query."""
     async with AsyncSession(_engine(), expire_on_commit=False) as session, session.begin():

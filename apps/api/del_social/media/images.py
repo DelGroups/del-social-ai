@@ -24,6 +24,7 @@ Image.MAX_IMAGE_PIXELS = MAX_PIXELS
 # name → (width, height); height None = fit inside a width×width box without cropping
 VARIANTS: dict[str, tuple[int, int | None]] = {
     "thumb": (480, None),
+    "full": (2048, None),  # input for AI edits: large, uncropped, untouched tone
     "feed": (1080, 1350),  # Instagram portrait 4:5
     "square": (1080, 1080),
 }

@@ -84,6 +84,7 @@ export type BrandProfileData = {
   hashtags: { branded: string[]; pool: string[]; max_per_post: number };
   examples: { good: string[]; bad: string[] };
   occasions: string[];
+  image_editing: Record<"background" | "remove_objects" | "enhance" | "recolor" | "swap_product", boolean>;
   mention_prices: boolean;
 };
 
@@ -156,6 +157,10 @@ export type EvalRunDetail = EvalRunSummary & { items: EvalItem[] };
 // Mirrors Permission.APPROVE_CONTENT
 export const canApprove = (role: Role) => role !== "viewer";
 
+export type MediaSource = "own" | "render" | "licensed" | "reference";
+export type EditKind = "enhance" | "remove" | "background" | "recolor" | "swap";
+export type ImageEditingSettings = BrandProfileData["image_editing"];
+
 export type MediaAsset = {
   asset_id: string;
   kind: "photo" | "logo";
@@ -168,6 +173,12 @@ export type MediaAsset = {
   focal_x: number;
   focal_y: number;
   enhance: boolean;
+  source: MediaSource;
+  parent_asset_id: string | null;
+  status: "pending" | "ready" | "failed";
+  edit: { kind: EditKind; request?: string; subject?: string; error?: string; cost_usd?: string | null } | null;
+  approved_at: string | null;
+  publishable: boolean;
   created_at: string;
   urls: Record<string, string>; // signed, ~24h: thumb, feed, square, feed-logo, square-logo
 };

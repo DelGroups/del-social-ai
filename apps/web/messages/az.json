@@ -163,7 +163,8 @@
       "rules": "Qaydalar",
       "hashtags": "Heşteqlər",
       "examples": "Nümunə postlar",
-      "occasions": "Xüsusi günlər"
+      "occasions": "Xüsusi günlər",
+      "image_editing": "Süni intellektlə şəkil redaktəsi"
     },
     "f": {
       "basics": {
@@ -212,7 +213,14 @@
         "bad": "Bəyənmədiyimiz postlar"
       },
       "occasions": "Brendin qeyd etdiyi günlər",
-      "terminology": "Terminologiyamız: düzgün söz və nəyi yazmamaq lazımdır (hər sətirdə bir, məs. \"Membran fasad — yox: membran örtüklü MDF fasad\")"
+      "terminology": "Terminologiyamız: düzgün söz və nəyi yazmamaq lazımdır (hər sətirdə bir, məs. \"Membran fasad — yox: membran örtüklü MDF fasad\")",
+      "image_editing": {
+        "enhance": "Keyfiyyəti artırmaq (ölçü, səs-küy, kəskinlik)",
+        "remove_objects": "Şəkildən əşyaları silmək",
+        "background": "Məhsulun ətrafını dəyişmək",
+        "recolor": "Məhsulun rəngini və ya örtüyünü dəyişmək (dizayn dəyişmir)",
+        "swap_product": "Məhsulu oxşar məhsulla əvəz etmək"
+      }
     },
     "opt": {
       "formal": "Rəsmi (siz / вы)",
@@ -227,7 +235,8 @@
       "az": "Yalnız Azərbaycan dili",
       "ru": "Yalnız rus dili",
       "alternate": "Azərbaycan və rus dilində növbə ilə"
-    }
+    },
+    "imageEditingHint": "Hər redaktə şəklin yeni versiyasını yaradır; orijinal həmişə saxlanılır və redaktə olunmuş şəkil yalnız kimsə təsdiqlədikdən sonra postlarda istifadə olunur. Hər redaktə bir neçə sent başa gəlir."
   },
   "usage": {
     "title": "Süni intellekt istifadəsi · {month}",
@@ -306,6 +315,51 @@
     "saved": "Yadda saxlanıldı",
     "close": "Bağla",
     "delete": "Sil",
-    "deleteConfirm": "Bu şəkil silinsin? Artıq paylaşılmış postlara təsir etmir."
+    "deleteConfirm": "Bu şəkil silinsin? Artıq paylaşılmış postlara təsir etmir.",
+    "source": "Mənbə",
+    "sourceHint": "Öz işimiz və lisenziyalı şəkillər paylaşıla bilər. Renderlər vizualizasiya kimi paylaşılır, hazır layihə kimi yox. İstinad şəkilləri (məs. Pinterest-dən) yalnız ilham üçündür: heç vaxt paylaşılmır və başqasının məhsulu ilə edilən redaktələr də istinad olaraq qalır.",
+    "sources": {
+      "own": "Öz işimiz",
+      "render": "Render / vizualizasiya",
+      "licensed": "Lisenziyalı",
+      "reference": "İstinad (paylaşılmır)"
+    },
+    "kinds": {
+      "enhance": "Keyfiyyət",
+      "remove": "Əşyaları silmək",
+      "background": "Ətraf mühit",
+      "recolor": "Rəng",
+      "swap": "Məhsulu əvəz etmək"
+    },
+    "editing": "Süni intellekt redaktə edir…",
+    "editingLong": "Süni intellekt redaktəsi davam edir. Adətən bir dəqiqədən az çəkir; səhifə özü yenilənir.",
+    "editFailed": "Redaktə alınmadı",
+    "needsApproval": "təsdiq gözləyir",
+    "beforeAfter": "Əvvəl və sonra",
+    "before": "Əvvəl",
+    "after": "Sonra",
+    "approve": "Bu redaktəni təsdiqlə",
+    "approved": "Təsdiqləndi: postlar artıq bu şəkildən istifadə edə bilər",
+    "approveHint": "Məhsulun düzgün göründüyünü və qəribə heç nə əlavə olunmadığını yoxlayın.",
+    "notPublishable": "Bu şəkil hələ paylaşıla bilməz (istinad şəklidir və ya təsdiq gözləyən redaktədir).",
+    "editsOfThis": "Bu şəklin süni intellekt redaktələri ({count})",
+    "aiOff": "Süni intellektlə şəkil redaktəsi söndürülüb. Sahiblər və adminlər hər növü Brend → Süni intellektlə şəkil redaktəsi bölməsində aça bilər.",
+    "aiTitle": "Süni intellekt redaktəsi (yeni versiya yaradır; orijinal qalır)",
+    "aiKind": "Redaktə",
+    "aiSubject": "Hansı obyekt",
+    "aiSubjectHint": "məs. \"qarderob\" (istəyə bağlı)",
+    "aiRequest": "Nə dəyişməlidir",
+    "aiRequestHint": {
+      "background": "məs. \"açıq palıd döşəməli işıqlı müasir qonaq otağı\". İstənilən dildə.",
+      "remove": "məs. \"soldakı stul və kabellər\". İstənilən dildə.",
+      "recolor": "məs. \"qoz şponu\" və ya \"mat adaçayı yaşılı\". İstənilən dildə.",
+      "swap": "məs. \"müasir boz künc divanı\" və ya boş saxlayıb istinad şəkli seçin.",
+      "enhance": ""
+    },
+    "aiReference": "İstinad şəkli (istəyə bağlı)",
+    "aiReferenceHint": "Ətraf mühit: izlənəcək otaq üslubu. Əvəzetmə: yerləşdiriləcək məhsul.",
+    "aiSubmit": "Redaktəni başlat",
+    "aiCostHint": "Hər redaktə bir neçə sent.",
+    "editStarted": "Başladı. Yeni versiya hazır olanda aşağıda görünəcək."
   }
 }

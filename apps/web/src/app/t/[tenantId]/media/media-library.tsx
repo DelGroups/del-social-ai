@@ -2,16 +2,24 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Alert, Button, Card, Field, Input, Select } from "@/components/ui";
 import { ApiError, api } from "@/lib/client-api";
-import type { MediaAsset } from "@/lib/types";
+import type { EditKind, ImageEditingSettings, MediaAsset, MediaSource } from "@/lib/types";
 
 // Photos larger than this are scaled down in the browser before upload: posts are
 // published at 1080 px, and smaller uploads pass the panel's proxy quickly.
 const MAX_SIDE = 3200;
 const RESIZABLE = ["image/jpeg", "image/png", "image/webp"];
+const SOURCES: MediaSource[] = ["own", "render", "licensed", "reference"];
+const EDIT_TOGGLE: Record<EditKind, keyof ImageEditingSettings> = {
+  enhance: "enhance",
+  remove: "remove_objects",
+  background: "background",
+  recolor: "recolor",
+  swap: "swap_product",
+};
 
 async function shrinkIfLarge(file: File): Promise<File> {
   if (!RESIZABLE.includes(file.type)) return file; // e.g. HEIC: sent as is, the server converts it
@@ -26,20 +34,18 @@ async function shrinkIfLarge(file: File): Promise<File> {
   return blob ? new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }) : file;
 }
 
-async function uploadFile(tenantId: string, file: File, kind: string, description: string, tags: string) {
+async function uploadFile(tenantId: string, file: File, fields: Record<string, string>) {
   const form = new FormData();
-  form.append("file", kind === "logo" ? file : await shrinkIfLarge(file));
-  form.append("kind", kind);
-  form.append("description", description);
-  form.append("tags", tags);
+  form.append("file", fields.kind === "logo" ? file : await shrinkIfLarge(file));
+  for (const [k, v] of Object.entries(fields)) form.append(k, v);
   const res = await fetch(`/api/tenants/${tenantId}/media`, { method: "POST", body: form, credentials: "same-origin" });
   const data = await res.json().catch(() => null);
   if (!res.ok) throw new ApiError(res.status, typeof data?.detail === "string" ? data.detail : res.statusText);
 }
 
-type Props = { tenantId: string; assets: MediaAsset[]; canManage: boolean };
+type Props = { tenantId: string; assets: MediaAsset[]; canManage: boolean; editing: ImageEditingSettings };
 
-export function MediaLibrary({ tenantId, assets, canManage }: Props) {
+export function MediaLibrary({ tenantId, assets, canManage, editing }: Props) {
   const t = useTranslations("media");
   const tc = useTranslations("common");
   const router = useRouter();
@@ -55,6 +61,14 @@ export function MediaLibrary({ tenantId, assets, canManage }: Props) {
   const allTags = [...new Set(photos.flatMap((p) => p.tags))].sort();
   const shown = filter ? photos.filter((p) => p.tags.includes(filter)) : photos;
   const current = assets.find((a) => a.asset_id === selected) ?? null;
+  const pending = assets.some((a) => a.status === "pending");
+
+  // AI edits finish in the background: refresh until none is pending
+  useEffect(() => {
+    if (!pending) return;
+    const timer = setInterval(() => router.refresh(), 4000);
+    return () => clearInterval(timer);
+  }, [pending, router]);
 
   async function onUpload(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -68,7 +82,12 @@ export function MediaLibrary({ tenantId, assets, canManage }: Props) {
     for (const [i, file] of files.entries()) {
       setProgress(t("uploading", { current: i + 1, total: files.length }));
       try {
-        await uploadFile(tenantId, file, String(form.get("kind")), String(form.get("description") ?? ""), String(form.get("tags") ?? ""));
+        await uploadFile(tenantId, file, {
+          kind: String(form.get("kind")),
+          source: String(form.get("source")),
+          description: String(form.get("description") ?? ""),
+          tags: String(form.get("tags") ?? ""),
+        });
       } catch (err) {
         failed.push(`${file.name}: ${err instanceof ApiError ? err.message : tc("error")}`);
       }
@@ -98,18 +117,30 @@ export function MediaLibrary({ tenantId, assets, canManage }: Props) {
                 className="block w-full text-sm text-muted file:mr-3 file:rounded-md file:border file:border-border file:bg-surface file:px-3 file:py-2 file:text-text"
               />
             </Field>
-            <Field label={t("kind")}>
-              <Select name="kind" defaultValue="photo" className="w-full">
-                <option value="photo">{t("kindPhoto")}</option>
-                <option value="logo">{t("kindLogo")}</option>
-              </Select>
-            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label={t("kind")}>
+                <Select name="kind" defaultValue="photo" className="w-full">
+                  <option value="photo">{t("kindPhoto")}</option>
+                  <option value="logo">{t("kindLogo")}</option>
+                </Select>
+              </Field>
+              <Field label={t("source")}>
+                <Select name="source" defaultValue="own" className="w-full">
+                  {SOURCES.map((s) => (
+                    <option key={s} value={s}>
+                      {t(`sources.${s}`)}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
             <Field label={t("description")} hint={t("descriptionHint")}>
               <Input name="description" maxLength={500} />
             </Field>
             <Field label={t("tags")} hint={t("tagsHint")}>
               <Input name="tags" maxLength={1000} />
             </Field>
+            <p className="text-xs text-muted md:col-span-2">{t("sourceHint")}</p>
             <div className="flex items-center gap-3 md:col-span-2">
               <Button type="submit" disabled={busy}>
                 {t("upload")}
@@ -134,9 +165,9 @@ export function MediaLibrary({ tenantId, assets, canManage }: Props) {
       <Card title={t("photosTitle", { count: photos.length })}>
         {allTags.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2 text-xs">
-            <TagChip active={!filter} onClick={() => setFilter("")} label={t("allTags")} />
+            <Chip active={!filter} onClick={() => setFilter("")} label={t("allTags")} />
             {allTags.map((tag) => (
-              <TagChip key={tag} active={filter === tag} onClick={() => setFilter(tag)} label={tag} />
+              <Chip key={tag} active={filter === tag} onClick={() => setFilter(tag)} label={tag} />
             ))}
           </div>
         )}
@@ -151,8 +182,15 @@ export function MediaLibrary({ tenantId, assets, canManage }: Props) {
                 onClick={() => setSelected(a.asset_id)}
                 className={`overflow-hidden rounded-md border text-left transition ${selected === a.asset_id ? "border-accent" : "border-border hover:border-accent"}`}
               >
-                <img src={a.urls.thumb} alt={a.description || a.filename} className="aspect-square w-full object-cover" loading="lazy" />
+                {a.status === "ready" ? (
+                  <img src={a.urls.thumb} alt={a.description || a.filename} className="aspect-square w-full object-cover" loading="lazy" />
+                ) : (
+                  <div className="flex aspect-square w-full items-center justify-center bg-bg text-xs text-muted">
+                    {a.status === "pending" ? t("editing") : t("editFailed")}
+                  </div>
+                )}
                 <div className="space-y-1 p-2 text-xs">
+                  <Badges asset={a} />
                   <p className="line-clamp-2">{a.description || <span className="text-muted">{t("noDescription")}</span>}</p>
                   <p className="truncate text-muted">{a.tags.join(" · ")}</p>
                 </div>
@@ -164,19 +202,21 @@ export function MediaLibrary({ tenantId, assets, canManage }: Props) {
 
       {current && (
         <PhotoEditor
-          key={current.asset_id + current.focal_x + current.focal_y + current.enhance}
+          key={current.asset_id + current.status + current.focal_x + current.focal_y + current.enhance + current.approved_at}
           tenantId={tenantId}
           asset={current}
+          assets={assets}
           hasLogo={Boolean(logo)}
           canManage={canManage}
-          onClose={() => setSelected(null)}
+          editing={editing}
+          onSelect={setSelected}
         />
       )}
     </div>
   );
 }
 
-function TagChip({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
+function Chip({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
   return (
     <button
       type="button"
@@ -188,29 +228,55 @@ function TagChip({ active, onClick, label }: { active: boolean; onClick: () => v
   );
 }
 
+function Badges({ asset }: { asset: MediaAsset }) {
+  const t = useTranslations("media");
+  const badge = "rounded-full border px-2 py-0.5";
+  return (
+    <div className="flex flex-wrap gap-1">
+      {asset.source !== "own" && (
+        <span className={`${badge} ${asset.source === "reference" ? "border-danger text-danger" : "border-border text-muted"}`}>
+          {t(`sources.${asset.source}`)}
+        </span>
+      )}
+      {asset.parent_asset_id && <span className={`${badge} border-accent text-accent`}>AI · {t(`kinds.${asset.edit?.kind ?? "enhance"}`)}</span>}
+      {asset.parent_asset_id && asset.status === "ready" && !asset.approved_at && (
+        <span className={`${badge} border-danger text-danger`}>{t("needsApproval")}</span>
+      )}
+    </div>
+  );
+}
+
 function PhotoEditor({
   tenantId,
   asset,
+  assets,
   hasLogo,
   canManage,
-  onClose,
+  editing,
+  onSelect,
 }: {
   tenantId: string;
   asset: MediaAsset;
+  assets: MediaAsset[];
   hasLogo: boolean;
   canManage: boolean;
-  onClose: () => void;
+  editing: ImageEditingSettings;
+  onSelect: (id: string | null) => void;
 }) {
   const t = useTranslations("media");
   const tc = useTranslations("common");
   const router = useRouter();
   const [description, setDescription] = useState(asset.description);
   const [tags, setTags] = useState(asset.tags.join(", "));
+  const [source, setSource] = useState<MediaSource>(asset.source);
   const [focal, setFocal] = useState({ x: asset.focal_x, y: asset.focal_y });
   const [enhance, setEnhance] = useState(asset.enhance);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
   const [preview, setPreview] = useState<"feed" | "square">("feed");
+
+  const parent = asset.parent_asset_id ? assets.find((a) => a.asset_id === asset.parent_asset_id) : null;
+  const edits = assets.filter((a) => a.parent_asset_id === asset.asset_id);
 
   async function run(action: () => Promise<unknown>, done?: string) {
     setBusy(true);
@@ -235,10 +301,57 @@ function PhotoEditor({
     });
   }
 
+  if (asset.status !== "ready") {
+    return (
+      <Card title={asset.filename}>
+        {asset.status === "pending" ? <Alert>{t("editingLong")}</Alert> : <Alert tone="error">{asset.edit?.error ?? t("editFailed")}</Alert>}
+        <div className="mt-4 flex gap-2">
+          <Button variant="ghost" onClick={() => onSelect(null)}>
+            {t("close")}
+          </Button>
+          {canManage && asset.status === "failed" && (
+            <Button variant="danger" disabled={busy} onClick={() => run(async () => {
+              await api(`/tenants/${tenantId}/media/${asset.asset_id}`, { method: "DELETE" });
+              onSelect(null);
+            })}>
+              {t("delete")}
+            </Button>
+          )}
+        </div>
+      </Card>
+    );
+  }
+
   const previewUrl = asset.urls[hasLogo ? `${preview}-logo` : preview] ?? asset.urls[preview];
 
   return (
     <Card title={asset.filename}>
+      <div className="mb-4">
+        <Badges asset={asset} />
+      </div>
+      {parent && (
+        <div className="mb-6 space-y-2">
+          <p className="text-sm font-medium">{t("beforeAfter")}</p>
+          <div className="grid grid-cols-2 gap-3">
+            {parent.urls.thumb && <img src={parent.urls.thumb} alt={t("before")} className="w-full rounded border border-border" />}
+            <img src={asset.urls.thumb} alt={t("after")} className="w-full rounded border border-accent" />
+          </div>
+          {asset.edit?.request && <p className="text-xs text-muted">“{asset.edit.request}”</p>}
+          {asset.edit?.cost_usd && <p className="text-xs text-muted">${asset.edit.cost_usd}</p>}
+          {canManage && !asset.approved_at && (
+            <div className="flex items-center gap-3">
+              <Button
+                disabled={busy}
+                onClick={() => run(() => api(`/tenants/${tenantId}/media/${asset.asset_id}/approve`, { method: "POST" }), t("approved"))}
+              >
+                {t("approve")}
+              </Button>
+              <span className="text-xs text-muted">{t("approveHint")}</span>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-2">
           <p className="text-xs text-muted">{canManage ? t("focalHint") : t("original")}</p>
@@ -255,11 +368,11 @@ function PhotoEditor({
         </div>
         <div className="space-y-2">
           <div className="flex gap-2 text-xs">
-            <TagChip active={preview === "feed"} onClick={() => setPreview("feed")} label={t("previewFeed")} />
-            <TagChip active={preview === "square"} onClick={() => setPreview("square")} label={t("previewSquare")} />
+            <Chip active={preview === "feed"} onClick={() => setPreview("feed")} label={t("previewFeed")} />
+            <Chip active={preview === "square"} onClick={() => setPreview("square")} label={t("previewSquare")} />
           </div>
           <img src={previewUrl} alt={t("previewAlt")} className="max-h-96 w-auto rounded border border-border" />
-          <p className="text-xs text-muted">{t("previewHint")}</p>
+          <p className="text-xs text-muted">{asset.publishable ? t("previewHint") : t("notPublishable")}</p>
         </div>
       </div>
 
@@ -270,7 +383,16 @@ function PhotoEditor({
         <Field label={t("tags")} hint={t("tagsHint")}>
           <Input value={tags} onChange={(e) => setTags(e.target.value)} disabled={!canManage} />
         </Field>
-        <label className="flex items-center gap-2 text-sm md:col-span-2">
+        <Field label={t("source")} hint={t("sourceHint")}>
+          <Select value={source} onChange={(e) => setSource(e.target.value as MediaSource)} disabled={!canManage} className="w-full">
+            {SOURCES.map((s) => (
+              <option key={s} value={s}>
+                {t(`sources.${s}`)}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <label className="flex items-center gap-2 self-end text-sm">
           <input type="checkbox" checked={enhance} onChange={(e) => setEnhance(e.target.checked)} disabled={!canManage} />
           {t("enhance")}
         </label>
@@ -293,6 +415,7 @@ function PhotoEditor({
                     body: {
                       description,
                       tags: tags.split(",").map((s) => s.trim()).filter(Boolean),
+                      source,
                       focal_x: focal.x,
                       focal_y: focal.y,
                       enhance,
@@ -305,7 +428,7 @@ function PhotoEditor({
             {t("save")}
           </Button>
         )}
-        <Button variant="ghost" onClick={onClose}>
+        <Button variant="ghost" onClick={() => onSelect(null)}>
           {t("close")}
         </Button>
         {canManage && (
@@ -316,7 +439,7 @@ function PhotoEditor({
               confirm(t("deleteConfirm")) &&
               run(async () => {
                 await api(`/tenants/${tenantId}/media/${asset.asset_id}`, { method: "DELETE" });
-                onClose();
+                onSelect(null);
               })
             }
           >
@@ -324,6 +447,131 @@ function PhotoEditor({
           </Button>
         )}
       </div>
+
+      {canManage && !asset.parent_asset_id && (
+        <AiEdit tenantId={tenantId} asset={asset} assets={assets} editing={editing} onDone={() => router.refresh()} />
+      )}
+
+      {edits.length > 0 && (
+        <div className="mt-6">
+          <p className="mb-2 text-sm font-medium">{t("editsOfThis", { count: edits.length })}</p>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+            {edits.map((e) => (
+              <button key={e.asset_id} type="button" onClick={() => onSelect(e.asset_id)} className="overflow-hidden rounded border border-border text-left text-xs hover:border-accent">
+                {e.status === "ready" ? (
+                  <img src={e.urls.thumb} alt="" className="aspect-square w-full object-cover" />
+                ) : (
+                  <div className="flex aspect-square items-center justify-center bg-bg p-1 text-center text-muted">
+                    {e.status === "pending" ? t("editing") : t("editFailed")}
+                  </div>
+                )}
+                <div className="p-1">{t(`kinds.${e.edit?.kind ?? "enhance"}`)}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </Card>
+  );
+}
+
+function AiEdit({
+  tenantId,
+  asset,
+  assets,
+  editing,
+  onDone,
+}: {
+  tenantId: string;
+  asset: MediaAsset;
+  assets: MediaAsset[];
+  editing: ImageEditingSettings;
+  onDone: () => void;
+}) {
+  const t = useTranslations("media");
+  const tc = useTranslations("common");
+  const enabled = (Object.keys(EDIT_TOGGLE) as EditKind[]).filter((k) => editing[EDIT_TOGGLE[k]]);
+  const [kind, setKind] = useState<EditKind | "">(enabled[0] ?? "");
+  const [request, setRequest] = useState("");
+  const [subject, setSubject] = useState("");
+  const [reference, setReference] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
+
+  if (enabled.length === 0) return <p className="mt-6 text-sm text-muted">{t("aiOff")}</p>;
+  const others = assets.filter((a) => a.kind === "photo" && a.status === "ready" && a.asset_id !== asset.asset_id);
+  const usesReference = kind === "background" || kind === "swap";
+
+  async function submit() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await api(`/tenants/${tenantId}/media/${asset.asset_id}/edits`, {
+        method: "POST",
+        body: { kind, request, subject, reference_asset_id: usesReference && reference ? reference : null },
+      });
+      setRequest("");
+      setMessage({ tone: "success", text: t("editStarted") });
+      onDone();
+    } catch (err) {
+      setMessage({ tone: "error", text: err instanceof ApiError ? err.message : tc("error") });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-6 space-y-4 rounded-md border border-border p-4">
+      <p className="text-sm font-medium">{t("aiTitle")}</p>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label={t("aiKind")}>
+          <Select value={kind} onChange={(e) => setKind(e.target.value as EditKind)} className="w-full">
+            {enabled.map((k) => (
+              <option key={k} value={k}>
+                {t(`kinds.${k}`)}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        {kind !== "enhance" && kind !== "remove" && (
+          <Field label={t("aiSubject")} hint={t("aiSubjectHint")}>
+            <Input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={200} />
+          </Field>
+        )}
+        {kind !== "enhance" && (
+          <div className="md:col-span-2">
+            <Field label={t("aiRequest")} hint={t(`aiRequestHint.${kind}`)}>
+              <textarea
+                value={request}
+                onChange={(e) => setRequest(e.target.value)}
+                rows={2}
+                maxLength={500}
+                className="w-full rounded-md border border-border bg-bg px-3 py-2 text-sm text-text focus:border-accent focus:outline-none"
+              />
+            </Field>
+          </div>
+        )}
+        {usesReference && (
+          <Field label={t("aiReference")} hint={t("aiReferenceHint")}>
+            <Select value={reference} onChange={(e) => setReference(e.target.value)} className="w-full">
+              <option value="">—</option>
+              {others.map((o) => (
+                <option key={o.asset_id} value={o.asset_id}>
+                  {o.description || o.filename}
+                  {o.source === "reference" ? ` (${t("sources.reference")})` : ""}
+                </option>
+              ))}
+            </Select>
+          </Field>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button onClick={submit} disabled={busy || !kind}>
+          {t("aiSubmit")}
+        </Button>
+        <span className="text-xs text-muted">{t("aiCostHint")}</span>
+      </div>
+      {message && <Alert tone={message.tone}>{message.text}</Alert>}
+    </div>
   );
 }

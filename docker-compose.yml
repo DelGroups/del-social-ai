@@ -103,6 +103,9 @@ services:
       META_APP_SECRET: ${META_APP_SECRET:-}
       META_GRAPH_VERSION: ${META_GRAPH_VERSION:-v23.0}
       META_LOGIN_CONFIG_ID: ${META_LOGIN_CONFIG_ID:-}
+      FAL_KEY: ${FAL_KEY:-}
+      IMAGE_EDIT_MODEL: ${IMAGE_EDIT_MODEL:-fal-ai/flux-2-pro/edit}
+      IMAGE_ENHANCE_MODEL: ${IMAGE_ENHANCE_MODEL:-fal-ai/topaz/upscale/image}
       MEDIA_ROOT: /data/media
       MEDIA_PUBLIC_URL: https://${API_DOMAIN} # Instagram/Facebook fetch post images from here
     volumes:

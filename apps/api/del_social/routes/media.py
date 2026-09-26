@@ -6,19 +6,23 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+import httpx
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import any_, literal, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from del_social.core.config import get_settings
 from del_social.core.db import set_tenant
-from del_social.core.deps import TenantContext, get_db, require_permission
-from del_social.media import images
+from del_social.core.deps import TenantContext, get_db, get_engine, get_http, require_permission
+from del_social.knowledge.brand_profile import BrandProfile, ImageEditing
+from del_social.llm import LLM, build_llm
+from del_social.media import editing, images
+from del_social.media.fal import FalClient
 from del_social.media.storage import MediaNotConfigured, MediaStore, signed_url, verify
-from del_social.models import MediaAsset
+from del_social.models import BrandProfileVersion, MediaAsset
 from del_social.tenants.permissions import Permission
 
 router = APIRouter(prefix="/tenants/{tenant_id}/media", tags=["media"])
@@ -28,11 +32,25 @@ can_view = require_permission(Permission.VIEW)
 can_manage = require_permission(Permission.MANAGE_MEDIA)
 
 Kind = Literal["photo", "logo"]
-PUBLIC_VARIANTS = ("thumb", "feed", "square", "feed-logo", "square-logo")
+Source = Literal["own", "render", "licensed", "reference"]
+PUBLIC_VARIANTS = ("thumb", "full", "feed", "square", "feed-logo", "square-logo")
+EDIT_FIELDS = ("kind", "request", "subject", "reference_asset_id", "error", "cost_usd", "model")
 
 
 def get_store() -> MediaStore:
     return MediaStore(get_settings().media_root)
+
+
+def get_fal(http: httpx.AsyncClient = Depends(get_http)) -> FalClient | None:
+    s = get_settings()
+    if not s.fal_key:
+        return None
+    return FalClient(http, s.fal_key, s.image_edit_poll_seconds, s.image_edit_timeout_seconds)
+
+
+def get_translator(engine: AsyncEngine = Depends(get_engine), http: httpx.AsyncClient = Depends(get_http)) -> LLM | None:
+    s = get_settings()
+    return build_llm(s, engine, http) if s.anthropic_api_key else None
 
 
 class MediaOut(BaseModel):
@@ -47,6 +65,12 @@ class MediaOut(BaseModel):
     focal_x: float
     focal_y: float
     enhance: bool
+    source: Source
+    parent_asset_id: uuid.UUID | None
+    status: Literal["pending", "ready", "failed"]
+    edit: dict | None  # kind, request, subject, reference_asset_id, error, cost_usd, model
+    approved_at: datetime | None
+    publishable: bool  # ready, not a reference, and (for AI edits) approved by a human
     created_at: datetime
     urls: dict[str, str]  # signed, valid ~24h: thumb, feed, square (+ -logo variants)
 
@@ -57,6 +81,14 @@ class MediaPatch(BaseModel):
     focal_x: float | None = Field(default=None, ge=0, le=1)
     focal_y: float | None = Field(default=None, ge=0, le=1)
     enhance: bool | None = None
+    source: Source | None = None
+
+
+class EditIn(BaseModel):
+    kind: editing.EditKind
+    request: str = Field(default="", max_length=500)  # e.g. "a bright Scandinavian living room"
+    subject: str = Field(default="", max_length=200)  # which object, e.g. "the wardrobe"
+    reference_asset_id: uuid.UUID | None = None  # a second library image: style or product reference
 
 
 def _clean_tags(tags: list[str]) -> list[str]:
@@ -72,10 +104,21 @@ def _out(asset: MediaAsset, has_logo: bool) -> MediaOut:
     s = get_settings()
     variants = ["thumb", "feed", "square"] + (["feed-logo", "square-logo"] if has_logo else [])
     try:
-        urls = {v: signed_url(s.media_public_url, s.secret_key, asset.tenant_id, asset.asset_id, v) for v in variants}
+        urls = (
+            {v: signed_url(s.media_public_url, s.secret_key, asset.tenant_id, asset.asset_id, v) for v in variants}
+            if asset.status == "ready"
+            else {}
+        )
     except MediaNotConfigured:
         urls = {}
-    return MediaOut.model_validate({**{c: getattr(asset, c) for c in MediaOut.model_fields if c != "urls"}, "urls": urls})
+    publishable = (
+        asset.status == "ready"
+        and asset.source != "reference"
+        and (asset.parent_asset_id is None or asset.approved_at is not None)
+    )
+    fields = {c: getattr(asset, c) for c in MediaOut.model_fields if c not in ("urls", "publishable", "edit")}
+    edit = {k: v for k, v in (asset.edit or {}).items() if k in EDIT_FIELDS} if asset.edit else None
+    return MediaOut.model_validate({**fields, "edit": edit, "urls": urls, "publishable": publishable})
 
 
 async def _current_logo(db: AsyncSession) -> MediaAsset | None:
@@ -115,6 +158,7 @@ async def list_media(
 async def upload(
     file: UploadFile = File(...),
     kind: Kind = Form("photo"),
+    source: Source = Form("own"),
     description: str = Form("", max_length=500),
     tags: str = Form("", max_length=1000),  # comma-separated
     ctx: TenantContext = Depends(can_manage),
@@ -146,6 +190,7 @@ async def upload(
         sha256=digest,
         tags=_clean_tags(tags.split(",")),
         description=description.strip(),
+        source=source,
         uploaded_by=ctx.account.account_id,
     )
     await run_in_threadpool(store.save_original, ctx.tenant_id, asset.asset_id, data)
@@ -188,6 +233,98 @@ async def delete(
     await run_in_threadpool(store.delete, asset.tenant_id, asset.asset_id)
 
 
+# --- AI edits (ADR 005) ---
+
+
+async def _image_editing(db: AsyncSession) -> ImageEditing:
+    row = await db.scalar(select(BrandProfileVersion).order_by(BrandProfileVersion.version.desc()).limit(1))
+    return BrandProfile.model_validate(row.data).image_editing if row else ImageEditing()
+
+
+@router.post("/{asset_id}/edits", response_model=MediaOut, status_code=status.HTTP_202_ACCEPTED)
+async def request_edit(
+    asset_id: uuid.UUID,
+    body: EditIn,
+    background: BackgroundTasks,
+    ctx: TenantContext = Depends(can_manage),
+    db: AsyncSession = Depends(get_db),
+    engine: AsyncEngine = Depends(get_engine),
+    store: MediaStore = Depends(get_store),
+    fal: FalClient | None = Depends(get_fal),
+    translator: LLM | None = Depends(get_translator),
+) -> MediaOut:
+    if fal is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "AI image editing is not configured on the server")
+    if not editing.allowed(await _image_editing(db), body.kind):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This edit is turned off in the brand profile")
+    parent = await _get(db, asset_id)
+    if parent.kind != "photo" or parent.status != "ready":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only finished photos can be edited")
+    reference = await _get(db, body.reference_asset_id) if body.reference_asset_id else None
+    # Enhance needs no words; a swap or background with a reference photo is described by that photo
+    described_by_photo = reference is not None and body.kind in (editing.EditKind.SWAP, editing.EditKind.BACKGROUND)
+    if body.kind is not editing.EditKind.ENHANCE and not body.request.strip() and not described_by_photo:
+        raise HTTPException(422, "Describe the change")
+    if reference is not None and (reference.kind != "photo" or reference.status != "ready"):
+        raise HTTPException(status.HTTP_409_CONFLICT, "The reference must be a finished photo")
+    child_id = uuid.uuid4()
+    child = MediaAsset(
+        asset_id=child_id,
+        tenant_id=ctx.tenant_id,
+        kind="photo",
+        filename=f"{parent.filename} · {body.kind.value}"[:200],
+        format="JPEG",
+        width=parent.width,
+        height=parent.height,
+        bytes=0,
+        sha256=f"pending:{child_id}",
+        tags=list(parent.tags),
+        description=parent.description,
+        focal_x=parent.focal_x,
+        focal_y=parent.focal_y,
+        enhance=parent.enhance,
+        source=editing.result_source(body.kind, parent.source, reference.source if reference else None),
+        parent_asset_id=parent.asset_id,
+        status="pending",
+        edit={
+            "kind": body.kind.value,
+            "request": body.request.strip(),
+            "subject": body.subject.strip(),
+            "reference_asset_id": str(reference.asset_id) if reference else None,
+        },
+        uploaded_by=ctx.account.account_id,
+    )
+    # Committed in its own transaction before the job starts: background tasks run before the
+    # request's own transaction (get_db) is committed, so the job would not see the row otherwise.
+    async with AsyncSession(engine, expire_on_commit=False) as own, own.begin():
+        await set_tenant(own, ctx.tenant_id)
+        own.add(child)
+        await own.flush()
+        await own.refresh(child)
+    background.add_task(
+        editing.run_edit,
+        engine=engine, settings=get_settings(), fal=fal, llm=translator, store=store,
+        tenant_id=ctx.tenant_id, child_id=child_id,
+    )
+    return _out(child, await _current_logo(db) is not None)
+
+
+@router.post("/{asset_id}/approve", response_model=MediaOut)
+async def approve_edit(
+    asset_id: uuid.UUID,
+    ctx: TenantContext = Depends(can_manage),
+    db: AsyncSession = Depends(get_db),
+) -> MediaOut:
+    """A human confirms the AI edit looks right (product intact, nothing odd) before posts may use it."""
+    asset = await _get(db, asset_id)
+    if asset.parent_asset_id is None or asset.status != "ready":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only finished AI edits need approval")
+    asset.approved_at = datetime.now(UTC)
+    await db.flush()
+    await db.refresh(asset)
+    return _out(asset, await _current_logo(db) is not None)
+
+
 # --- public, signed ---
 
 
@@ -216,7 +353,7 @@ async def public_file(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")  # same answer for every failure
     await set_tenant(db, tenant_id)  # the signature is the authorisation
     asset = await db.get(MediaAsset, asset_id)
-    if asset is None or asset.deleted_at is not None:
+    if asset is None or asset.deleted_at is not None or asset.status != "ready":
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
     base, _, with_logo = variant.partition("-")
     logo = await _current_logo(db) if with_logo else None
@@ -228,7 +365,9 @@ async def public_file(
         logo_data = await run_in_threadpool(store.read_original, tenant_id, logo.asset_id) if logo else None
         rendered = await run_in_threadpool(
             images.render, original, base,
-            focal=(asset.focal_x, asset.focal_y), enhance=asset.enhance and asset.kind == "photo", logo_data=logo_data,
+            focal=(asset.focal_x, asset.focal_y),
+            enhance=asset.enhance and asset.kind == "photo" and base != "full",
+            logo_data=logo_data,
         )
         await run_in_threadpool(store.save_variant, path, rendered)
     max_age = max(0, min(exp - int(time.time()), 86400))

@@ -207,7 +207,7 @@ def cookie(token: str) -> dict[str, str]:
 @pytest.fixture
 async def client(app_engine, redis) -> AsyncIterator[httpx.AsyncClient]:
     # Imported here: del_social.main reads settings at import, after the env defaults above
-    from del_social.core.deps import allowed_origins, get_db, get_redis
+    from del_social.core.deps import allowed_origins, get_db, get_engine, get_redis
     from del_social.main import app
 
     async def db_override() -> AsyncIterator[AsyncSession]:
@@ -215,6 +215,7 @@ async def client(app_engine, redis) -> AsyncIterator[httpx.AsyncClient]:
             yield session
 
     app.dependency_overrides[get_db] = db_override
+    app.dependency_overrides[get_engine] = lambda: app_engine
     app.dependency_overrides[get_redis] = lambda: redis
     app.dependency_overrides[allowed_origins] = lambda: [ORIGIN]
     b = uuid.uuid4().bytes  # fresh client IP per test so IP rate limits don't leak across tests
