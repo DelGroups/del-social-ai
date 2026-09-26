@@ -75,14 +75,14 @@ async def run_analysis(
 
 
 async def _run(engine: AsyncEngine, llm: LLM, store: MediaStore, tenant_id: uuid.UUID, asset_id: uuid.UUID) -> None:
-    async def save(**values: Any) -> None:
+    async def set_status(**status: Any) -> None:
+        """Status changes keep the rest of the analysis (a person's corrections included)."""
         async with AsyncSession(engine) as db, db.begin():
             await set_tenant(db, tenant_id)
             row = await db.get(MediaAsset, asset_id)
-            for k, v in values.items():
-                setattr(row, k, v)
+            row.analysis = {**(row.analysis or {}), **status}
 
-    await save(analysis={"status": "running"})
+    await set_status(status="running", error=None)
     try:
         async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
             await set_tenant(db, tenant_id)
@@ -158,6 +158,11 @@ async def _run(engine: AsyncEngine, llm: LLM, store: MediaStore, tenant_id: uuid
                 row.position = 0 if last is None else last + 1
             findings = a.model_dump(mode="json")
             findings["hashtags"] = clean_hashtags(a.hashtags, min(profile.hashtags.max_per_post, 30))
+            previous = row.analysis or {}
+            human_fields = previous.get("human_fields", [])
+            for field in human_fields:  # a person's correction outranks the model
+                findings[field] = previous.get(field)
+            findings["human_fields"] = human_fields
             row.analysis = {
                 "status": "done",
                 **findings,
@@ -167,7 +172,7 @@ async def _run(engine: AsyncEngine, llm: LLM, store: MediaStore, tenant_id: uuid
             }
             row.analyzed_at = datetime.now(UTC)
     except LLMError as e:
-        await save(analysis={"status": "failed", "error": str(e)})
+        await set_status(status="failed", error=str(e))
     except Exception:
         log.exception("photo analysis %s failed", asset_id)
-        await save(analysis={"status": "failed", "error": "Unexpected error while analysing"})
+        await set_status(status="failed", error="Unexpected error while analysing")

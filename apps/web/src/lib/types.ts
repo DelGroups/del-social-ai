@@ -224,6 +224,7 @@ export type PhotoAnalysis = {
   quality_issues?: string[];
   suggested_edits?: string[];
   product_action?: "created" | "joined" | null;
+  human_fields?: string[];
   cost_usd?: string | null;
 };
 

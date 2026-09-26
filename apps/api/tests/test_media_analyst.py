@@ -178,3 +178,38 @@ async def test_analyse_all_marks_photos_queued_first(client, tenants, session_fo
     await client.post(murl(tenants["a"], "/analyze-all"), headers={**owner, **O})
     assert seen == ["called"]
     assert (await listing(client, tenants["a"], owner))[photo["asset_id"]]["analysis"]["status"] == "done"
+
+
+async def test_people_correct_the_analysis_and_it_sticks(client, analyst, tenants, session_for):
+    owner = await session_for(tenants["a_owner"])
+    viewer = await session_for(tenants["a_viewer"])
+    photo = (await upload(client, tenants["a"], owner, jpeg(1600, 1200))).json()
+    assert (await listing(client, tenants["a"], owner))[photo["asset_id"]]["analysis"]["features"] == ["qulpsuz qapılar"]
+
+    fix = {"features": ["dairəvi qulplar", " iki rəngli fasad ", ""], "materials_visible": []}
+    assert (await client.patch(murl(tenants["a"], f"/{photo['asset_id']}/analysis"), json=fix, headers={**viewer, **O})).status_code == 403
+    r = await client.patch(murl(tenants["a"], f"/{photo['asset_id']}/analysis"), json=fix, headers={**owner, **O})
+    assert r.status_code == 200
+    a = r.json()["analysis"]
+    assert a["features"] == ["dairəvi qulplar", "iki rəngli fasad"] and a["materials_visible"] == []
+    assert a["human_fields"] == ["features", "materials_visible"]
+
+    # Re-analysis: the model says "qulpsuz" again, the person's correction stays
+    await client.post(murl(tenants["a"], f"/{photo['asset_id']}/analyze"), headers={**owner, **O})
+    a = (await listing(client, tenants["a"], owner))[photo["asset_id"]]["analysis"]
+    assert a["features"] == ["dairəvi qulplar", "iki rəngli fasad"] and a["colors"] == ["ağ"]
+
+
+def test_brief_lists_features_per_photo_not_as_facts():
+    from types import SimpleNamespace
+
+    from del_social.posts.service import build_brief
+
+    photos = [
+        SimpleNamespace(description="Bağlı qapılar", analysis={"features": ["dairəvi qulplar"], "materials_visible": []}),
+        SimpleNamespace(description="Açıq qapılar", analysis={"features": ["daxili rəflər"], "materials_visible": ["güzgü"]}),
+    ]
+    brief = build_brief(uuid.uuid4(), None, photos, "")
+    assert brief.key_message is None
+    assert "Photo 1: dairəvi qulplar | Photo 2: daxili rəflər, güzgü" in brief.notes
+    assert "do not contradict" in brief.notes

@@ -801,6 +801,33 @@ function AnalysisPanel({
   const tc = useTranslations("common");
   const [error, setError] = useState<string | null>(null);
   const a: PhotoAnalysis | null = asset.analysis;
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState({
+    title_az: a?.title_az ?? "",
+    features: (a?.features ?? []).join(", "),
+    materials_visible: (a?.materials_visible ?? []).join(", "),
+    colors: (a?.colors ?? []).join(", "),
+  });
+  const list = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
+
+  async function saveCorrection() {
+    setError(null);
+    try {
+      await api(`/tenants/${tenantId}/media/${asset.asset_id}/analysis`, {
+        method: "PATCH",
+        body: {
+          title_az: draft.title_az,
+          features: list(draft.features),
+          materials_visible: list(draft.materials_visible),
+          colors: list(draft.colors),
+        },
+      });
+      setEditing(false);
+      onDone();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : tc("error"));
+    }
+  }
   const rows: [string, string | undefined][] = a
     ? [
         ["aCategory", a.category],
@@ -827,8 +854,14 @@ function AnalysisPanel({
       <div className="flex flex-wrap items-center gap-3">
         <p className="text-sm font-medium">{t("analysisTitle")}</p>
         {a?.status === "done" && a.looks_like && <span className="text-xs text-muted">{t(`looksLike.${a.looks_like}`)}</span>}
+        {a?.human_fields && a.human_fields.length > 0 && <span className="text-xs text-accent">✎ {t("corrected")}</span>}
+        {canManage && a?.status === "done" && !editing && (
+          <Button variant="ghost" className="ml-auto px-2 py-1 text-xs" onClick={() => setEditing(true)}>
+            {t("correct")}
+          </Button>
+        )}
         {canManage && a?.status !== "queued" && a?.status !== "running" && (
-          <Button variant="ghost" className="ml-auto px-2 py-1 text-xs" onClick={rerun}>
+          <Button variant="ghost" className={`${a?.status === "done" && !editing ? "" : "ml-auto "}px-2 py-1 text-xs`} onClick={rerun}>
             {a ? t("reanalyze") : t("analyze")}
           </Button>
         )}
@@ -837,7 +870,30 @@ function AnalysisPanel({
       {!a && <p className="text-sm text-muted">{t("notAnalyzed")}</p>}
       {(a?.status === "queued" || a?.status === "running") && <Alert>{t("analyzingLong")}</Alert>}
       {a?.status === "failed" && <Alert tone="error">{a.error ?? t("analysisFailed")}</Alert>}
-      {a?.status === "done" && (
+      {a?.status === "done" && editing && (
+        <div className="space-y-3">
+          <p className="text-xs text-muted">{t("correctHint")}</p>
+          <Field label={t("aTitle")}>
+            <Input value={draft.title_az} onChange={(e) => setDraft({ ...draft, title_az: e.target.value })} maxLength={200} />
+          </Field>
+          <Field label={t("aFeatures")} hint={t("commaHint")}>
+            <Input value={draft.features} onChange={(e) => setDraft({ ...draft, features: e.target.value })} />
+          </Field>
+          <Field label={t("aMaterials")} hint={t("commaHint")}>
+            <Input value={draft.materials_visible} onChange={(e) => setDraft({ ...draft, materials_visible: e.target.value })} />
+          </Field>
+          <Field label={t("aColors")} hint={t("commaHint")}>
+            <Input value={draft.colors} onChange={(e) => setDraft({ ...draft, colors: e.target.value })} />
+          </Field>
+          <div className="flex gap-2">
+            <Button onClick={saveCorrection}>{t("saveCorrection")}</Button>
+            <Button variant="ghost" onClick={() => setEditing(false)}>
+              {t("close")}
+            </Button>
+          </div>
+        </div>
+      )}
+      {a?.status === "done" && !editing && (
         <div className="space-y-3 text-sm">
           {a.title_az && <p className="font-medium">{a.title_az}</p>}
           {a.product_action && <p className="text-xs text-accent">{t(`productAction.${a.product_action}`)}</p>}

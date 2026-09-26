@@ -321,11 +321,37 @@ async def analyze(
     async with AsyncSession(engine, expire_on_commit=False) as own, own.begin():
         await set_tenant(own, ctx.tenant_id)
         row = await own.get(MediaAsset, asset_id)
-        row.analysis = {"status": "queued"}
+        row.analysis = {**(row.analysis or {}), "status": "queued"}  # keep corrections
         await own.flush()
         await own.refresh(row)
     _schedule_analysis(background, engine, analyst, store, ctx.tenant_id, asset_id)
     return _out(row, await _current_logo(db) is not None)
+
+
+class AnalysisPatch(BaseModel):
+    title_az: str | None = Field(default=None, max_length=200)
+    features: list[str] | None = Field(default=None, max_length=20)
+    materials_visible: list[str] | None = Field(default=None, max_length=20)
+    colors: list[str] | None = Field(default=None, max_length=20)
+
+
+@router.patch("/{asset_id}/analysis", response_model=MediaOut)
+async def correct_analysis(
+    asset_id: uuid.UUID, body: AnalysisPatch, ctx: TenantContext = Depends(can_manage), db: AsyncSession = Depends(get_db)
+) -> MediaOut:
+    """A person corrects what the Photo Analyst saw. Posts use the correction; re-analysis keeps it."""
+    asset = await _get(db, asset_id)
+    if not asset.analysis or asset.analysis.get("status") != "done":
+        raise HTTPException(status.HTTP_409_CONFLICT, "This photo has no finished analysis to correct")
+    changes = {
+        k: ([x.strip()[:100] for x in v if x.strip()] if isinstance(v, list) else v.strip())
+        for k, v in body.model_dump(exclude_none=True).items()
+    }
+    human = sorted(set(asset.analysis.get("human_fields", [])) | set(changes))
+    asset.analysis = {**asset.analysis, **changes, "human_fields": human}
+    await db.flush()
+    await db.refresh(asset)
+    return _out(asset, await _current_logo(db) is not None)
 
 
 class AnalyzeAllOut(BaseModel):
