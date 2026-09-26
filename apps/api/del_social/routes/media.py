@@ -11,7 +11,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPExcepti
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import any_, literal, select
+from sqlalchemy import any_, func, literal, select, update as sql_update
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from del_social.core.config import get_settings
@@ -21,6 +21,7 @@ from del_social.llm import LLM, build_llm
 from del_social.media import editing, images
 from del_social.media.fal import FalClient
 from del_social.media.storage import MediaNotConfigured, MediaStore, signed_url, verify
+from del_social.routes.products import get_product
 from del_social.models import MediaAsset
 from del_social.tenants.permissions import Permission
 
@@ -32,7 +33,7 @@ can_manage = require_permission(Permission.MANAGE_MEDIA)
 
 Kind = Literal["photo", "logo"]
 Source = Literal["own", "render", "licensed", "reference"]
-PUBLIC_VARIANTS = ("thumb", "full", "feed", "square", "feed-logo", "square-logo")
+PUBLIC_VARIANTS = ("thumb", "full", "feed", "square", "landscape", "feed-logo", "square-logo", "landscape-logo")
 EDIT_FIELDS = ("kinds", "recipe", "error", "cost_usd", "cost_complete", "models")
 
 
@@ -70,6 +71,9 @@ class MediaOut(BaseModel):
     edit: dict | None  # for AI results: kinds, recipe, error, cost_usd, cost_complete, models
     approved_at: datetime | None
     recipe: dict | None  # this photo's saved AI edit settings
+    product_id: uuid.UUID | None
+    position: int  # order within the product; 0 = cover
+    default_logo: bool
     publishable: bool  # ready, not a reference, and (for AI edits) approved by a human
     created_at: datetime
     urls: dict[str, str]  # signed, valid ~24h: thumb, feed, square (+ -logo variants)
@@ -82,6 +86,7 @@ class MediaPatch(BaseModel):
     focal_y: float | None = Field(default=None, ge=0, le=1)
     enhance: bool | None = None
     source: Source | None = None
+    product_id: uuid.UUID | None = None  # send null to remove the photo from its product
 
 
 def _clean_tags(tags: list[str]) -> list[str]:
@@ -95,7 +100,8 @@ def _clean_tags(tags: list[str]) -> list[str]:
 
 def _out(asset: MediaAsset, has_logo: bool) -> MediaOut:
     s = get_settings()
-    variants = ["thumb", "feed", "square"] + (["feed-logo", "square-logo"] if has_logo else [])
+    base = ["thumb", "feed", "square", "landscape"]
+    variants = base + ([f"{v}-logo" for v in ("feed", "square", "landscape")] if has_logo and asset.kind == "photo" else [])
     try:
         urls = (
             {v: signed_url(s.media_public_url, s.secret_key, asset.tenant_id, asset.asset_id, v) for v in variants}
@@ -117,12 +123,20 @@ def _out(asset: MediaAsset, has_logo: bool) -> MediaOut:
 
 
 async def _current_logo(db: AsyncSession) -> MediaAsset | None:
+    """The logo chosen for posts, or the newest logo if none was chosen."""
     return await db.scalar(
         select(MediaAsset)
         .where(MediaAsset.kind == "logo", MediaAsset.deleted_at.is_(None))
-        .order_by(MediaAsset.created_at.desc())
+        .order_by(MediaAsset.default_logo.desc(), MediaAsset.created_at.desc())
         .limit(1)
     )
+
+
+async def _next_position(db: AsyncSession, product_id: uuid.UUID) -> int:
+    last = await db.scalar(
+        select(func.max(MediaAsset.position)).where(MediaAsset.product_id == product_id, MediaAsset.deleted_at.is_(None))
+    )
+    return 0 if last is None else last + 1
 
 
 async def _get(db: AsyncSession, asset_id: uuid.UUID) -> MediaAsset:
@@ -136,6 +150,7 @@ async def _get(db: AsyncSession, asset_id: uuid.UUID) -> MediaAsset:
 async def list_media(
     kind: Kind | None = None,
     tag: str | None = Query(default=None, max_length=40),
+    product_id: uuid.UUID | None = None,
     ctx: TenantContext = Depends(can_view),
     db: AsyncSession = Depends(get_db),
 ) -> list[MediaOut]:
@@ -144,6 +159,8 @@ async def list_media(
         q = q.where(MediaAsset.kind == kind)
     if tag:
         q = q.where(literal(tag.strip().lower()) == any_(MediaAsset.tags))
+    if product_id:
+        q = q.order_by(None).where(MediaAsset.product_id == product_id).order_by(MediaAsset.position, MediaAsset.created_at)
     assets = (await db.scalars(q)).all()
     has_logo = await _current_logo(db) is not None
     return [_out(a, has_logo) for a in assets]
@@ -154,6 +171,7 @@ async def upload(
     file: UploadFile = File(...),
     kind: Kind = Form("photo"),
     source: Source = Form("own"),
+    product_id: uuid.UUID | None = Form(None),
     description: str = Form("", max_length=500),
     tags: str = Form("", max_length=1000),  # comma-separated
     ctx: TenantContext = Depends(can_manage),
@@ -171,7 +189,14 @@ async def upload(
         select(MediaAsset).where(MediaAsset.sha256 == digest, MediaAsset.deleted_at.is_(None))
     )
     has_logo = await _current_logo(db) is not None
+    product = await get_product(db, product_id) if product_id else None
+    if kind == "logo" and product is not None:
+        raise HTTPException(422, "A logo can't belong to a product")
     if existing is not None:
+        if product is not None and existing.product_id is None:
+            existing.product_id = product.product_id
+            existing.position = await _next_position(db, product.product_id)
+            await db.flush()
         return _out(existing, has_logo)
     asset = MediaAsset(
         asset_id=uuid.uuid4(),
@@ -186,6 +211,8 @@ async def upload(
         tags=_clean_tags(tags.split(",")),
         description=description.strip(),
         source=source,
+        product_id=product.product_id if product else None,
+        position=await _next_position(db, product.product_id) if product else 0,
         uploaded_by=ctx.account.account_id,
     )
     await run_in_threadpool(store.save_original, ctx.tenant_id, asset.asset_id, data)
@@ -204,6 +231,16 @@ async def update(
 ) -> MediaOut:
     asset = await _get(db, asset_id)
     changes = body.model_dump(exclude_none=True)
+    if "product_id" in body.model_fields_set:
+        new_product = body.product_id
+        if new_product is not None:
+            if asset.kind != "photo":
+                raise HTTPException(422, "A logo can't belong to a product")
+            await get_product(db, new_product)
+        if new_product != asset.product_id:
+            asset.product_id = new_product
+            asset.position = await _next_position(db, new_product) if new_product else 0
+        changes.pop("product_id", None)
     if "tags" in changes:
         changes["tags"] = _clean_tags(changes["tags"])
     if "description" in changes:
@@ -226,6 +263,21 @@ async def delete(
     asset.deleted_at = datetime.now(UTC)
     await db.flush()
     await run_in_threadpool(store.delete, asset.tenant_id, asset.asset_id)
+
+
+@router.post("/{asset_id}/default-logo", response_model=MediaOut)
+async def set_default_logo(
+    asset_id: uuid.UUID, ctx: TenantContext = Depends(can_manage), db: AsyncSession = Depends(get_db)
+) -> MediaOut:
+    """Choose which logo goes on post images (e.g. the full logo, not the round profile crop)."""
+    asset = await _get(db, asset_id)
+    if asset.kind != "logo":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only a logo can be the post logo")
+    await db.execute(sql_update(MediaAsset).where(MediaAsset.kind == "logo").values(default_logo=False))
+    asset.default_logo = True
+    await db.flush()
+    await db.refresh(asset)
+    return _out(asset, True)
 
 
 # --- AI edits (ADR 005): configured per photo ---
@@ -304,6 +356,8 @@ async def apply_recipe(
         focal_x=parent.focal_x,
         focal_y=parent.focal_y,
         enhance=parent.enhance,
+        product_id=parent.product_id,  # an edit of a product photo belongs to the same product
+        position=await _next_position(db, parent.product_id) if parent.product_id else 0,
         source=editing.result_source(recipe, parent.source, reference_sources),
         parent_asset_id=parent.asset_id,
         status="pending",

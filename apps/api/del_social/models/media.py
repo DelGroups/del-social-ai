@@ -37,6 +37,9 @@ class MediaAsset(Base):
     status: Mapped[str] = mapped_column(Text, server_default="ready")  # pending | ready | failed
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # AI edits need a human OK
     edit_recipe: Mapped[dict | None] = mapped_column(JSONB)  # this photo's own AI edit settings
+    product_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("products.product_id", ondelete="RESTRICT"))
+    position: Mapped[int] = mapped_column(Integer, server_default="0")  # order within the product
+    default_logo: Mapped[bool] = mapped_column(Boolean, server_default=text("false"))  # the logo put on posts
     uploaded_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("accounts.account_id", ondelete="SET NULL"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

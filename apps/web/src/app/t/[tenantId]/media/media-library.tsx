@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Alert, Button, Card, Field, Input, Select } from "@/components/ui";
 import { ApiError, api } from "@/lib/client-api";
-import type { MediaAsset, MediaSource, Recipe, RecipeStep } from "@/lib/types";
+import type { MediaAsset, MediaSource, ProductInfo, Recipe, RecipeStep } from "@/lib/types";
 
 // Photos larger than this are scaled down in the browser before upload: posts are
 // published at 1080 px, and smaller uploads pass the panel's proxy quickly.
@@ -45,9 +45,10 @@ async function uploadFile(tenantId: string, file: File, fields: Record<string, s
   if (!res.ok) throw new ApiError(res.status, typeof data?.detail === "string" ? data.detail : res.statusText);
 }
 
-type Props = { tenantId: string; assets: MediaAsset[]; canManage: boolean };
+type Props = { tenantId: string; assets: MediaAsset[]; products: ProductInfo[]; canManage: boolean };
+type Format = "feed" | "square" | "landscape";
 
-export function MediaLibrary({ tenantId, assets, canManage }: Props) {
+export function MediaLibrary({ tenantId, assets, products, canManage }: Props) {
   const t = useTranslations("media");
   const tc = useTranslations("common");
   const router = useRouter();
@@ -57,11 +58,15 @@ export function MediaLibrary({ tenantId, assets, canManage }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
+  const [productFilter, setProductFilter] = useState("");
 
-  const logo = assets.find((a) => a.kind === "logo");
+  const logos = assets.filter((a) => a.kind === "logo");
+  const logo = logos.find((a) => a.default_logo) ?? logos[0]; // same rule as the API
   const photos = assets.filter((a) => a.kind === "photo");
   const allTags = [...new Set(photos.flatMap((p) => p.tags))].sort();
-  const shown = filter ? photos.filter((p) => p.tags.includes(filter)) : photos;
+  const byProduct = productFilter ? photos.filter((p) => p.product_id === productFilter).sort((a, b) => a.position - b.position) : photos;
+  const shown = filter ? byProduct.filter((p) => p.tags.includes(filter)) : byProduct;
+  const activeProduct = products.find((p) => p.product_id === productFilter) ?? null;
   const current = assets.find((a) => a.asset_id === selected) ?? null;
   const pending = assets.some((a) => a.status === "pending");
 
@@ -89,6 +94,7 @@ export function MediaLibrary({ tenantId, assets, canManage }: Props) {
           source: String(form.get("source")),
           description: String(form.get("description") ?? ""),
           tags: String(form.get("tags") ?? ""),
+          ...(form.get("product_id") ? { product_id: String(form.get("product_id")) } : {}),
         });
       } catch (err) {
         failed.push(`${file.name}: ${err instanceof ApiError ? err.message : tc("error")}`);
@@ -142,6 +148,16 @@ export function MediaLibrary({ tenantId, assets, canManage }: Props) {
             <Field label={t("tags")} hint={t("tagsHint")}>
               <Input name="tags" maxLength={1000} />
             </Field>
+            <Field label={t("product")} hint={t("productUploadHint")}>
+              <Select name="product_id" defaultValue={productFilter} className="w-full">
+                <option value="">{t("noProduct")}</option>
+                {products.map((p) => (
+                  <option key={p.product_id} value={p.product_id}>
+                    {p.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
             <p className="text-xs text-muted md:col-span-2">{t("sourceHint")}</p>
             <div className="flex items-center gap-3 md:col-span-2">
               <Button type="submit" disabled={busy}>
@@ -154,17 +170,49 @@ export function MediaLibrary({ tenantId, assets, canManage }: Props) {
       )}
 
       <Card title={t("logoTitle")}>
-        {logo ? (
-          <div className="flex items-center gap-4">
-            <img src={logo.urls.thumb} alt={t("kindLogo")} className="h-20 w-auto rounded border border-border bg-white p-2" />
-            <p className="text-sm text-muted">{t("logoHint")}</p>
-          </div>
-        ) : (
+        {logos.length === 0 ? (
           <p className="text-sm text-muted">{t("noLogo")}</p>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-muted">{t("logoHint")}</p>
+            <div className="flex flex-wrap gap-4">
+              {logos.map((l) => (
+                <div key={l.asset_id} className={`space-y-2 rounded-md border p-2 ${l === logo ? "border-accent" : "border-border"}`}>
+                  <img src={l.urls.thumb} alt={l.description || t("kindLogo")} className="h-20 w-auto rounded bg-white p-2" />
+                  <p className="max-w-40 truncate text-xs text-muted">{l.description || l.filename}</p>
+                  {l === logo ? (
+                    <p className="text-xs text-accent">✓ {t("postLogo")}</p>
+                  ) : (
+                    canManage && (
+                      <Button
+                        variant="ghost"
+                        className="px-2 py-1 text-xs"
+                        onClick={async () => {
+                          await api(`/tenants/${tenantId}/media/${l.asset_id}/default-logo`, { method: "POST" });
+                          router.refresh();
+                        }}
+                      >
+                        {t("useOnPosts")}
+                      </Button>
+                    )
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </Card>
 
-      <Card title={t("photosTitle", { count: photos.length })}>
+      <ProductsCard
+        tenantId={tenantId}
+        products={products}
+        active={activeProduct}
+        photos={activeProduct ? shown : []}
+        canManage={canManage}
+        onPick={(id) => setProductFilter(id)}
+      />
+
+      <Card title={activeProduct ? t("productPhotos", { name: activeProduct.name, count: shown.length }) : t("photosTitle", { count: photos.length })}>
         {allTags.length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2 text-xs">
             <Chip active={!filter} onClick={() => setFilter("")} label={t("allTags")} />
@@ -208,12 +256,194 @@ export function MediaLibrary({ tenantId, assets, canManage }: Props) {
           tenantId={tenantId}
           asset={current}
           assets={assets}
+          products={products}
           hasLogo={Boolean(logo)}
           canManage={canManage}
           onSelect={setSelected}
         />
       )}
     </div>
+  );
+}
+
+function ProductsCard({
+  tenantId,
+  products,
+  active,
+  photos,
+  canManage,
+  onPick,
+}: {
+  tenantId: string;
+  products: ProductInfo[];
+  active: ProductInfo | null;
+  photos: MediaAsset[];
+  canManage: boolean;
+  onPick: (id: string) => void;
+}) {
+  const t = useTranslations("media");
+  const tc = useTranslations("common");
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [format, setFormat] = useState<Format>("square");
+  const [order, setOrder] = useState<string[] | null>(null);
+  const ordered = order ? order.map((id) => photos.find((p) => p.asset_id === id)!).filter(Boolean) : photos;
+
+  async function run(action: () => Promise<unknown>) {
+    setBusy(true);
+    setError(null);
+    try {
+      await action();
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : tc("error"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onCreate(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formEl = e.currentTarget;
+    const form = new FormData(formEl);
+    await run(async () => {
+      const p = await api<ProductInfo>(`/tenants/${tenantId}/products`, {
+        method: "POST",
+        body: { name: form.get("name"), category: form.get("category") ?? "" },
+      });
+      formEl.reset();
+      onPick(p.product_id);
+    });
+  }
+
+  function move(index: number, delta: number) {
+    const ids = ordered.map((p) => p.asset_id);
+    const target = index + delta;
+    if (target < 0 || target >= ids.length) return;
+    [ids[index], ids[target]] = [ids[target], ids[index]];
+    setOrder(ids);
+  }
+
+  return (
+    <Card title={t("productsTitle")}>
+      <p className="mb-3 text-sm text-muted">{t("productsHint")}</p>
+      {error && <Alert tone="error">{error}</Alert>}
+      <div className="mb-4 flex flex-wrap gap-2 text-xs">
+        <Chip active={!active} onClick={() => { setOrder(null); onPick(""); }} label={t("allPhotos")} />
+        {products.map((p) => (
+          <Chip
+            key={p.product_id}
+            active={active?.product_id === p.product_id}
+            onClick={() => { setOrder(null); onPick(p.product_id); }}
+            label={`${p.name} (${p.photos})`}
+          />
+        ))}
+      </div>
+      {canManage && (
+        <form onSubmit={onCreate} className="mb-4 flex flex-wrap items-end gap-3">
+          <div className="min-w-48 flex-1">
+            <Field label={t("productName")}>
+              <Input name="name" required maxLength={200} />
+            </Field>
+          </div>
+          <div className="min-w-40">
+            <Field label={t("productCategory")}>
+              <Input name="category" maxLength={200} />
+            </Field>
+          </div>
+          <Button type="submit" disabled={busy}>
+            {t("newProduct")}
+          </Button>
+        </form>
+      )}
+
+      {active && (
+        <div className="space-y-3 border-t border-border pt-4">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-sm font-medium">{t("carouselTitle")}</span>
+            <Chip active={format === "feed"} onClick={() => setFormat("feed")} label={t("previewFeed")} />
+            <Chip active={format === "square"} onClick={() => setFormat("square")} label={t("previewSquare")} />
+            <Chip active={format === "landscape"} onClick={() => setFormat("landscape")} label={t("previewLandscape")} />
+          </div>
+          <p className="text-xs text-muted">{t("carouselHint")}</p>
+          {ordered.length === 0 ? (
+            <p className="text-sm text-muted">{t("productEmpty")}</p>
+          ) : (
+            <div className="flex snap-x gap-3 overflow-x-auto pb-2">
+              {ordered.map((p, i) => (
+                <div key={p.asset_id} className="w-56 shrink-0 snap-start space-y-1">
+                  {p.urls[format] ? (
+                    <img src={p.urls[format]} alt="" className="w-full rounded border border-border" loading="lazy" />
+                  ) : (
+                    <div className="flex aspect-square items-center justify-center rounded border border-border text-xs text-muted">
+                      {p.status === "pending" ? t("editing") : t("editFailed")}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted">
+                      {i + 1}
+                      {i === 0 ? ` · ${t("cover")}` : ""}
+                      {!p.publishable ? ` · ${t("notPublishableShort")}` : ""}
+                    </span>
+                    {canManage && (
+                      <span className="flex gap-1">
+                        <button type="button" onClick={() => move(i, -1)} className="rounded border border-border px-2" aria-label={t("moveLeft")}>
+                          ←
+                        </button>
+                        <button type="button" onClick={() => move(i, 1)} className="rounded border border-border px-2" aria-label={t("moveRight")}>
+                          →
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {canManage && (
+            <div className="flex flex-wrap gap-2">
+              {order && (
+                <Button
+                  disabled={busy}
+                  onClick={() =>
+                    run(async () => {
+                      await api(`/tenants/${tenantId}/products/${active.product_id}/order`, { method: "PUT", body: { asset_ids: order } });
+                      setOrder(null);
+                    })
+                  }
+                >
+                  {t("saveOrder")}
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                disabled={busy}
+                onClick={() => {
+                  const name = prompt(t("productName"), active.name);
+                  if (name && name.trim()) run(() => api(`/tenants/${tenantId}/products/${active.product_id}`, { method: "PATCH", body: { name } }));
+                }}
+              >
+                {t("rename")}
+              </Button>
+              <Button
+                variant="danger"
+                disabled={busy}
+                onClick={() =>
+                  confirm(t("deleteProductConfirm")) &&
+                  run(async () => {
+                    await api(`/tenants/${tenantId}/products/${active.product_id}`, { method: "DELETE" });
+                    onPick("");
+                  })
+                }
+              >
+                {t("deleteProduct")}
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -253,6 +483,7 @@ function PhotoEditor({
   tenantId,
   asset,
   assets,
+  products,
   hasLogo,
   canManage,
   onSelect,
@@ -260,6 +491,7 @@ function PhotoEditor({
   tenantId: string;
   asset: MediaAsset;
   assets: MediaAsset[];
+  products: ProductInfo[];
   hasLogo: boolean;
   canManage: boolean;
   onSelect: (id: string | null) => void;
@@ -270,11 +502,12 @@ function PhotoEditor({
   const [description, setDescription] = useState(asset.description);
   const [tags, setTags] = useState(asset.tags.join(", "));
   const [source, setSource] = useState<MediaSource>(asset.source);
+  const [productId, setProductId] = useState(asset.product_id ?? "");
   const [focal, setFocal] = useState({ x: asset.focal_x, y: asset.focal_y });
   const [enhance, setEnhance] = useState(asset.enhance);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
-  const [preview, setPreview] = useState<"feed" | "square">("feed");
+  const [preview, setPreview] = useState<Format>("feed");
 
   const parent = asset.parent_asset_id ? assets.find((a) => a.asset_id === asset.parent_asset_id) : null;
   const edits = assets.filter((a) => a.parent_asset_id === asset.asset_id);
@@ -375,6 +608,7 @@ function PhotoEditor({
           <div className="flex gap-2 text-xs">
             <Chip active={preview === "feed"} onClick={() => setPreview("feed")} label={t("previewFeed")} />
             <Chip active={preview === "square"} onClick={() => setPreview("square")} label={t("previewSquare")} />
+            <Chip active={preview === "landscape"} onClick={() => setPreview("landscape")} label={t("previewLandscape")} />
           </div>
           <img src={previewUrl} alt={t("previewAlt")} className="max-h-96 w-auto rounded border border-border" />
           <p className="text-xs text-muted">{asset.publishable ? t("previewHint") : t("notPublishable")}</p>
@@ -387,6 +621,16 @@ function PhotoEditor({
         </Field>
         <Field label={t("tags")} hint={t("tagsHint")}>
           <Input value={tags} onChange={(e) => setTags(e.target.value)} disabled={!canManage} />
+        </Field>
+        <Field label={t("product")}>
+          <Select value={productId} onChange={(e) => setProductId(e.target.value)} disabled={!canManage} className="w-full">
+            <option value="">{t("noProduct")}</option>
+            {products.map((p) => (
+              <option key={p.product_id} value={p.product_id}>
+                {p.name}
+              </option>
+            ))}
+          </Select>
         </Field>
         <Field label={t("source")} hint={t("sourceHint")}>
           <Select value={source} onChange={(e) => setSource(e.target.value as MediaSource)} disabled={!canManage} className="w-full">
@@ -421,6 +665,7 @@ function PhotoEditor({
                       description,
                       tags: tags.split(",").map((s) => s.trim()).filter(Boolean),
                       source,
+                      product_id: productId || null,
                       focal_x: focal.x,
                       focal_y: focal.y,
                       enhance,

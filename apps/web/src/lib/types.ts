@@ -187,6 +187,9 @@ export type MediaAsset = {
   edit: { kinds: EditKind[]; recipe?: Recipe; error?: string; cost_usd?: string | null; cost_complete?: boolean } | null;
   approved_at: string | null;
   recipe: Recipe | null;
+  product_id: string | null;
+  position: number;
+  default_logo: boolean;
   publishable: boolean;
   created_at: string;
   urls: Record<string, string>; // signed, ~24h: thumb, feed, square, feed-logo, square-logo
@@ -194,3 +197,12 @@ export type MediaAsset = {
 
 // Mirrors Permission.MANAGE_MEDIA
 export const canManageMedia = (role: Role) => role === "owner" || role === "admin";
+
+export type ProductInfo = {
+  product_id: string;
+  name: string;
+  category: string;
+  description: string;
+  photos: number;
+  created_at: string;
+};
