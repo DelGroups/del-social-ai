@@ -24,6 +24,13 @@ from del_social.core.db import APP_ROLE, make_engine
 
 API_DIR = Path(__file__).resolve().parents[1]
 
+# del_social.main reads settings at import. Tests override the DB/Redis dependencies,
+# so these only need to be well-formed.
+os.environ.setdefault("DATABASE_URL", os.environ.get("TEST_DATABASE_URL", "postgresql+asyncpg://unused/unused_test"))
+os.environ.setdefault("REDIS_URL", os.environ.get("TEST_REDIS_URL", "redis://unused:6379/15"))
+os.environ.setdefault("APP_BASE_URL", "https://app.test")
+os.environ.setdefault("APP_ENV", "test")
+
 
 def plain_dsn(url: str) -> str:
     return url.replace("postgresql+asyncpg://", "postgresql://", 1)

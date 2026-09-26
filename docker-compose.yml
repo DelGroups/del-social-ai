@@ -88,6 +88,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      APP_BASE_URL: https://${APP_DOMAIN} # invitation and password-reset links point here
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-}
       CLAUDE_MODEL_FAST: ${CLAUDE_MODEL_FAST:-}
@@ -104,7 +105,9 @@ services:
     networks: [frontend, backend]
     logging: *default-logging
 
-  # One-off migrations as the database owner:  docker compose run --rm migrate
+  # One-off jobs as the database owner:
+  #   docker compose run --rm migrate                      (apply migrations)
+  #   docker compose run --rm migrate python -m del_social.cli create-platform-admin --email ...
   migrate:
     profiles: ["tools"]
     build: ./apps/api
