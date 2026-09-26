@@ -94,3 +94,16 @@ export type BrandProfileOut = {
 };
 
 export const canManageBrand = (role: Role) => role === "owner" || role === "admin";
+
+export type AgentUsage = {
+  agent: string;
+  calls: number;
+  errors: number;
+  input_tokens: number;
+  output_tokens: number;
+  cost_usd: string;
+};
+
+export type Usage = { month: string; calls: number; cost_usd: string; by_agent: AgentUsage[] };
+
+export const canViewUsage = (role: Role) => role === "owner" || role === "admin";

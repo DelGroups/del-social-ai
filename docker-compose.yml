@@ -90,9 +90,12 @@ services:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
       APP_BASE_URL: https://${APP_DOMAIN} # invitation and password-reset links point here
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      CLAUDE_MODEL: ${CLAUDE_MODEL:-}
-      CLAUDE_MODEL_FAST: ${CLAUDE_MODEL_FAST:-}
-      CLAUDE_MAX_TOKENS: ${CLAUDE_MAX_TOKENS:-}
+      CLAUDE_MODEL_FAST: ${CLAUDE_MODEL_FAST:-claude-haiku-4-5-20251001}
+      CLAUDE_MODEL_DEFAULT: ${CLAUDE_MODEL_DEFAULT:-claude-sonnet-5}
+      CLAUDE_MODEL_STRATEGY: ${CLAUDE_MODEL_STRATEGY:-claude-opus-5-5}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
       DATABASE_URL: postgresql+asyncpg://${APP_DB_USER:-del_app}:${APP_DB_PASSWORD:?APP_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       TOKEN_VAULT_KEY: ${TOKEN_VAULT_KEY:-}
