@@ -49,7 +49,8 @@
     "connections": "Connections",
     "brand": "Brand",
     "evals": "Evals",
-    "media": "Photos"
+    "media": "Photos",
+    "posts": "Posts"
   },
   "members": {
     "title": "Members",
@@ -430,5 +431,72 @@
     },
     "mergeInto": "Merge into…",
     "mergeConfirm": "Move all photos of “{from}” into “{into}” and remove “{from}”?"
+  },
+  "posts": {
+    "title": "Posts",
+    "empty": "No posts yet.",
+    "writing": "The agents are writing…",
+    "photoCount": "{count, plural, one {# photo} other {# photos}}",
+    "newTitle": "New post",
+    "product": "Product",
+    "productHint": "All publishable photos of the product, in their order (2+ photos = carousel).",
+    "format": "Format",
+    "formatAuto": "Automatic (Photo Analyst's choice)",
+    "withLogo": "with logo",
+    "noLogo": "without logo",
+    "notes": "Notes for the agents (optional)",
+    "notesHint": "e.g. \"mention free measurement\" or \"for new apartment owners\"",
+    "create": "Create post",
+    "createHint": "The Copywriter and Brand Guardian write three caption options (≈$0.05–0.10).",
+    "noProducts": "Add a product with photos in Photos first.",
+    "postTitle": "Post",
+    "preview": "Preview (exactly what will be published)",
+    "options": "Caption options",
+    "finalCaption": "Final caption (you can edit it)",
+    "saveCaption": "Save caption",
+    "saved": "Saved",
+    "generatingLong": "The Copywriter and Brand Guardian are writing three options. This takes about a minute; the page refreshes by itself.",
+    "publishingLong": "Publishing to the live pages…",
+    "publish": "Publish now",
+    "retryPublish": "Publish to the remaining pages",
+    "publishConfirm": "Publish this post NOW to the live {channels} pages? This can't be undone from here.",
+    "publishStarted": "Publishing started.",
+    "results": "Published",
+    "openPost": "Open post",
+    "regenerate": "Write new options",
+    "archive": "Archive",
+    "archiveConfirm": "Archive this post?",
+    "verdict": {
+      "pass": "Guardian: OK",
+      "fix": "Guardian: needs fix",
+      "block": "Guardian: blocked"
+    },
+    "status": {
+      "generating": "writing",
+      "ready": "ready for review",
+      "failed": "failed",
+      "approved": "approved",
+      "publishing": "publishing",
+      "published": "published",
+      "partly_published": "partly published"
+    }
+  },
+  "pageSetup": {
+    "title": "Page setup",
+    "intro": "Profile details for your connected pages. Facebook details are set here directly; Instagram's bio and both profile pictures can only be changed in the apps (Meta doesn't allow it through the API), so copy the texts below.",
+    "about": "Short description (About)",
+    "description": "Full description",
+    "website": "Website",
+    "phone": "Phone",
+    "emails": "Emails",
+    "emailsHint": "Comma-separated",
+    "fbApply": "Apply to the Facebook page",
+    "fbDone": "Facebook page details updated.",
+    "fbManual": "Profile picture and cover photo: upload them in Facebook (the logo from Photos works as the profile picture).",
+    "igManual": "Instagram → Edit profile: paste the name, bio and link below, and set the profile picture to your round logo.",
+    "igName": "Name (searchable, max 30)",
+    "igBio": "Bio (max 150)",
+    "igLink": "Link",
+    "igSteps": "Also in Edit profile: category \"Furniture Store\", contact buttons (WhatsApp, call), address."
   }
 }

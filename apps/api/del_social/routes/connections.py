@@ -20,6 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from del_social.connections import CHANNELS, build_adapters
+from del_social.connections import meta_publish
 from del_social.connections.base import ChannelAdapter, ChannelError, Identity
 from del_social.connections.meta import MetaClient
 from del_social.connections.service import credentials, record_check, save_connection
@@ -207,6 +208,40 @@ async def disconnect(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     await db.delete(await _get_connection(db, connection_id))
+
+
+class PageProfileIn(BaseModel):
+    about: str | None = Field(default=None, max_length=255)
+    description: str | None = Field(default=None, max_length=2000)
+    website: str | None = Field(default=None, max_length=300)
+    phone: str | None = Field(default=None, max_length=40)
+    emails: str | None = Field(default=None, max_length=300)  # comma-separated
+
+
+@router.post("/{connection_id}/page-profile", status_code=status.HTTP_204_NO_CONTENT)
+async def update_page_profile(
+    connection_id: uuid.UUID,
+    body: PageProfileIn,
+    ctx: TenantContext = Depends(can_manage),
+    db: AsyncSession = Depends(get_db),
+    vault: TokenVault = Depends(get_vault),
+    meta: MetaClient = Depends(get_meta),
+) -> None:
+    """Write the Facebook page's details (about, description, website, phone, email).
+
+    Instagram's bio and both profile pictures can't be set through Meta's API; the panel
+    gives ready-to-copy text for those.
+    """
+    conn = await _get_connection(db, connection_id)
+    if conn.channel != Channel.FACEBOOK.value:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only a Facebook page's details can be set here")
+    try:
+        creds = credentials(vault, conn)
+        await meta_publish.update_page_profile(meta, creds.external_id, creds.token, body.model_dump(exclude_none=True))
+    except VaultError:
+        raise HTTPException(status.HTTP_409_CONFLICT, "The stored token could not be read. Please connect again.") from None
+    except ChannelError as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Facebook: {e}") from None
 
 
 # --- Meta (Facebook pages + Instagram) ---
