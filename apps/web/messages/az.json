@@ -427,6 +427,8 @@
       "text_on_image": "şəkildə mətn",
       "people": "insanlar",
       "tilted": "əyri"
-    }
+    },
+    "mergeInto": "Birləşdir…",
+    "mergeConfirm": "“{from}” məhsulunun bütün şəkilləri “{into}” məhsuluna köçürülsün və “{from}” silinsin?"
   }
 }

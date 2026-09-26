@@ -444,6 +444,35 @@ function ProductsCard({
                   {t("saveOrder")}
                 </Button>
               )}
+              {products.length > 1 && (
+                <Select
+                  value=""
+                  disabled={busy}
+                  className="w-auto"
+                  onChange={(e) => {
+                    const into = e.target.value;
+                    const target = products.find((p) => p.product_id === into);
+                    if (into && target && confirm(t("mergeConfirm", { from: active.name, into: target.name }))) {
+                      run(async () => {
+                        await api(`/tenants/${tenantId}/products/${active.product_id}/merge`, {
+                          method: "POST",
+                          body: { into_product_id: into },
+                        });
+                        onPick(into);
+                      });
+                    }
+                  }}
+                >
+                  <option value="">{t("mergeInto")}</option>
+                  {products
+                    .filter((p) => p.product_id !== active.product_id)
+                    .map((p) => (
+                      <option key={p.product_id} value={p.product_id}>
+                        {p.name}
+                      </option>
+                    ))}
+                </Select>
+              )}
               <Button
                 variant="ghost"
                 disabled={busy}

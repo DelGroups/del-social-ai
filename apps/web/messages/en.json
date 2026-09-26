@@ -427,6 +427,8 @@
       "text_on_image": "text on image",
       "people": "people",
       "tilted": "tilted"
-    }
+    },
+    "mergeInto": "Merge into…",
+    "mergeConfirm": "Move all photos of “{from}” into “{into}” and remove “{from}”?"
   }
 }
