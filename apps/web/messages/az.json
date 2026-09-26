@@ -163,8 +163,7 @@
       "rules": "Qaydalar",
       "hashtags": "Heşteqlər",
       "examples": "Nümunə postlar",
-      "occasions": "Xüsusi günlər",
-      "image_editing": "Süni intellektlə şəkil redaktəsi"
+      "occasions": "Xüsusi günlər"
     },
     "f": {
       "basics": {
@@ -213,14 +212,7 @@
         "bad": "Bəyənmədiyimiz postlar"
       },
       "occasions": "Brendin qeyd etdiyi günlər",
-      "terminology": "Terminologiyamız: düzgün söz və nəyi yazmamaq lazımdır (hər sətirdə bir, məs. \"Membran fasad — yox: membran örtüklü MDF fasad\")",
-      "image_editing": {
-        "enhance": "Keyfiyyəti artırmaq (ölçü, səs-küy, kəskinlik)",
-        "remove_objects": "Şəkildən əşyaları silmək",
-        "background": "Məhsulun ətrafını dəyişmək",
-        "recolor": "Məhsulun rəngini və ya örtüyünü dəyişmək (dizayn dəyişmir)",
-        "swap_product": "Məhsulu oxşar məhsulla əvəz etmək"
-      }
+      "terminology": "Terminologiyamız: düzgün söz və nəyi yazmamaq lazımdır (hər sətirdə bir, məs. \"Membran fasad — yox: membran örtüklü MDF fasad\")"
     },
     "opt": {
       "formal": "Rəsmi (siz / вы)",
@@ -235,8 +227,7 @@
       "az": "Yalnız Azərbaycan dili",
       "ru": "Yalnız rus dili",
       "alternate": "Azərbaycan və rus dilində növbə ilə"
-    },
-    "imageEditingHint": "Hər redaktə şəklin yeni versiyasını yaradır; orijinal həmişə saxlanılır və redaktə olunmuş şəkil yalnız kimsə təsdiqlədikdən sonra postlarda istifadə olunur. Hər redaktə bir neçə sent başa gəlir."
+    }
   },
   "usage": {
     "title": "Süni intellekt istifadəsi · {month}",
@@ -343,11 +334,8 @@
     "approveHint": "Məhsulun düzgün göründüyünü və qəribə heç nə əlavə olunmadığını yoxlayın.",
     "notPublishable": "Bu şəkil hələ paylaşıla bilməz (istinad şəklidir və ya təsdiq gözləyən redaktədir).",
     "editsOfThis": "Bu şəklin süni intellekt redaktələri ({count})",
-    "aiOff": "Süni intellektlə şəkil redaktəsi söndürülüb. Sahiblər və adminlər hər növü Brend → Süni intellektlə şəkil redaktəsi bölməsində aça bilər.",
-    "aiTitle": "Süni intellekt redaktəsi (yeni versiya yaradır; orijinal qalır)",
-    "aiKind": "Redaktə",
-    "aiSubject": "Hansı obyekt",
-    "aiSubjectHint": "məs. \"qarderob\" (istəyə bağlı)",
+    "aiSubject": "Şəkildəki əsas məhsul",
+    "aiSubjectHint": "məs. \"qarderob\" (hər redaktədə onun toxunulmaz qalmasına kömək edir)",
     "aiRequest": "Nə dəyişməlidir",
     "aiRequestHint": {
       "background": "məs. \"açıq palıd döşəməli işıqlı müasir qonaq otağı\". İstənilən dildə.",
@@ -357,9 +345,18 @@
       "enhance": ""
     },
     "aiReference": "İstinad şəkli (istəyə bağlı)",
-    "aiReferenceHint": "Ətraf mühit: izlənəcək otaq üslubu. Əvəzetmə: yerləşdiriləcək məhsul.",
-    "aiSubmit": "Redaktəni başlat",
+    "aiReferenceHint": {
+      "background": "Üslubu izlənəcək otaq (istəyə bağlı)",
+      "swap": "Yerləşdiriləcək məhsul (istəyə bağlı)"
+    },
+    "aiSubmit": "Tətbiq et: yeni versiya yarat",
     "aiCostHint": "Hər redaktə bir neçə sent.",
-    "editStarted": "Başladı. Yeni versiya hazır olanda aşağıda görünəcək."
+    "editStarted": "Başladı. Yeni versiya hazır olanda aşağıda görünəcək.",
+    "recipeTitle": "Bu şəkil üçün süni intellekt redaktələri",
+    "recipeHint": "Yalnız bu şəkil üçün redaktələri və detalları seçin. \"Tətbiq et\" işarələnənlərin hamısı ilə bir yeni versiya yaradır; orijinal qalır. Tənzimləmələr şəkillə birlikdə saxlanılır.",
+    "enhanceAiHint": "ölçü, səs-küy, kəskinlik: sonda icra olunur",
+    "recipeSave": "Yalnız tənzimləmələri saxla",
+    "recipeSaved": "Bu şəkil üçün tənzimləmələr saxlanıldı",
+    "costUnknownPart": "qiyməti göstərilməyən model"
   }
 }

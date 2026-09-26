@@ -163,8 +163,7 @@
       "rules": "Rules",
       "hashtags": "Hashtags",
       "examples": "Example posts",
-      "occasions": "Occasions",
-      "image_editing": "AI photo editing"
+      "occasions": "Occasions"
     },
     "f": {
       "basics": {
@@ -213,14 +212,7 @@
         "bad": "Posts we don't like"
       },
       "occasions": "Dates the brand marks",
-      "terminology": "Our terminology: the correct word, and what not to write (one per line, e.g. \"Membran fasad — not: membran örtüklü MDF fasad\")",
-      "image_editing": {
-        "enhance": "Improve quality (resolution, noise, sharpness)",
-        "remove_objects": "Remove items from a photo",
-        "background": "Change the product's surroundings",
-        "recolor": "Change the product's colour or finish (design unchanged)",
-        "swap_product": "Replace the product with a similar one"
-      }
+      "terminology": "Our terminology: the correct word, and what not to write (one per line, e.g. \"Membran fasad — not: membran örtüklü MDF fasad\")"
     },
     "opt": {
       "formal": "Formal (siz / вы)",
@@ -235,8 +227,7 @@
       "az": "Azerbaijani only",
       "ru": "Russian only",
       "alternate": "Alternate Azerbaijani and Russian posts"
-    },
-    "imageEditingHint": "Each edit creates a new version of the photo; the original is always kept, and an edited photo is used in posts only after someone approves it. Edits cost a few cents each."
+    }
   },
   "usage": {
     "title": "AI usage · {month}",
@@ -343,11 +334,8 @@
     "approveHint": "Check that the product looks right and nothing odd was added.",
     "notPublishable": "This image can't be published yet (reference, or an AI edit waiting for approval).",
     "editsOfThis": "AI edits of this photo ({count})",
-    "aiOff": "AI photo editing is off. Owners and admins can turn each kind on in Brand → AI photo editing.",
-    "aiTitle": "AI edit (creates a new version; the original stays)",
-    "aiKind": "Edit",
-    "aiSubject": "Which object",
-    "aiSubjectHint": "e.g. \"the wardrobe\" (optional)",
+    "aiSubject": "Main product in the photo",
+    "aiSubjectHint": "e.g. \"the wardrobe\" (helps every edit keep it intact)",
     "aiRequest": "What should change",
     "aiRequestHint": {
       "background": "e.g. \"a bright modern living room with light oak floor\". Any language.",
@@ -357,9 +345,18 @@
       "enhance": ""
     },
     "aiReference": "Reference photo (optional)",
-    "aiReferenceHint": "Surroundings: the room style to follow. Swap: the product to insert.",
-    "aiSubmit": "Start AI edit",
+    "aiReferenceHint": {
+      "background": "A room whose style to follow (optional)",
+      "swap": "The product to insert (optional)"
+    },
+    "aiSubmit": "Apply: make a new version",
     "aiCostHint": "A few cents per edit.",
-    "editStarted": "Started. The new version appears below when it's ready."
+    "editStarted": "Started. The new version appears below when it's ready.",
+    "recipeTitle": "AI edits for this photo",
+    "recipeHint": "Choose the edits and details for this photo only. \"Apply\" makes one new version with everything ticked; the original stays. Settings are saved with the photo.",
+    "enhanceAiHint": "resolution, noise, sharpness: runs last",
+    "recipeSave": "Save settings only",
+    "recipeSaved": "Settings saved for this photo",
+    "costUnknownPart": "a model without a listed price"
   }
 }

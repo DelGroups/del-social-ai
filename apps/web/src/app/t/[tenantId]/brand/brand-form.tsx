@@ -80,16 +80,6 @@ const SECTIONS: { key: string; fields: Spec[] }[] = [
     ],
   },
   { key: "occasions", fields: [{ path: "occasions", kind: "list" }] },
-  {
-    key: "image_editing",
-    fields: [
-      { path: "image_editing.enhance", kind: "bool" },
-      { path: "image_editing.remove_objects", kind: "bool" },
-      { path: "image_editing.background", kind: "bool" },
-      { path: "image_editing.recolor", kind: "bool" },
-      { path: "image_editing.swap_product", kind: "bool" },
-    ],
-  },
 ];
 
 const BLOCK_SEPARATOR = /\n\s*---\s*\n/;
@@ -225,7 +215,6 @@ export function BrandForm({ tenantId, canEdit, initial }: Props) {
 
       {SECTIONS.map((section) => (
         <Card key={section.key} title={t(`sections.${section.key}`)}>
-          {section.key === "image_editing" && <p className="mb-4 text-sm text-muted">{t("imageEditingHint")}</p>}
           <div className="grid gap-4 md:grid-cols-2">
             {section.fields.map((s) => (
               <div key={s.path} className={s.kind === "text" || s.kind === "select" || s.kind === "number" ? "" : "md:col-span-2"}>

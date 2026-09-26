@@ -1,9 +1,13 @@
-"""AI photo edits (ADR 005): background, remove objects, enhance, recolour, swap product.
+"""AI photo edits per photo (ADR 005): each photo has its own recipe of switchable edits.
 
-Code decides everything except the pixels: which edits the company allows, the exact
-instruction sent to the image model, the rights of the result (source), its cost, and
-that a human must approve it before any post uses it. The original is never changed;
-every edit is a new asset pointing at its parent.
+A recipe says, for one photo, which of the five edits to apply and how: enhance,
+remove items, new surroundings, new colour/finish, swap the product. Applying it makes
+ONE new version with all enabled edits: the instruction edits go to the editor model
+in a single combined instruction, then enhance runs last on its result.
+
+Code decides everything except the pixels: the exact instruction, the rights of the
+result (source), its cost, and that a human must approve it before posts use it.
+The original never changes; every result is a new asset pointing at its parent.
 """
 import enum
 import hashlib
@@ -17,7 +21,6 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from del_social.core.config import Settings
 from del_social.core.db import set_tenant
-from del_social.knowledge.brand_profile import ImageEditing
 from del_social.llm import LLM, LLMError, Tier, load_prompt
 from del_social.media import images
 from del_social.media.fal import FalClient, FalError
@@ -28,70 +31,116 @@ log = logging.getLogger(__name__)
 
 
 class EditKind(enum.StrEnum):
-    BACKGROUND = "background"
-    REMOVE = "remove"
     ENHANCE = "enhance"
+    REMOVE = "remove"
+    BACKGROUND = "background"
     RECOLOR = "recolor"
     SWAP = "swap"
 
 
-TOGGLE = {  # edit kind → brand profile switch
-    EditKind.BACKGROUND: "background",
-    EditKind.REMOVE: "remove_objects",
-    EditKind.ENHANCE: "enhance",
-    EditKind.RECOLOR: "recolor",
-    EditKind.SWAP: "swap_product",
-}
+class Step(BaseModel):
+    on: bool = False
+    request: str = Field(default="", max_length=500)  # in any language
+    reference_asset_id: uuid.UUID | None = None  # background: style to follow; swap: product to insert
 
-# USD per output megapixel (fal.ai model pages, checked 2026-09-27); unknown → cost NULL
+
+class Recipe(BaseModel):
+    """One photo's edit settings. Saved with the photo and reused."""
+
+    subject: str = Field(default="", max_length=200)  # the main product, e.g. "the wardrobe"
+    enhance: bool = False
+    remove: Step = Field(default_factory=Step)
+    background: Step = Field(default_factory=Step)
+    recolor: Step = Field(default_factory=Step)
+    swap: Step = Field(default_factory=Step)
+
+    def kinds(self) -> list[EditKind]:
+        out = [k for k in (EditKind.REMOVE, EditKind.BACKGROUND, EditKind.RECOLOR, EditKind.SWAP) if getattr(self, k).on]
+        return out + ([EditKind.ENHANCE] if self.enhance else [])
+
+    def references(self) -> list[uuid.UUID]:
+        return [s.reference_asset_id for s in (self.background, self.swap) if s.on and s.reference_asset_id]
+
+
+class RecipeError(ValueError):
+    """Safe to show to the user."""
+
+
+def validate(recipe: Recipe) -> None:
+    if not recipe.kinds():
+        raise RecipeError("Turn on at least one edit")
+    for kind in (EditKind.REMOVE, EditKind.BACKGROUND, EditKind.RECOLOR, EditKind.SWAP):
+        step: Step = getattr(recipe, kind)
+        described_by_photo = kind in (EditKind.BACKGROUND, EditKind.SWAP) and step.reference_asset_id is not None
+        if step.on and not step.request.strip() and not described_by_photo:
+            raise RecipeError(f"Describe the change for: {kind.value}")
+
+
+# USD per output megapixel (fal.ai model pages, checked 2026-09-27); unknown → not counted, flagged
 PRICE_PER_MP = {"fal-ai/flux-2-pro/edit": Decimal("0.03")}
 
 GUARD = (
     "Photorealistic interior photograph with natural, consistent light, perspective and shadows. "
     "No text, letters, logos, watermarks or people anywhere in the image."
 )
+ORDINAL = {2: "second", 3: "third"}
 
 
-def allowed(settings: ImageEditing, kind: EditKind) -> bool:
-    return getattr(settings, TOGGLE[kind])
+def instruction(recipe: Recipe, requests: dict[EditKind, str]) -> str:
+    """One English instruction for all enabled instruction edits. Built by code."""
+    subject = recipe.subject.strip() or "the main furniture piece"
+    parts: list[str] = []
+    image_no = 1
+    ref_of: dict[EditKind, int] = {}
+    for kind in (EditKind.BACKGROUND, EditKind.SWAP):  # same order as Recipe.references()
+        step: Step = getattr(recipe, kind)
+        if step.on and step.reference_asset_id:
+            image_no += 1
+            ref_of[kind] = image_no
 
-
-def instruction(kind: EditKind, request: str, subject: str, has_reference: bool) -> str:
-    """The exact English instruction for the image model. Built by code, per kind."""
-    subject = subject or "the main furniture piece"
-    ref = " Use the second image only as a style reference." if has_reference else ""
-    if kind is EditKind.BACKGROUND:
-        body = (
-            f"Keep {subject} exactly as it is: same shape, size, position, construction, materials, colour, "
-            f"texture and every detail. Replace only the surroundings"
-            + (f" with: {request}." if request else " with a room in the style of the second image.")
-            + (ref if request else "")
+    if recipe.remove.on:
+        parts.append(f"Remove {requests[EditKind.REMOVE]} and fill those areas naturally so they match their surroundings.")
+    if recipe.swap.on:
+        if EditKind.SWAP in ref_of:
+            product = f"the product shown in the {ORDINAL[ref_of[EditKind.SWAP]]} image"
+            extra = f" ({requests[EditKind.SWAP]})" if requests.get(EditKind.SWAP) else ""
+        else:
+            product, extra = requests[EditKind.SWAP], ""
+        parts.append(
+            f"Replace {subject} with {product}{extra}, matching the original's size, position, perspective and lighting."
         )
-    elif kind is EditKind.REMOVE:
-        body = f"Remove {request} from the photo and fill the area naturally so it matches its surroundings. Change nothing else."
-    elif kind is EditKind.RECOLOR:
-        body = (
-            f"Change only the colour or finish of {subject} to: {request}. Keep its exact shape, proportions, "
-            "construction, edges, handles and every detail, and keep the rest of the photo unchanged."
+    if recipe.recolor.on:
+        target = "the new product" if recipe.swap.on else subject
+        parts.append(
+            f"Change only the colour or finish of {target} to: {requests[EditKind.RECOLOR]}. "
+            "Keep its exact shape, proportions, construction, edges, handles and every detail."
         )
-    else:  # SWAP
-        product = "the product shown in the second image" if has_reference else request
-        body = (
-            f"Replace {subject} with {product}"
-            + (f" ({request})" if has_reference and request else "")
-            + ", matching the original's size, position, perspective and lighting. Keep the room and everything else unchanged."
+    if recipe.background.on:
+        style = (
+            f" in the style of the room in the {ORDINAL[ref_of[EditKind.BACKGROUND]]} image"
+            if EditKind.BACKGROUND in ref_of
+            else ""
         )
-    return f"{body} {GUARD}"
+        what = requests.get(EditKind.BACKGROUND) or "a new, fitting room"
+        parts.append(f"Replace only the surroundings with {what}{style}.")
+    if not recipe.swap.on:
+        keep = "except for its colour or finish" if recipe.recolor.on else "exactly as it is"
+        parts.append(
+            f"Keep {subject} {keep}: same shape, size, position, construction, materials, texture and every detail."
+        )
+    parts.append("Change nothing that was not asked for.")
+    return " ".join(parts) + " " + GUARD
 
 
-def result_source(kind: EditKind, parent_source: str, reference_source: str | None) -> str:
-    """Rights of the edited image. 'reference' (not ours) is never published."""
+def result_source(recipe: Recipe, parent_source: str, reference_sources: dict[uuid.UUID, str]) -> str:
+    """Rights of the result. 'reference' (someone else's image) is never published."""
     if parent_source == "reference":
         return "reference"
-    if kind is EditKind.SWAP and reference_source == "reference":
+    swap_ref = recipe.swap.reference_asset_id if recipe.swap.on else None
+    if swap_ref and reference_sources.get(swap_ref) == "reference":
         return "reference"  # someone else's product inserted: inspiration only
-    if kind in (EditKind.BACKGROUND, EditKind.RECOLOR, EditKind.SWAP):
-        return "render"  # a visualisation, not a photo of a finished project
+    if recipe.background.on or recipe.recolor.on or recipe.swap.on:
+        return "render"  # a visualisation
     return parent_source
 
 
@@ -99,9 +148,9 @@ class TranslatedRequest(BaseModel):
     english: str = Field(description="The request translated to concise English, meaning unchanged")
 
 
-async def to_english(llm: LLM | None, tenant_id: uuid.UUID, request: str) -> str:
+async def to_english(llm: LLM | None, tenant_id: uuid.UUID | None, request: str) -> str:
     """Users write in Azerbaijani, Russian or Persian; image models follow English best."""
-    if llm is None or request.isascii():
+    if llm is None or not request or request.isascii():
         return request
     try:
         r = await llm.structured(
@@ -118,6 +167,20 @@ async def to_english(llm: LLM | None, tenant_id: uuid.UUID, request: str) -> str
         return request
 
 
+def _first_image(out: dict[str, Any]) -> dict[str, Any]:
+    files = out.get("images") or ([out["image"]] if out.get("image") else [])
+    if not files or not files[0].get("url"):
+        raise FalError("The image model returned no image")
+    return files[0]
+
+
+def _step_cost(model: str, out: dict[str, Any]) -> Decimal | None:
+    price = PRICE_PER_MP.get(model)
+    if price is None or not out.get("width") or not out.get("height"):
+        return None
+    return price * Decimal(out["width"] * out["height"]) / Decimal(1_000_000)
+
+
 async def run_edit(
     *,
     engine: AsyncEngine,
@@ -130,11 +193,6 @@ async def run_edit(
 ) -> None:
     """Background job: produce the edited image for a pending child asset."""
 
-    async def load() -> MediaAsset:
-        async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
-            await set_tenant(db, tenant_id)
-            return await db.get(MediaAsset, child_id)
-
     async def finish(**values: Any) -> None:
         async with AsyncSession(engine) as db, db.begin():
             await set_tenant(db, tenant_id)
@@ -145,36 +203,52 @@ async def run_edit(
             for k, v in values.items():
                 setattr(row, k, v)
 
-    child = await load()
-    edit = child.edit or {}
-    kind = EditKind(edit["kind"])
+    async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
+        await set_tenant(db, tenant_id)
+        child = await db.get(MediaAsset, child_id)
+    recipe = Recipe.model_validate(child.edit["recipe"])
+
+    def url(asset_id: uuid.UUID) -> str:
+        return signed_url(settings.media_public_url, settings.secret_key, tenant_id, asset_id, "full")
+
     try:
-        url = lambda asset_id: signed_url(settings.media_public_url, settings.secret_key, tenant_id, asset_id, "full")  # noqa: E731
-        image_urls = [url(child.parent_asset_id)]
-        if edit.get("reference_asset_id"):
-            image_urls.append(url(uuid.UUID(edit["reference_asset_id"])))
-        if kind is EditKind.ENHANCE:
-            model = settings.image_enhance_model
-            payload: dict[str, Any] = {"image_url": image_urls[0], "upscale_factor": 2, "output_format": "jpeg"}
-            prompt = None
-        else:
-            model = settings.image_edit_model
-            request_en = await to_english(llm, tenant_id, edit.get("request", ""))
-            prompt = instruction(kind, request_en, edit.get("subject", ""), len(image_urls) > 1)
-            payload = {"prompt": prompt, "image_urls": image_urls, "output_format": "jpeg"}
-        out = await fal.run(model, payload)
-        files = out.get("images") or ([out["image"]] if out.get("image") else [])
-        if not files or not files[0].get("url"):
-            raise FalError("The image model returned no image")
-        data = await fal.download(files[0]["url"], images.MAX_UPLOAD_BYTES)
+        current_url = url(child.parent_asset_id)
+        models: list[str] = []
+        cost = Decimal(0)
+        cost_complete = True
+        prompt = None
+        instruction_kinds = [k for k in recipe.kinds() if k is not EditKind.ENHANCE]
+        steps: list[tuple[str, dict[str, Any]]] = []
+        if instruction_kinds:
+            requests = {k: await to_english(llm, tenant_id, getattr(recipe, k).request.strip()) for k in instruction_kinds}
+            prompt = instruction(recipe, requests)
+            refs = [url(r) for r in recipe.references()]
+            steps.append((settings.image_edit_model, {"prompt": prompt, "image_urls": [current_url, *refs], "output_format": "jpeg"}))
+        if recipe.enhance:
+            steps.append((settings.image_enhance_model, {"upscale_factor": 2, "output_format": "jpeg"}))
+        for model, payload in steps:
+            if "prompt" not in payload:
+                payload["image_url"] = current_url  # enhance runs on the previous step's result
+            out = _first_image(await fal.run(model, payload))
+            models.append(model)
+            step_cost = _step_cost(model, out)
+            if step_cost is None:
+                cost_complete = False
+            else:
+                cost += step_cost
+            current_url = out["url"]  # fal's own URL feeds the next step directly
+        data = await fal.download(current_url, images.MAX_UPLOAD_BYTES)
         info = images.inspect(data)
         store.save_original(tenant_id, child_id, data)
-        price = PRICE_PER_MP.get(model)
-        cost = (price * Decimal(info.width * info.height) / Decimal(1_000_000)).quantize(Decimal("0.0001")) if price else None
         await finish(
             status="ready", width=info.width, height=info.height, bytes=len(data), format=info.format,
             sha256=hashlib.sha256(data).hexdigest(),
-            edit={"model": model, "prompt": prompt, "cost_usd": str(cost) if cost is not None else None},
+            edit={
+                "models": models,
+                "prompt": prompt,
+                "cost_usd": str(cost.quantize(Decimal("0.0001"))),
+                "cost_complete": cost_complete,  # False: a model without a known price was used
+            },
         )
     except (FalError, images.ImageRejected) as e:
         await finish(status="failed", edit={"error": str(e)})

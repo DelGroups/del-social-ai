@@ -110,7 +110,7 @@ DEFAULT_OCCASIONS = [
 
 
 class ImageEditing(_Section):
-    """AI photo edits the company allows (ADR 005). All off by default."""
+    """Unused since edits are configured per photo (ADR 005, revised). Kept so saved versions load."""
 
     background: bool = False  # replace the product's surroundings
     remove_objects: bool = False  # remove items from the photo

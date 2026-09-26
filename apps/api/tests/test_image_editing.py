@@ -1,53 +1,81 @@
-"""AI photo edits (ADR 005): toggles, instructions, rights of the result, approval, fal.ai flow.
+"""AI photo edits configured per photo (ADR 005): recipes, combined instructions, rights, approval.
 
 fal.ai is replaced by httpx.MockTransport: no real calls, no cost.
 """
 import io
 import json
+import uuid
 from decimal import Decimal
 
 import httpx
 import pytest
 from PIL import Image
 
-from del_social.knowledge.brand_profile import BrandProfile, ImageEditing
 from del_social.media import editing
-from del_social.media.editing import EditKind, instruction, result_source
+from del_social.media.editing import EditKind, Recipe, Step, instruction, result_source
 from del_social.media.fal import FalClient
 
 from .conftest import O
 from .test_media import jpeg, path_of, upload
 
-
-def test_instructions_protect_the_product():
-    bg = instruction(EditKind.BACKGROUND, "a bright Scandinavian living room", "the wardrobe", False)
-    assert "Keep the wardrobe exactly as it is" in bg and "Scandinavian living room" in bg
-    recolor = instruction(EditKind.RECOLOR, "walnut veneer", "", False)
-    assert "the main furniture piece" in recolor and "Keep its exact shape" in recolor
-    swap = instruction(EditKind.SWAP, "", "the sofa", True)
-    assert "the product shown in the second image" in swap
-    for text in (bg, recolor, swap, instruction(EditKind.REMOVE, "the chair", "", False)):
-        assert "No text, letters, logos, watermarks or people" in text
+REF = uuid.uuid4()
 
 
-@pytest.mark.parametrize("kind, parent, ref, expected", [
-    (EditKind.ENHANCE, "own", None, "own"),
-    (EditKind.REMOVE, "licensed", None, "licensed"),
-    (EditKind.BACKGROUND, "own", None, "render"),
-    (EditKind.BACKGROUND, "own", "reference", "render"),  # style reference only: product is still ours
-    (EditKind.RECOLOR, "own", None, "render"),
-    (EditKind.SWAP, "own", "own", "render"),
-    (EditKind.SWAP, "own", "reference", "reference"),  # someone else's product inserted
-    (EditKind.ENHANCE, "reference", None, "reference"),  # never becomes publishable
+# --- recipe logic ---
+
+
+def test_combined_instruction_keeps_the_product():
+    r = Recipe(
+        subject="the wardrobe",
+        remove=Step(on=True, request="the chair"),
+        background=Step(on=True, request="a bright Scandinavian bedroom"),
+        recolor=Step(on=True, request="walnut veneer"),
+        enhance=True,
+    )
+    text = instruction(r, {EditKind.REMOVE: "the chair", EditKind.BACKGROUND: "a bright Scandinavian bedroom", EditKind.RECOLOR: "walnut veneer"})
+    assert "Remove the chair" in text
+    assert "colour or finish of the wardrobe to: walnut veneer" in text
+    assert "surroundings with a bright Scandinavian bedroom" in text
+    assert "Keep the wardrobe except for its colour or finish" in text
+    assert "No text, letters, logos, watermarks or people" in text
+    assert r.kinds() == [EditKind.REMOVE, EditKind.BACKGROUND, EditKind.RECOLOR, EditKind.ENHANCE]
+
+
+def test_reference_images_are_numbered_in_order():
+    style, product = uuid.uuid4(), uuid.uuid4()
+    r = Recipe(
+        subject="the sofa",
+        background=Step(on=True, reference_asset_id=style),
+        swap=Step(on=True, reference_asset_id=product),
+    )
+    text = instruction(r, {EditKind.BACKGROUND: "", EditKind.SWAP: ""})
+    assert r.references() == [style, product]
+    assert "style of the room in the second image" in text
+    assert "Replace the sofa with the product shown in the third image" in text
+    assert "Keep the sofa" not in text  # it is being replaced
+
+
+def test_validation():
+    with pytest.raises(editing.RecipeError, match="at least one"):
+        editing.validate(Recipe())
+    with pytest.raises(editing.RecipeError, match="recolor"):
+        editing.validate(Recipe(recolor=Step(on=True)))
+    editing.validate(Recipe(enhance=True))
+    editing.validate(Recipe(swap=Step(on=True, reference_asset_id=REF)))  # described by the photo
+
+
+@pytest.mark.parametrize("recipe, parent, refs, expected", [
+    (Recipe(enhance=True), "own", {}, "own"),
+    (Recipe(remove=Step(on=True, request="x")), "licensed", {}, "licensed"),
+    (Recipe(background=Step(on=True, request="x")), "own", {}, "render"),
+    (Recipe(background=Step(on=True, reference_asset_id=REF)), "own", {REF: "reference"}, "render"),
+    (Recipe(recolor=Step(on=True, request="x")), "own", {}, "render"),
+    (Recipe(swap=Step(on=True, reference_asset_id=REF)), "own", {REF: "own"}, "render"),
+    (Recipe(swap=Step(on=True, reference_asset_id=REF)), "own", {REF: "reference"}, "reference"),
+    (Recipe(enhance=True), "reference", {}, "reference"),
 ])
-def test_result_source(kind, parent, ref, expected):
-    assert result_source(kind, parent, ref) == expected
-
-
-def test_toggles_default_off():
-    settings = BrandProfile().image_editing
-    assert not any(editing.allowed(settings, k) for k in EditKind)
-    assert editing.allowed(ImageEditing(recolor=True), EditKind.RECOLOR)
+def test_result_source(recipe, parent, refs, expected):
+    assert result_source(recipe, parent, refs) == expected
 
 
 async def test_translation_falls_back_to_original():
@@ -59,7 +87,6 @@ async def test_translation_falls_back_to_original():
 
     assert await editing.to_english(None, None, "otağı işıqlı et") == "otağı işıqlı et"
     assert await editing.to_english(Broken(), None, "otağı işıqlı et") == "otağı işıqlı et"
-    assert await editing.to_english(Broken(), None, "plain English") == "plain English"
 
 
 # --- API flow with a fake fal.ai ---
@@ -92,9 +119,9 @@ class FakeFal:
                 if self.fail:
                     return httpx.Response(200, json={"status": "COMPLETED", "error": "model crashed"})
                 return httpx.Response(200, json={"status": "IN_PROGRESS" if self.polls % 2 else "COMPLETED"})
-            key = "image" if "topaz" in url else "images"
-            file = {"url": "https://v3.fal.media/files/out.jpg", "width": 1200, "height": 1500}
-            return httpx.Response(200, json={key: file if key == "image" else [file]})
+            n = len(self.submitted)
+            file = {"url": f"https://v3.fal.media/files/out{n}.jpg", "width": 1200, "height": 1500}
+            return httpx.Response(200, json={"image": file} if "topaz" in url else {"images": [file]})
         if request.url.host == "v3.fal.media":
             return httpx.Response(200, content=result_jpeg())
         return httpx.Response(404)
@@ -112,52 +139,65 @@ def fal(client):
     return fake
 
 
-async def enable(client, tenant_id, headers, **toggles):
-    profile = BrandProfile(image_editing=ImageEditing(**toggles)).model_dump(mode="json")
-    current = (await client.get(f"/tenants/{tenant_id}/brand-profile", headers=headers)).json()["version"]
-    r = await client.put(f"/tenants/{tenant_id}/brand-profile", json={"base_version": current, "data": profile}, headers={**headers, **O})
-    assert r.status_code == 200, r.text
-
-
 def media_url(tenant_id, path=""):
     return f"/tenants/{tenant_id}/media{path}"
 
 
-async def test_edit_flow_with_approval(client, fal, tenants, session_for):
+async def listing(client, tenant_id, headers) -> dict[str, dict]:
+    return {m["asset_id"]: m for m in (await client.get(media_url(tenant_id), headers=headers)).json()}
+
+
+async def test_per_photo_recipe_is_saved_and_applied(client, fal, tenants, session_for):
     owner = await session_for(tenants["a_owner"])
     photo = (await upload(client, tenants["a"], owner, jpeg(2000, 1600), description="Ağ qarderob")).json()
-    body = {"kind": "background", "request": "a bright Scandinavian bedroom", "subject": "the wardrobe"}
+    other = (await upload(client, tenants["a"], owner, jpeg(1600, 1600, color=(90, 90, 90)))).json()
+    recipe = {
+        "subject": "the wardrobe",
+        "enhance": True,
+        "remove": {"on": True, "request": "the chair"},
+        "recolor": {"on": True, "request": "walnut veneer"},
+    }
 
-    off = await client.post(media_url(tenants["a"], f"/{photo['asset_id']}/edits"), json=body, headers={**owner, **O})
-    assert off.status_code == 403 and "turned off" in off.text
-    await enable(client, tenants["a"], owner, background=True)
+    saved = await client.put(media_url(tenants["a"], f"/{photo['asset_id']}/recipe"), json=recipe, headers={**owner, **O})
+    assert saved.status_code == 200 and saved.json()["recipe"]["recolor"]["request"] == "walnut veneer"
+    assert not fal.submitted  # saving settings runs nothing
+    assert (await listing(client, tenants["a"], owner))[other["asset_id"]]["recipe"] is None  # per photo
 
-    r = await client.post(media_url(tenants["a"], f"/{photo['asset_id']}/edits"), json=body, headers={**owner, **O})
+    r = await client.post(media_url(tenants["a"], f"/{photo['asset_id']}/edits"), json=recipe, headers={**owner, **O})
     assert r.status_code == 202, r.text
-    assert r.json()["status"] == "pending" and r.json()["urls"] == {}
+    assert r.json()["edit"]["kinds"] == ["remove", "recolor", "enhance"]
 
-    model, sent = fal.submitted[0]
-    assert model == "fal-ai/flux-2-pro/edit"
-    assert "Scandinavian bedroom" in sent["prompt"] and "Keep the wardrobe exactly" in sent["prompt"]
-    assert sent["image_urls"][0].startswith(f"https://api.test/media/{tenants['a']}/{photo['asset_id']}/full.jpg?")
+    (m1, p1), (m2, p2) = fal.submitted
+    assert m1 == "fal-ai/flux-2-pro/edit" and "Remove the chair" in p1["prompt"] and "walnut veneer" in p1["prompt"]
+    assert p1["image_urls"][0].startswith(f"https://api.test/media/{tenants['a']}/{photo['asset_id']}/full.jpg?")
+    assert m2 == "fal-ai/topaz/upscale/image" and p2["image_url"] == "https://v3.fal.media/files/out1.jpg"  # chained
     assert fal.auth == {"Key fal-test-key"}
 
-    edited = next(m for m in (await client.get(media_url(tenants["a"]), headers=owner)).json() if m["parent_asset_id"])
-    assert edited["status"] == "ready" and (edited["width"], edited["height"]) == (1200, 1500)
-    assert edited["source"] == "render" and edited["edit"]["kind"] == "background"
-    assert edited["edit"]["cost_usd"] == "0.0540"  # 1.8 MP × $0.03
-    assert edited["publishable"] is False  # an AI edit needs a human OK first
-    assert "prompt" not in edited["edit"]
+    edited = (await listing(client, tenants["a"], owner))[r.json()["asset_id"]]
+    assert edited["status"] == "ready" and edited["source"] == "render"
+    assert edited["edit"]["models"] == ["fal-ai/flux-2-pro/edit", "fal-ai/topaz/upscale/image"]
+    assert edited["edit"]["cost_usd"] == "0.0540" and edited["edit"]["cost_complete"] is False  # topaz price unknown
+    assert edited["publishable"] is False  # needs a human OK
     assert (await client.get(path_of(edited["urls"]["feed"]))).status_code == 200
 
     approved = await client.post(media_url(tenants["a"], f"/{edited['asset_id']}/approve"), headers={**owner, **O})
     assert approved.json()["publishable"] is True
-    original = next(m for m in (await client.get(media_url(tenants["a"]), headers=owner)).json() if m["asset_id"] == photo["asset_id"])
-    assert original["source"] == "own" and original["publishable"] is True  # the original is untouched
+    original = (await listing(client, tenants["a"], owner))[photo["asset_id"]]
+    assert original["source"] == "own" and original["publishable"] is True and original["recipe"]["enhance"] is True
 
     usage = (await client.get(f"/tenants/{tenants['a']}/usage", headers=owner)).json()
     line = next(a for a in usage["by_agent"] if a["agent"] == "image_editor")
     assert line["calls"] == 1 and Decimal(line["cost_usd"]) == Decimal("0.054")
+
+
+async def test_enhance_only_uses_one_model(client, fal, tenants, session_for):
+    owner = await session_for(tenants["a_owner"])
+    photo = (await upload(client, tenants["a"], owner, jpeg(1000, 1000))).json()
+    r = await client.post(media_url(tenants["a"], f"/{photo['asset_id']}/edits"), json={"enhance": True}, headers={**owner, **O})
+    assert r.status_code == 202
+    assert [m for m, _ in fal.submitted] == ["fal-ai/topaz/upscale/image"]
+    assert "/full.jpg?" in fal.submitted[0][1]["image_url"]
+    assert (await listing(client, tenants["a"], owner))[r.json()["asset_id"]]["source"] == "own"
 
 
 async def test_reference_products_are_never_publishable(client, fal, tenants, session_for):
@@ -165,46 +205,38 @@ async def test_reference_products_are_never_publishable(client, fal, tenants, se
     ours = (await upload(client, tenants["a"], owner, jpeg(2000, 1600))).json()
     pinterest = (await upload(client, tenants["a"], owner, jpeg(1600, 1600, color=(10, 90, 200)), source="reference")).json()
     assert pinterest["source"] == "reference" and pinterest["publishable"] is False
-    await enable(client, tenants["a"], owner, swap_product=True)
     r = await client.post(
         media_url(tenants["a"], f"/{ours['asset_id']}/edits"),
-        json={"kind": "swap", "subject": "the sofa", "reference_asset_id": pinterest["asset_id"]},
+        json={"subject": "the sofa", "swap": {"on": True, "reference_asset_id": pinterest["asset_id"]}},
         headers={**owner, **O},
     )
     assert r.status_code == 202, r.text
     assert len(fal.submitted[0][1]["image_urls"]) == 2
-    child = r.json()["asset_id"]
-    await client.post(media_url(tenants["a"], f"/{child}/approve"), headers={**owner, **O})
-    edited = next(m for m in (await client.get(media_url(tenants["a"]), headers=owner)).json() if m["asset_id"] == child)
+    await client.post(media_url(tenants["a"], f"/{r.json()['asset_id']}/approve"), headers={**owner, **O})
+    edited = (await listing(client, tenants["a"], owner))[r.json()["asset_id"]]
     assert edited["source"] == "reference" and edited["publishable"] is False
 
 
-async def test_enhance_uses_the_upscaler(client, fal, tenants, session_for):
-    owner = await session_for(tenants["a_owner"])
-    photo = (await upload(client, tenants["a"], owner, jpeg(1000, 1000))).json()
-    await enable(client, tenants["a"], owner, enhance=True)
-    r = await client.post(media_url(tenants["a"], f"/{photo['asset_id']}/edits"), json={"kind": "enhance"}, headers={**owner, **O})
-    assert r.status_code == 202
-    model, sent = fal.submitted[0]
-    assert model == "fal-ai/topaz/upscale/image" and "/full.jpg?" in sent["image_url"] and "prompt" not in sent
-    edited = next(m for m in (await client.get(media_url(tenants["a"]), headers=owner)).json() if m["asset_id"] == r.json()["asset_id"])
-    assert edited["status"] == "ready" and edited["source"] == "own"
-    assert edited["edit"]["cost_usd"] is None  # price not in our table: recorded as unknown, never guessed
-
-
-async def test_failures_and_permissions(client, fal, tenants, session_for):
+async def test_failures_permissions_and_isolation(client, fal, tenants, session_for):
     owner = await session_for(tenants["a_owner"])
     viewer = await session_for(tenants["a_viewer"])
+    owner_b = await session_for(tenants["b_owner"])
     photo = (await upload(client, tenants["a"], owner, jpeg(1200, 1200))).json()
-    await enable(client, tenants["a"], owner, remove_objects=True)
     url = media_url(tenants["a"], f"/{photo['asset_id']}/edits")
+    remove = {"remove": {"on": True, "request": "the chair"}}
 
-    assert (await client.post(url, json={"kind": "remove", "request": "the chair"}, headers={**viewer, **O})).status_code == 403
-    assert (await client.post(url, json={"kind": "remove", "request": "  "}, headers={**owner, **O})).status_code == 422
+    assert (await client.post(url, json=remove, headers={**viewer, **O})).status_code == 403
+    assert (await client.post(url, json={}, headers={**owner, **O})).status_code == 422
+    assert (await client.post(url, json={"remove": {"on": True}}, headers={**owner, **O})).status_code == 422
+    # B can't edit A's photo, nor use A's photo as a reference
+    b_photo = (await upload(client, tenants["b"], owner_b, jpeg(1200, 1200))).json()
+    cross = {"swap": {"on": True, "reference_asset_id": photo["asset_id"]}}
+    assert (await client.post(media_url(tenants["b"], f"/{b_photo['asset_id']}/edits"), json=cross, headers={**owner_b, **O})).status_code == 404
+    assert (await client.post(media_url(tenants["b"], f"/{photo['asset_id']}/edits"), json=remove, headers={**owner_b, **O})).status_code == 404
 
     fal.fail = True
-    r = await client.post(url, json={"kind": "remove", "request": "the chair"}, headers={**owner, **O})
-    edited = next(m for m in (await client.get(media_url(tenants["a"]), headers=owner)).json() if m["asset_id"] == r.json()["asset_id"])
+    r = await client.post(url, json=remove, headers={**owner, **O})
+    edited = (await listing(client, tenants["a"], owner))[r.json()["asset_id"]]
     assert edited["status"] == "failed" and "model crashed" in edited["edit"]["error"] and edited["urls"] == {}
     assert (await client.post(media_url(tenants["a"], f"/{edited['asset_id']}/approve"), headers={**owner, **O})).status_code == 409
 
@@ -212,4 +244,4 @@ async def test_failures_and_permissions(client, fal, tenants, session_for):
     from del_social.routes.media import get_fal
 
     app.dependency_overrides[get_fal] = lambda: None
-    assert (await client.post(url, json={"kind": "remove", "request": "the chair"}, headers={**owner, **O})).status_code == 503
+    assert (await client.post(url, json=remove, headers={**owner, **O})).status_code == 503
