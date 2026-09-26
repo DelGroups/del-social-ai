@@ -95,6 +95,11 @@ services:
       CLAUDE_MAX_TOKENS: ${CLAUDE_MAX_TOKENS:-}
       DATABASE_URL: postgresql+asyncpg://${APP_DB_USER:-del_app}:${APP_DB_PASSWORD:?APP_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      TOKEN_VAULT_KEY: ${TOKEN_VAULT_KEY:-}
+      META_APP_ID: ${META_APP_ID:-}
+      META_APP_SECRET: ${META_APP_SECRET:-}
+      META_GRAPH_VERSION: ${META_GRAPH_VERSION:-v23.0}
+      META_LOGIN_CONFIG_ID: ${META_LOGIN_CONFIG_ID:-}
     expose:
       - "8000"
     depends_on:

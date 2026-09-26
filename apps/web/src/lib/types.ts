@@ -36,3 +36,36 @@ export type InvitationInfo = {
 // Mirrors apps/api/del_social/tenants/permissions.py (the API enforces it; this only hides buttons)
 export const canManageMembers = (role: Role) => role === "owner" || role === "admin";
 export const canManageOwners = (role: Role) => role === "owner";
+
+export type ChannelName = "instagram" | "facebook" | "telegram" | "whatsapp" | "tiktok" | "youtube";
+
+export type Connection = {
+  connection_id: string;
+  channel: ChannelName;
+  external_id: string;
+  display_name: string;
+  status: "active" | "error";
+  token_expires_at: string | null;
+  last_checked_at: string | null;
+  last_error: string | null;
+  details: Record<string, string>;
+  created_at: string;
+};
+
+export type ChannelInfo = {
+  channel: ChannelName;
+  connect_method: "oauth" | "bot_token" | "embedded_signup";
+  available: boolean;
+  configured: boolean;
+  capabilities: Record<string, boolean>;
+  connections: Connection[];
+};
+
+export type PageOption = {
+  page_id: string;
+  name: string;
+  instagram_id: string | null;
+  instagram_username: string | null;
+};
+
+export const canManageConnections = (role: Role) => role === "owner" || role === "admin";

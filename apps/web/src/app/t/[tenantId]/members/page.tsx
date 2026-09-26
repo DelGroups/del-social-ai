@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { redirect } from "next/navigation";
 
 import { PageTitle } from "@/components/ui";
 import { apiGet, requireMe } from "@/lib/server-api";
@@ -9,7 +10,9 @@ import { MembersManager } from "./members-manager";
 export default async function MembersPage({ params }: { params: Promise<{ tenantId: string }> }) {
   const { tenantId } = await params;
   const me = await requireMe();
-  const role = me.memberships.find((m) => m.tenant_id === tenantId)!.role;
+  const membership = me.memberships.find((m) => m.tenant_id === tenantId);
+  if (!membership) redirect("/");
+  const role = membership.role;
   const manage = canManageMembers(role);
   const [members, invitations] = await Promise.all([
     apiGet<Member[]>(`/tenants/${tenantId}/members`),

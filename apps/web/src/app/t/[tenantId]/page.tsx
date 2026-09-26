@@ -1,4 +1,5 @@
 import { getTranslations } from "next-intl/server";
+import { redirect } from "next/navigation";
 
 import { Alert, Card, PageTitle } from "@/components/ui";
 import { requireMe } from "@/lib/server-api";
@@ -6,7 +7,8 @@ import { requireMe } from "@/lib/server-api";
 export default async function TenantOverview({ params }: { params: Promise<{ tenantId: string }> }) {
   const { tenantId } = await params;
   const me = await requireMe();
-  const membership = me.memberships.find((m) => m.tenant_id === tenantId)!;
+  const membership = me.memberships.find((m) => m.tenant_id === tenantId);
+  if (!membership) redirect("/"); // the layout redirects too, but pages render in parallel
   const t = await getTranslations();
   return (
     <>

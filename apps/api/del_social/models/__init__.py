@@ -1,6 +1,7 @@
 from del_social.models.account import Account
 from del_social.models.auth_session import AuthSession
 from del_social.models.base import Base
+from del_social.models.connection import Channel, Connection, ConnectionStatus
 from del_social.models.invitation import Invitation
 from del_social.models.membership import MemberRole, Membership
 from del_social.models.password_reset import PasswordReset
@@ -11,6 +12,9 @@ __all__ = [
     "Account",
     "AuthSession",
     "Base",
+    "Channel",
+    "Connection",
+    "ConnectionStatus",
     "Invitation",
     "MemberRole",
     "Membership",

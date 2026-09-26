@@ -45,7 +45,8 @@
     "switch": "Şirkət",
     "welcome": "Xoş gəlmisiniz: {tenant}",
     "yourRole": "Rolunuz: {role}",
-    "comingSoon": "Sosial media üzrə süni intellekt komandanız (strategiya, məzmun, təsdiqlər, paylaşım) 1-ci mərhələdə gələcək. Hələlik kimin giriş hüququ olduğunu idarə edə bilərsiniz."
+    "comingSoon": "Sosial media üzrə süni intellekt komandanız (strategiya, məzmun, təsdiqlər, paylaşım) 1-ci mərhələdə gələcək. Hələlik kimin giriş hüququ olduğunu idarə edə bilərsiniz.",
+    "connections": "Bağlantılar"
   },
   "members": {
     "title": "Üzvlər",
@@ -110,5 +111,34 @@
     "issue": "Link yarat",
     "resetCreated": "Bərpa linki (1 saat etibarlıdır, birdəfəlik). Yalnız hesabın sahibinə göndərin:",
     "noAccount": "Bu e-poçt ilə hesab yoxdur"
+  },
+  "connections": {
+    "title": "Bağlantılar",
+    "intro": "Süni intellekt komandanızın işləyəcəyi sosial hesabları qoşun. Tokenlər şifrələnmiş saxlanılır və bir daha göstərilmir.",
+    "none": "Qoşulmayıb",
+    "statusActive": "İşləyir",
+    "statusError": "Problem var",
+    "lastChecked": "Yoxlanılıb: {date}",
+    "expires": "Tokenin vaxtı bitir: {date}",
+    "test": "Yoxla",
+    "disconnect": "Ayır",
+    "disconnectConfirm": "{name} ayrılsın? Süni intellekt komandası artıq ondan istifadə etməyəcək.",
+    "connectMeta": "Meta ilə qoş",
+    "metaHint": "Bir girişlə Facebook səhifəsi və ona bağlı Instagram hesabı qoşulur.",
+    "telegramToken": "Bot tokeni",
+    "telegramHint": "Telegram-da @BotFather ilə bot yaradın və verdiyi tokeni bura yapışdırın.",
+    "connect": "Qoş",
+    "comingSoon": "Tezliklə",
+    "notConfigured": "Serverdə hələ qurulmayıb",
+    "pickTitle": "Qoşulacaq səhifəni seçin",
+    "pickHint": "Instagram hesabı öz Facebook səhifəsi ilə birlikdə qoşulur.",
+    "noInstagram": "Bağlı Instagram hesabı yoxdur",
+    "pickSubmit": "Bu səhifəni qoş",
+    "pickExpired": "Bu seçimin vaxtı bitib. Yenidən qoşun.",
+    "metaCancelled": "Meta girişi ləğv edildi.",
+    "metaError": "Meta girişi qəbul etmədi. Yenidən cəhd edin.",
+    "metaNopages": "Bu Meta hesabında Facebook səhifəsi tapılmadı. Səhifəni idarə etdiyinizə və ona giriş icazəsi verdiyinizə əmin olun.",
+    "metaSession": "Giriş başqa hesabdan və ya brauzerdən başladılıb. Yenidən cəhd edin.",
+    "metaForbidden": "Bağlantıları idarə etmək icazəniz artıq yoxdur."
   }
 }

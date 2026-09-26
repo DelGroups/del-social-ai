@@ -15,10 +15,11 @@ from pathlib import Path
 import asyncio
 
 import asyncpg
+import httpx
 import pytest
 from redis.asyncio import Redis
 from sqlalchemy.engine import make_url
-from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from del_social.core.db import APP_ROLE, make_engine
 
@@ -168,7 +169,7 @@ async def tenants(admin: asyncpg.Connection, account_factory) -> AsyncIterator[d
         yield ids
     finally:
         tids = [a, b]
-        for table in ("invitations", "memberships", "tenant_secrets", "tenants"):
+        for table in ("connections", "invitations", "memberships", "tenant_secrets", "tenants"):
             await admin.execute(f"DELETE FROM {table} WHERE tenant_id = ANY($1::uuid[])", tids)
 
 
@@ -186,3 +187,48 @@ async def as_app(
         if account_id is not None:
             await conn.execute("SELECT set_config('app.account_id', $1, true)", str(account_id))
         yield conn
+
+
+# --- HTTP client through the real app (routes and connections tests) ---
+
+ORIGIN = "https://app.test"
+O = {"origin": ORIGIN}
+
+
+def cookie(token: str) -> dict[str, str]:
+    from del_social.core.sessions import SESSION_COOKIE
+
+    return {"cookie": f"{SESSION_COOKIE}={token}"}
+
+
+@pytest.fixture
+async def client(app_engine, redis) -> AsyncIterator[httpx.AsyncClient]:
+    # Imported here: del_social.main reads settings at import, after the env defaults above
+    from del_social.core.deps import allowed_origins, get_db, get_redis
+    from del_social.main import app
+
+    async def db_override() -> AsyncIterator[AsyncSession]:
+        async with AsyncSession(app_engine, expire_on_commit=False) as session, session.begin():
+            yield session
+
+    app.dependency_overrides[get_db] = db_override
+    app.dependency_overrides[get_redis] = lambda: redis
+    app.dependency_overrides[allowed_origins] = lambda: [ORIGIN]
+    b = uuid.uuid4().bytes  # fresh client IP per test so IP rate limits don't leak across tests
+    transport = httpx.ASGITransport(app=app, client=(f"10.{b[0]}.{b[1]}.{b[2]}", 1234))
+    try:
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as c:
+            yield c
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def session_for(app_engine):
+    from del_social.core.sessions import create_session
+
+    async def make(account_id: uuid.UUID) -> dict[str, str]:
+        async with AsyncSession(app_engine) as db, db.begin():
+            return cookie(await create_session(db, account_id))
+
+    return make

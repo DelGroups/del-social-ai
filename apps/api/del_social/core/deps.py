@@ -4,15 +4,18 @@ from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
 from functools import lru_cache
 
+import httpx
 from fastapi import Depends, HTTPException, Request, status
 from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
+from del_social.connections.meta import MetaClient
 from del_social.core.config import get_settings
 from del_social.core.db import make_engine, set_tenant
 from del_social.core.rate_limit import RateLimiter
 from del_social.core.sessions import SESSION_COOKIE, resolve_session
+from del_social.core.vault import TokenVault, parse_key
 from del_social.models import Account, MemberRole, Membership
 from del_social.tenants.permissions import Permission, has_permission
 
@@ -51,6 +54,51 @@ async def get_db() -> AsyncIterator[AsyncSession]:
 
 def get_redis() -> Redis:
     return _redis()
+
+
+@lru_cache
+def _http() -> httpx.AsyncClient:
+    return httpx.AsyncClient(timeout=httpx.Timeout(15.0), follow_redirects=False)
+
+
+def get_http() -> httpx.AsyncClient:
+    """Shared client for channel APIs (Meta, Telegram)."""
+    return _http()
+
+
+@lru_cache
+def _vault() -> TokenVault | None:
+    key = get_settings().token_vault_key
+    return TokenVault(parse_key(key)) if key else None
+
+
+def get_vault_optional() -> TokenVault | None:
+    return _vault()
+
+
+def get_vault(vault: TokenVault | None = Depends(get_vault_optional)) -> TokenVault:
+    if vault is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Token vault is not configured")
+    return vault
+
+
+def get_meta_optional(http: httpx.AsyncClient = Depends(get_http)) -> MetaClient | None:
+    s = get_settings()
+    if not s.meta_configured:
+        return None
+    return MetaClient(
+        http,
+        app_id=s.meta_app_id,
+        app_secret=s.meta_app_secret,
+        version=s.meta_graph_version,
+        login_config_id=s.meta_login_config_id,
+    )
+
+
+def get_meta(meta: MetaClient | None = Depends(get_meta_optional)) -> MetaClient:
+    if meta is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "The Meta app is not configured")
+    return meta
 
 
 def get_rate_limiter(redis: Redis = Depends(get_redis)) -> RateLimiter:
