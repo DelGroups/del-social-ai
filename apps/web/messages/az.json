@@ -1,0 +1,102 @@
+{
+  "common": {
+    "copy": "Kopyala",
+    "copied": "Kopyalandı",
+    "signOut": "Çıxış",
+    "account": "Hesab",
+    "language": "Dil",
+    "theme": "Mövzu",
+    "save": "Yadda saxla",
+    "error": "Xəta baş verdi. Yenidən cəhd edin.",
+    "tooMany": "Çox sayda cəhd. 15 dəqiqədən sonra yenidən cəhd edin.",
+    "passwordHint": "Ən azı 10 simvol",
+    "mismatch": "Şifrələr uyğun gəlmir"
+  },
+  "roles": { "owner": "Sahib", "admin": "Admin", "approver": "Təsdiqləyici", "viewer": "İzləyici" },
+  "themes": { "midnight": "Gecə", "daylight": "Gündüz", "graphite": "Qrafit", "sage": "Adaçayı" },
+  "login": {
+    "title": "Daxil ol",
+    "email": "E-poçt",
+    "password": "Şifrə",
+    "submit": "Daxil ol",
+    "invalid": "E-poçt və ya şifrə yanlışdır",
+    "forgot": "Şifrəni unutmusunuz? Platforma administratorundan bərpa linki istəyin."
+  },
+  "home": {
+    "title": "Şirkətləriniz",
+    "empty": "Hələ heç bir şirkətin üzvü deyilsiniz. Şirkət sahibindən dəvət istəyin.",
+    "platform": "Platforma administratoru"
+  },
+  "tenant": {
+    "overview": "Ümumi baxış",
+    "members": "Üzvlər",
+    "switch": "Şirkət",
+    "welcome": "Xoş gəlmisiniz: {tenant}",
+    "yourRole": "Rolunuz: {role}",
+    "comingSoon": "Sosial media üzrə süni intellekt komandanız (strategiya, məzmun, təsdiqlər, paylaşım) 1-ci mərhələdə gələcək. Hələlik kimin giriş hüququ olduğunu idarə edə bilərsiniz."
+  },
+  "members": {
+    "title": "Üzvlər",
+    "email": "E-poçt",
+    "role": "Rol",
+    "since": "Üzvlük tarixi",
+    "you": "siz",
+    "remove": "Sil",
+    "removeConfirm": "{email} bu şirkətdən silinsin?",
+    "inviteTitle": "Dəvət et",
+    "inviteSubmit": "Dəvət linki yarat",
+    "linkCreated": "Bu linki indi kopyalayın və {email} ünvanına göndərin. Link yalnız bir dəfə göstərilir və 7 gün etibarlıdır.",
+    "pending": "Gözləyən dəvətlər",
+    "noPending": "Gözləyən dəvət yoxdur",
+    "expires": "Bitmə tarixi: {date}",
+    "revoke": "Ləğv et"
+  },
+  "invite": {
+    "title": "Dəvət",
+    "joinAs": "Siz {tenant} şirkətinə {role} kimi dəvət olunmusunuz.",
+    "forEmail": "Bu dəvət {email} üçündür.",
+    "choosePassword": "Şifrə seçin",
+    "confirmPassword": "Şifrəni təkrarlayın",
+    "accept": "Dəvəti qəbul et",
+    "signedInAs": "{email} kimi daxil olmusunuz.",
+    "wrongAccount": "Bu dəvət başqa e-poçt ünvanı üçündür. Çıxış edin və linki yenidən açın.",
+    "existingAccount": "Bu e-poçt ilə hesab artıq mövcuddur. Əvvəlcə daxil olun, sonra bu linki yenidən açın.",
+    "signInToAccept": "Qəbul etmək üçün daxil olun",
+    "expired": "Bu dəvətin müddəti bitib. Yenisini istəyin.",
+    "accepted": "Bu dəvət artıq istifadə olunub.",
+    "revoked": "Bu dəvət ləğv edilib.",
+    "notFound": "Bu dəvət linki etibarlı deyil."
+  },
+  "reset": {
+    "title": "Yeni şifrə təyin edin",
+    "newPassword": "Yeni şifrə",
+    "confirm": "Yeni şifrəni təkrarlayın",
+    "submit": "Şifrəni təyin et",
+    "done": "Şifrəniz dəyişdirildi və bütün digər sessiyalar bağlandı.",
+    "goToLogin": "Daxil olmağa keç",
+    "invalid": "Bu link etibarsızdır və ya müddəti bitib. Platforma administratorundan yenisini istəyin."
+  },
+  "account": {
+    "title": "Hesab",
+    "changePassword": "Şifrəni dəyiş",
+    "current": "Cari şifrə",
+    "new": "Yeni şifrə",
+    "changed": "Şifrə dəyişdirildi. Digər cihazlarınızdan çıxış edildi.",
+    "wrongCurrent": "Cari şifrə yanlışdır",
+    "preferences": "Seçimlər"
+  },
+  "platform": {
+    "title": "Platforma administratoru",
+    "note": "Platforma administratorları şirkətin üzvü olmadıqca onun məlumatlarını görə bilməz.",
+    "createTenant": "Şirkət yarat",
+    "tenantName": "Şirkətin adı",
+    "ownerEmail": "Sahibin e-poçtu",
+    "create": "Yarat",
+    "tenantCreated": "Şirkət yaradıldı. Bu dəvət linkini {email} ünvanına göndərin (7 gün etibarlıdır, yalnız bir dəfə göstərilir):",
+    "resetTitle": "Şifrə bərpa linki",
+    "resetEmail": "Hesabın e-poçtu",
+    "issue": "Link yarat",
+    "resetCreated": "Bərpa linki (1 saat etibarlıdır, birdəfəlik). Yalnız hesabın sahibinə göndərin:",
+    "noAccount": "Bu e-poçt ilə hesab yoxdur"
+  }
+}

@@ -1,38 +1,71 @@
-/* Theme tokens — see CLAUDE.md "Design". Midnight is the default. */
+@import "tailwindcss";
+
+/* Theme tokens (CLAUDE.md "Design"). Midnight is the default. */
 :root,
 [data-theme="midnight"] {
   --bg: #0b1422;
   --surface: #121e30;
   --text: #e8edf5;
   --accent: #ff7a1a;
+  --accent-text: #0b1422;
+  --muted: #8fa0b8;
+  --border: #22324a;
+  --danger: #ff5c5c;
+  --success: #3ecf8e;
+  color-scheme: dark;
 }
 [data-theme="daylight"] {
   --bg: #f7f7f4;
   --surface: #ffffff;
   --text: #13233a;
   --accent: #f26b0f;
+  --accent-text: #ffffff;
+  --muted: #5d6b7e;
+  --border: #dfe3e8;
+  --danger: #c62828;
+  --success: #1b8a5a;
+  color-scheme: light;
 }
 [data-theme="graphite"] {
   --bg: #101113;
   --surface: #18191c;
   --text: #ededed;
   --accent: #7c8cff;
+  --accent-text: #101113;
+  --muted: #9a9ca3;
+  --border: #2a2c31;
+  --danger: #ff6b6b;
+  --success: #4cd4a0;
+  color-scheme: dark;
 }
 [data-theme="sage"] {
   --bg: #f4f6f3;
   --surface: #ffffff;
   --text: #1e2a24;
   --accent: #2f8f6b;
+  --accent-text: #ffffff;
+  --muted: #5f6f66;
+  --border: #d9e0da;
+  --danger: #b3261e;
+  --success: #2f8f6b;
+  color-scheme: light;
 }
 
-* {
-  box-sizing: border-box;
+/* Expose tokens as Tailwind colors: bg-bg, bg-surface, text-text, text-muted, border-border, ... */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-text: var(--text);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 body {
-  margin: 0;
-  min-height: 100vh;
   background: var(--bg);
   color: var(--text);
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
 }

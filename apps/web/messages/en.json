@@ -1,0 +1,102 @@
+{
+  "common": {
+    "copy": "Copy",
+    "copied": "Copied",
+    "signOut": "Sign out",
+    "account": "Account",
+    "language": "Language",
+    "theme": "Theme",
+    "save": "Save",
+    "error": "Something went wrong. Please try again.",
+    "tooMany": "Too many attempts. Try again in 15 minutes.",
+    "passwordHint": "At least 10 characters",
+    "mismatch": "Passwords do not match"
+  },
+  "roles": { "owner": "Owner", "admin": "Admin", "approver": "Approver", "viewer": "Viewer" },
+  "themes": { "midnight": "Midnight", "daylight": "Daylight", "graphite": "Graphite", "sage": "Sage" },
+  "login": {
+    "title": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "invalid": "Invalid email or password",
+    "forgot": "Forgot your password? Ask the platform administrator for a reset link."
+  },
+  "home": {
+    "title": "Your companies",
+    "empty": "You are not a member of any company yet. Ask a company owner for an invitation.",
+    "platform": "Platform admin"
+  },
+  "tenant": {
+    "overview": "Overview",
+    "members": "Members",
+    "switch": "Company",
+    "welcome": "Welcome to {tenant}",
+    "yourRole": "Your role: {role}",
+    "comingSoon": "Your AI social media team (strategy, content, approvals, publishing) arrives in Phase 1. For now you can manage who has access."
+  },
+  "members": {
+    "title": "Members",
+    "email": "Email",
+    "role": "Role",
+    "since": "Member since",
+    "you": "you",
+    "remove": "Remove",
+    "removeConfirm": "Remove {email} from this company?",
+    "inviteTitle": "Invite someone",
+    "inviteSubmit": "Create invitation link",
+    "linkCreated": "Copy this link now and send it to {email}. It is shown only once and is valid for 7 days.",
+    "pending": "Pending invitations",
+    "noPending": "No pending invitations",
+    "expires": "Expires {date}",
+    "revoke": "Revoke"
+  },
+  "invite": {
+    "title": "Invitation",
+    "joinAs": "You are invited to join {tenant} as {role}.",
+    "forEmail": "This invitation is for {email}.",
+    "choosePassword": "Choose a password",
+    "confirmPassword": "Repeat password",
+    "accept": "Accept invitation",
+    "signedInAs": "You are signed in as {email}.",
+    "wrongAccount": "This invitation is for a different email address. Sign out, then open the link again.",
+    "existingAccount": "An account with this email already exists. Sign in first, then open this link again.",
+    "signInToAccept": "Sign in to accept",
+    "expired": "This invitation has expired. Ask for a new one.",
+    "accepted": "This invitation has already been used.",
+    "revoked": "This invitation was revoked.",
+    "notFound": "This invitation link is not valid."
+  },
+  "reset": {
+    "title": "Set a new password",
+    "newPassword": "New password",
+    "confirm": "Repeat new password",
+    "submit": "Set password",
+    "done": "Your password was changed and every other session was signed out.",
+    "goToLogin": "Go to sign in",
+    "invalid": "This link is invalid or has expired. Ask the platform administrator for a new one."
+  },
+  "account": {
+    "title": "Account",
+    "changePassword": "Change password",
+    "current": "Current password",
+    "new": "New password",
+    "changed": "Password changed. Your other devices were signed out.",
+    "wrongCurrent": "Current password is incorrect",
+    "preferences": "Preferences"
+  },
+  "platform": {
+    "title": "Platform admin",
+    "note": "Platform admins cannot see a company's data unless they are a member of it.",
+    "createTenant": "Create a company",
+    "tenantName": "Company name",
+    "ownerEmail": "Owner's email",
+    "create": "Create",
+    "tenantCreated": "Company created. Send this invitation link to {email} (valid 7 days, shown only once):",
+    "resetTitle": "Password reset link",
+    "resetEmail": "Account email",
+    "issue": "Create link",
+    "resetCreated": "Reset link (valid 1 hour, single use). Send it only to the account owner:",
+    "noAccount": "No account with this email"
+  }
+}
