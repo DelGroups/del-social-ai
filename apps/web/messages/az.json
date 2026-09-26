@@ -210,7 +210,8 @@
         "good": "Bəyəndiyimiz postlar",
         "bad": "Bəyənmədiyimiz postlar"
       },
-      "occasions": "Brendin qeyd etdiyi günlər"
+      "occasions": "Brendin qeyd etdiyi günlər",
+      "terminology": "Terminologiyamız: düzgün söz və nəyi yazmamaq lazımdır (hər sətirdə bir, məs. \"Membran fasad — yox: membran örtüklü MDF fasad\")"
     },
     "opt": {
       "formal": "Rəsmi (siz / вы)",

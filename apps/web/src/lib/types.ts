@@ -79,6 +79,7 @@ export type BrandProfileData = {
   languages: { mode: string };
   never: { words: string[]; topics: string[]; competitors: string[] };
   claims: string[];
+  terminology: string[];
   ctas: string[];
   hashtags: { branded: string[]; pool: string[]; max_per_post: number };
   examples: { good: string[]; bad: string[] };

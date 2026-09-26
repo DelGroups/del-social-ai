@@ -143,6 +143,21 @@
     caption_ru: Ваша новая кухня станет любимым местом всей семьи. Свяжитесь с нами для проекта кухни.
     hashtags: ["#DelFurniture", "#mebel"]
 
+- id: bad-olaraq
+  expect: fix
+  brief: {id: g24, topic: Custom wardrobe, photo: White wardrobe}
+  option:
+    caption_az: Del Furniture olaraq biz hər layihəyə fərdi yanaşırıq. Qarderobunuz məkanınızın ölçülərinə uyğun hazırlanır. Fərdi dizayn üçün WhatsApp-a yazın.
+    caption_ru: Мы подходим индивидуально к каждому проекту. Ваш шкаф изготавливается по размерам вашего помещения. Пишите нам в WhatsApp.
+    hashtags: ["#DelFurniture", "#qarderob"]
+- id: bad-flowery-photo-narration
+  expect: fix
+  brief: {id: g25, topic: Custom wardrobe, photo: Wardrobe with open doors showing shelves}
+  option:
+    caption_az: Hər evin yaddaşı fərqlidir. Açıq qapılarımız arxasında gizlənən rəflər və asılqanlar sanki sizi gözləyir. Keyfiyyət burada sözlə deyil, sükutla danışır. Bizimlə əlaqə saxlayın.
+    caption_ru: У каждого дома своя память. Полки и вешалки за открытыми дверцами словно ждут вас. Качество здесь говорит не словами, а тишиной. Свяжитесь с нами.
+    hashtags: ["#DelFurniture", "#qarderob"]
+
 # --- Good captions: must pass ---
 - id: good-wardrobe
   expect: pass

@@ -210,7 +210,8 @@
         "good": "Posts we like",
         "bad": "Posts we don't like"
       },
-      "occasions": "Dates the brand marks"
+      "occasions": "Dates the brand marks",
+      "terminology": "Our terminology: the correct word, and what not to write (one per line, e.g. \"Membran fasad — not: membran örtüklü MDF fasad\")"
     },
     "opt": {
       "formal": "Formal (siz / вы)",
