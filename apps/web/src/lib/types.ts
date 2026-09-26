@@ -69,3 +69,28 @@ export type PageOption = {
 };
 
 export const canManageConnections = (role: Role) => role === "owner" || role === "admin";
+
+// Mirrors apps/api/del_social/knowledge/brand_profile.py (the API validates it)
+export type BrandProfileData = {
+  basics: Record<string, string | string[]>;
+  audience: { description: string; segments: string[] };
+  products: { categories: string[]; materials: string[]; usps: string[] };
+  voice: { tone_words: string[]; formality: string; emoji: string; caption_length: string; notes: string };
+  languages: { mode: string };
+  never: { words: string[]; topics: string[]; competitors: string[] };
+  claims: string[];
+  ctas: string[];
+  hashtags: { branded: string[]; pool: string[]; max_per_post: number };
+  examples: { good: string[]; bad: string[] };
+  occasions: string[];
+  mention_prices: boolean;
+};
+
+export type BrandProfileOut = {
+  version: number;
+  data: BrandProfileData;
+  created_at: string | null;
+  created_by_email: string | null;
+};
+
+export const canManageBrand = (role: Role) => role === "owner" || role === "admin";

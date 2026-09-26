@@ -1,6 +1,7 @@
 from del_social.models.account import Account
 from del_social.models.auth_session import AuthSession
 from del_social.models.base import Base
+from del_social.models.brand_profile import BrandProfileVersion
 from del_social.models.connection import Channel, Connection, ConnectionStatus
 from del_social.models.invitation import Invitation
 from del_social.models.membership import MemberRole, Membership
@@ -12,6 +13,7 @@ __all__ = [
     "Account",
     "AuthSession",
     "Base",
+    "BrandProfileVersion",
     "Channel",
     "Connection",
     "ConnectionStatus",
