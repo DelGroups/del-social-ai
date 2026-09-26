@@ -60,6 +60,7 @@ const SECTIONS: { key: string; fields: Spec[] }[] = [
       { path: "never.topics", kind: "list" },
       { path: "never.competitors", kind: "list" },
       { path: "claims", kind: "list" },
+      { path: "terminology", kind: "list" },
       { path: "ctas", kind: "list" },
     ],
   },

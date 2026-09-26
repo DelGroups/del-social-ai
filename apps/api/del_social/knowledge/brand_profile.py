@@ -117,6 +117,8 @@ class BrandProfile(_Section):
     languages: Languages = Field(default_factory=Languages)
     never: NeverList = Field(default_factory=NeverList)
     claims: list[Item] = items()  # only claims that are true and can be proven
+    # The company's own vocabulary, one line each, e.g. "handleless door: qulpsuz qapı (not dəstəksiz)"
+    terminology: list[Item] = items(80)
     ctas: list[Item] = items(20)
     hashtags: Hashtags = Field(default_factory=Hashtags)
     examples: Examples = Field(default_factory=Examples)

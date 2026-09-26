@@ -26,6 +26,7 @@ def test_defaults_follow_phase_1_decisions():
     assert p.languages.mode is LanguageMode.AZ_RU_SAME_CAPTION
     assert p.mention_prices is False
     assert any("Novruz" in o for o in p.occasions)
+    assert p.terminology == []  # added later: saved profiles without it still load
 
 
 def test_old_versions_still_load_when_fields_are_added():
