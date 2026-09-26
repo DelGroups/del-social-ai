@@ -13,6 +13,17 @@ class Settings(BaseSettings):
     allowed_origins: str = ""
     app_base_url: str = "http://localhost:3000"  # panel URL used in invitation/reset links
 
+    # Channel connections (ADR 003). Empty = that feature is shown as "not configured".
+    token_vault_key: str = ""  # 32 random bytes, hex or base64: openssl rand -hex 32
+    meta_app_id: str = ""
+    meta_app_secret: str = ""
+    meta_graph_version: str = "v23.0"
+    meta_login_config_id: str = ""  # set when the app uses "Facebook Login for Business"
+
+    @property
+    def meta_configured(self) -> bool:
+        return bool(self.meta_app_id and self.meta_app_secret)
+
     @property
     def asyncpg_dsn(self) -> str:
         # SQLAlchemy-style "postgresql+asyncpg://" → plain DSN for asyncpg

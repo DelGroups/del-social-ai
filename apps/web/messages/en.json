@@ -45,7 +45,8 @@
     "switch": "Company",
     "welcome": "Welcome to {tenant}",
     "yourRole": "Your role: {role}",
-    "comingSoon": "Your AI social media team (strategy, content, approvals, publishing) arrives in Phase 1. For now you can manage who has access."
+    "comingSoon": "Your AI social media team (strategy, content, approvals, publishing) arrives in Phase 1. For now you can manage who has access.",
+    "connections": "Connections"
   },
   "members": {
     "title": "Members",
@@ -110,5 +111,34 @@
     "issue": "Create link",
     "resetCreated": "Reset link (valid 1 hour, single use). Send it only to the account owner:",
     "noAccount": "No account with this email"
+  },
+  "connections": {
+    "title": "Connections",
+    "intro": "Connect the social accounts your AI team will work with. Tokens are stored encrypted and are never shown again.",
+    "none": "Not connected",
+    "statusActive": "Working",
+    "statusError": "Problem",
+    "lastChecked": "Checked {date}",
+    "expires": "Token expires {date}",
+    "test": "Test",
+    "disconnect": "Disconnect",
+    "disconnectConfirm": "Disconnect {name}? The AI team will stop using it.",
+    "connectMeta": "Connect with Meta",
+    "metaHint": "One sign-in connects a Facebook page and the Instagram account linked to it.",
+    "telegramToken": "Bot token",
+    "telegramHint": "Create a bot with @BotFather in Telegram and paste the token it gives you.",
+    "connect": "Connect",
+    "comingSoon": "Coming soon",
+    "notConfigured": "Not set up on the server yet",
+    "pickTitle": "Choose the page to connect",
+    "pickHint": "An Instagram account is connected together with its Facebook page.",
+    "noInstagram": "No Instagram account linked",
+    "pickSubmit": "Connect this page",
+    "pickExpired": "This choice has expired. Please connect again.",
+    "metaCancelled": "The Meta sign-in was cancelled.",
+    "metaError": "Meta did not accept the sign-in. Please try again.",
+    "metaNopages": "No Facebook pages were found for this Meta account. Make sure you manage the page and allowed access to it.",
+    "metaSession": "The sign-in was started from a different account or browser. Please try again.",
+    "metaForbidden": "You no longer have permission to manage connections."
   }
 }
