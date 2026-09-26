@@ -149,6 +149,31 @@ async def test_compose_choose_and_publish_carousel(client, world, admin, tenants
     assert world.published("media_publish") == 1
 
 
+async def test_photos_can_be_reordered_and_removed(client, world, admin, tenants, session_for):
+    owner = await session_for(tenants["a_owner"])
+    owner_b = await session_for(tenants["b_owner"])
+    _, ids = await product_with_photos(client, tenants["a"], owner, n=3)
+    post = (await client.post(purl(tenants["a"]), json={"asset_ids": ids}, headers={**owner, **O})).json()
+    url = purl(tenants["a"], f"/{post['post_id']}")
+
+    reordered = await client.patch(url, json={"asset_ids": [ids[2], ids[0]]}, headers={**owner, **O})
+    assert reordered.status_code == 200
+    assert [p["asset_id"] for p in reordered.json()["photos"]] == [ids[2], ids[0]]  # new cover, one removed
+    assert (await client.patch(url, json={"asset_ids": [ids[0], ids[0]]}, headers={**owner, **O})).status_code == 422
+    assert (await client.patch(url, json={"asset_ids": []}, headers={**owner, **O})).status_code == 422
+    ref = (await upload(client, tenants["a"], owner, jpeg(1200, 1200), source="reference")).json()
+    assert (await client.patch(url, json={"asset_ids": [ids[0], ref["asset_id"]]}, headers={**owner, **O})).status_code == 409
+    b_photo = (await upload(client, tenants["b"], owner_b, jpeg(1200, 1200))).json()
+    assert (await client.patch(url, json={"asset_ids": [b_photo["asset_id"]]}, headers={**owner, **O})).status_code == 409
+
+    await connect(admin, world.vault, tenants["a"], "instagram", IG_ID)
+    await connect(admin, world.vault, tenants["a"], "facebook", PAGE_ID)
+    await client.post(purl(tenants["a"], f"/{post['post_id']}/publish"), json={"confirm": True}, headers={**owner, **O})
+    items = [f["image_url"] for m, p, f in world.calls if p == f"{IG_ID}/media" and f.get("is_carousel_item") == "true"]
+    assert [ids[2] in items[0], ids[0] in items[1]] == [True, True]  # published in the chosen order
+    assert (await client.patch(url, json={"asset_ids": [ids[0]]}, headers={**owner, **O})).status_code == 409  # published: frozen
+
+
 async def test_partial_failure_retries_only_what_failed(client, world, admin, tenants, session_for):
     owner = await session_for(tenants["a_owner"])
     await connect(admin, world.vault, tenants["a"], "instagram", IG_ID)

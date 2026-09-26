@@ -479,7 +479,12 @@
       "publishing": "paylaşılır",
       "published": "paylaşılıb",
       "partly_published": "qismən paylaşılıb"
-    }
+    },
+    "orderHint": "Postda şəkillərin ardıcıllığı (birincisi üz qabığıdır). Oxlardan istifadə edin, ✕ ilə silin və ya məhsulun başqa şəklini əlavə edin, sonra yadda saxlayın.",
+    "cover": "üz qabığı",
+    "addPhoto": "şəkil əlavə et",
+    "saveOrder": "Şəkil ardıcıllığını saxla",
+    "orderSaved": "Şəkil ardıcıllığı saxlanıldı"
   },
   "pageSetup": {
     "title": "Səhifə tənzimləmələri",
