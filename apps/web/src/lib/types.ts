@@ -240,7 +240,7 @@ export type PostOption = {
 
 export type PostInfo = {
   post_id: string;
-  status: "generating" | "ready" | "failed" | "approved" | "publishing" | "published" | "partly_published";
+  status: "generating" | "ready" | "failed" | "approved" | "publishing" | "published" | "partly_published" | "scheduled";
   product_id: string | null;
   format: "feed" | "square" | "landscape";
   with_logo: boolean;
@@ -256,5 +256,41 @@ export type PostInfo = {
   cost_usd: string | null;
   approved_at: string | null;
   published_at: string | null;
+  scheduled_at: string | null;
+  task_id: string | null;
   created_at: string;
+};
+
+export type TaskInfo = {
+  task_id: string;
+  title: string;
+  status: "running" | "waiting_approval" | "scheduled" | "done" | "failed" | "cancelled";
+  steps: { key: string; agent: string | null; status: "pending" | "running" | "done" | "waiting" | "failed"; note?: string }[];
+  post_id: string | null;
+  created_at: string;
+};
+
+export type ChatMsg = {
+  message_id: string;
+  role: "user" | "agent";
+  agent: string | null;
+  text: string;
+  created_at: string;
+  task: TaskInfo | null;
+  post: PostInfo | null;
+};
+
+export type LiveInfo = {
+  agents: { agent: string; state: "working" | "idle"; activity: string | null; last_at: string | null; done_today: number }[];
+  running: TaskInfo[];
+  waiting: PostInfo[];
+  scheduled: PostInfo[];
+  published: PostInfo[];
+  events: { agent: string; kind: string; title: string; at: string }[];
+  cost_today_usd: string;
+  cost_month_usd: string;
+  photos_total: number;
+  photos_unanalysed: number;
+  connections: { channel: string; name: string; status: string }[];
+  now: string;
 };

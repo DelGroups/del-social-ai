@@ -43,6 +43,7 @@ export function PostEditor({ tenantId, post, productPhotos, canApprove }: Props)
   }
   const working = post.status === "generating" || post.status === "publishing";
   const editable = canApprove && (post.status === "ready" || post.status === "approved");
+  const scheduled = post.status === "ready" && post.scheduled_at !== null && new Date(post.scheduled_at) > new Date();
   const canPublish = canApprove && ["ready", "approved", "partly_published"].includes(post.status) && caption.trim().length > 0;
   const base = `/tenants/${tenantId}/posts/${post.post_id}`;
 
@@ -68,7 +69,8 @@ export function PostEditor({ tenantId, post, productPhotos, canApprove }: Props)
 
   async function publish() {
     if (caption !== post.caption) await api(base, { method: "PATCH", body: { caption } });
-    await api(`${base}/publish`, { method: "POST", body: { confirm: true } });
+    // A post waiting for approval is approved: it goes out at its planned time, or now if it has none
+    await api(`${base}/${post.status === "ready" ? "approve" : "publish"}`, { method: "POST", body: { confirm: true } });
   }
 
   return (
@@ -83,6 +85,7 @@ export function PostEditor({ tenantId, post, productPhotos, canApprove }: Props)
       {post.error && <Alert tone="error">{post.error}</Alert>}
       {post.status === "generating" && <Alert>{t("generatingLong")}</Alert>}
       {post.status === "publishing" && <Alert>{t("publishingLong")}</Alert>}
+      {post.status === "scheduled" && post.scheduled_at && <Alert tone="success">{t("scheduledLong", { when: formatDateTime(post.scheduled_at) })}</Alert>}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title={t("preview")}>
@@ -228,9 +231,12 @@ export function PostEditor({ tenantId, post, productPhotos, canApprove }: Props)
             {canPublish && (
               <Button
                 disabled={busy}
-                onClick={() => confirm(t("publishConfirm", { channels: post.channels.join(" + ") })) && run(publish, t("publishStarted"))}
+                onClick={() =>
+                  confirm(scheduled ? t("approveConfirm", { when: formatDateTime(post.scheduled_at!) }) : t("publishConfirm", { channels: post.channels.join(" + ") })) &&
+                  run(publish, scheduled ? t("approved") : t("publishStarted"))
+                }
               >
-                {post.status === "partly_published" ? t("retryPublish") : t("publish")}
+                {post.status === "partly_published" ? t("retryPublish") : scheduled ? t("approveScheduled", { when: formatDateTime(post.scheduled_at!) }) : t("publish")}
               </Button>
             )}
             {canApprove && (post.status === "ready" || post.status === "failed") && (

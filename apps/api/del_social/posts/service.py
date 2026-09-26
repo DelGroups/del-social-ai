@@ -1,8 +1,10 @@
-"""Posts: build the brief from the photos' analysis, generate captions, publish when approved.
+"""Posts: build the brief from the photos' analysis, generate captions, revise on request,
+publish when approved (now or at the scheduled time).
 
 The model writes language (Copywriter + Brand Guardian); code decides everything else:
 which photos, their format and logo, the exact caption that was approved, which accounts
-it goes to, and that it goes out only after a human pressed Publish.
+it goes to, when it goes out, and that it goes out only after a person approved it.
+Every step reports to the Team Room (live events, wizard steps, messages).
 """
 import logging
 import uuid
@@ -12,7 +14,10 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-from del_social.agents.common import Brief
+from del_social.agents import brand_guardian, copywriter
+from del_social.agents.brand_guardian import OptionVerdict
+from del_social.agents.common import Brief, assemble_caption
+from del_social.agents.copywriter import CopyOption
 from del_social.agents.pipeline import generate_for_brief
 from del_social.connections.base import ChannelError
 from del_social.connections.meta import MetaClient
@@ -25,6 +30,8 @@ from del_social.knowledge.brand_profile import BrandProfile
 from del_social.llm import LLM, LLMError
 from del_social.media.storage import signed_url
 from del_social.models import BrandProfileVersion, Connection, ConnectionStatus, MediaAsset, Post, Product
+from del_social.team import activity
+from del_social.team.timing import baku_label
 
 log = logging.getLogger(__name__)
 
@@ -89,27 +96,97 @@ async def _profile(db: AsyncSession) -> BrandProfile:
     return BrandProfile.model_validate(row.data) if row else BrandProfile()
 
 
-async def run_generation(*, engine: AsyncEngine, llm: LLM, tenant_id: uuid.UUID, post_id: uuid.UUID) -> None:
-    async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
-        await set_tenant(db, tenant_id)
-        post = await db.get(Post, post_id)
-        profile = await _profile(db)
-        brief = Brief.model_validate(post.brief)
-    try:
-        result = await generate_for_brief(llm, tenant_id, profile, brief)
-        values: dict[str, Any] = {"status": "ready", "generation": result, "error": None}
-        best = next((i for i, o in enumerate(result["options"]) if o["verdict"] == "pass"), 0)
-        values |= {"chosen_option": best, "caption": result["options"][best]["caption"]}
-    except LLMError as e:
-        values = {"status": "failed", "error": str(e)}
-    except Exception:
-        log.exception("post generation %s failed", post_id)
-        values = {"status": "failed", "error": "Unexpected error while writing the captions"}
+async def _update(engine: AsyncEngine, tenant_id: uuid.UUID, post_id: uuid.UUID, **values: Any) -> None:
     async with AsyncSession(engine) as db, db.begin():
         await set_tenant(db, tenant_id)
         row = await db.get(Post, post_id)
         for k, v in values.items():
             setattr(row, k, v)
+
+
+def approval_text(post: Post) -> str:
+    when = (
+        f"Paylaşım vaxtı: {baku_label(post.scheduled_at)} (Bakı)."
+        if post.scheduled_at else "Təsdiqdən dərhal sonra paylaşılacaq."
+    )
+    return f"Post hazırdır və sizin təsdiqinizi gözləyir. {when} Təsdiqləyin və ya nəyi dəyişmək lazım olduğunu yazın."
+
+
+async def run_generation(*, engine: AsyncEngine, llm: LLM, tenant_id: uuid.UUID, post_id: uuid.UUID) -> None:
+    async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
+        await set_tenant(db, tenant_id)
+        post = await db.get(Post, post_id)
+        profile = await _profile(db)
+    brief = Brief.model_validate(post.brief)
+    task_id = post.task_id
+
+    async def on_event(agent: str, kind: str, title: str) -> None:
+        await activity.event(engine, tenant_id, agent, kind, title, task_id, post_id)
+        key = {"copywriter": "copy", "brand_guardian": "guard"}.get(agent)
+        if key:
+            await activity.step(engine, tenant_id, task_id, key, "running" if kind == "started" else "done")
+
+    await activity.step(engine, tenant_id, task_id, "photos", "done")
+    try:
+        result = await generate_for_brief(llm, tenant_id, profile, brief, on_event=on_event)
+        best = next((i for i, o in enumerate(result["options"]) if o["verdict"] == "pass"), 0)
+        await _update(engine, tenant_id, post_id, status="ready", generation=result, error=None,
+                      chosen_option=best, caption=result["options"][best]["caption"])
+        await activity.step(engine, tenant_id, task_id, "approval", "waiting", task_status="waiting_approval")
+        await activity.say(engine, tenant_id, "team_lead", approval_text(post), task_id, post_id)
+    except LLMError as e:
+        await _update(engine, tenant_id, post_id, status="failed", error=str(e))
+        await activity.step(engine, tenant_id, task_id, "copy", "failed", task_status="failed", note=str(e))
+        await activity.event(engine, tenant_id, "copywriter", "failed", f"Mətn yazıla bilmədi: {e}", task_id, post_id)
+        await activity.say(engine, tenant_id, "team_lead", f"Mətn yazıla bilmədi: {e}", task_id)
+    except Exception:
+        log.exception("post generation %s failed", post_id)
+        await _update(engine, tenant_id, post_id, status="failed", error="Unexpected error while writing the captions")
+        await activity.step(engine, tenant_id, task_id, "copy", "failed", task_status="failed")
+        await activity.say(engine, tenant_id, "team_lead", "Mətn yazılarkən gözlənilməz xəta baş verdi.", task_id)
+
+
+async def revise(*, engine: AsyncEngine, llm: LLM, tenant_id: uuid.UUID, post_id: uuid.UUID, instruction: str) -> None:
+    """A person says what to change; the Copywriter rewrites the chosen option, the Guardian re-checks."""
+    async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
+        await set_tenant(db, tenant_id)
+        post = await db.get(Post, post_id)
+        profile = await _profile(db)
+    brief = Brief.model_validate(post.brief)
+    gen = dict(post.generation or {})
+    options = list(gen.get("options", []))
+    if not options:
+        return
+    index = post.chosen_option or 0
+    current = CopyOption.model_validate({k: options[index][k] for k in CopyOption.model_fields})
+    task_id = post.task_id
+    await activity.event(engine, tenant_id, "copywriter", "started", f"Düzəliş edir: {instruction[:120]}", task_id, post_id)
+    await activity.step(engine, tenant_id, task_id, "copy", "running")
+    try:
+        request = brand_guardian.revision_request([(current, OptionVerdict(
+            "fix", [{"source": "human", "code": "request", "severity": "fix", "message": f"The approver asks: {instruction}"}]
+        ))])
+        revised = await copywriter.revise_options(llm, tenant_id, profile, brief, [], request, 1)
+        option = revised.output.options[0]
+        await activity.event(engine, tenant_id, "copywriter", "finished", "Düzəliş hazırdır", task_id, post_id)
+        await activity.event(engine, tenant_id, "brand_guardian", "started", "Düzəliş yoxlanılır", task_id, post_id)
+        verdicts, _ = await brand_guardian.review(llm, tenant_id, profile, brief, [option])
+        verdict = verdicts[0]
+        await activity.event(engine, tenant_id, "brand_guardian", "finished",
+                             "Qaydasındadır" if verdict.verdict == "pass" else "Qeydləri var", task_id, post_id)
+        caption = assemble_caption(profile, option.caption_az, option.caption_ru, option.hashtags)
+        options[index] = {**option.model_dump(), "caption": caption, "verdict": verdict.verdict,
+                          "findings": verdict.findings, "revised": True}
+        gen["options"] = options
+        await _update(engine, tenant_id, post_id, generation=gen, caption=caption, status="ready")
+        await activity.step(engine, tenant_id, task_id, "copy", "done")
+        await activity.step(engine, tenant_id, task_id, "approval", "waiting", task_status="waiting_approval")
+        note = "" if verdict.verdict == "pass" else " Nəzarətçinin qeydləri var, baxın."
+        await activity.say(engine, tenant_id, "copywriter", f"Düzəltdim: “{instruction[:200]}”.{note} Təsdiqləyirsiniz?", task_id, post_id)
+    except LLMError as e:
+        await activity.event(engine, tenant_id, "copywriter", "failed", f"Düzəliş alınmadı: {e}", task_id, post_id)
+        await activity.step(engine, tenant_id, task_id, "copy", "done")
+        await activity.say(engine, tenant_id, "copywriter", f"Düzəliş alınmadı: {e}", task_id)
 
 
 def image_urls(settings: Settings, post: Post, has_logo: bool, ttl: int = PUBLISH_URL_TTL) -> list[str]:
@@ -131,6 +208,9 @@ async def run_publish(
                 select(Connection).where(Connection.status == ConnectionStatus.ACTIVE.value).order_by(Connection.created_at)
             )).all()
         }
+    task_id = post.task_id
+    await activity.step(engine, tenant_id, task_id, "publish", "running")
+    await activity.event(engine, tenant_id, "publisher", "started", f"{' + '.join(post.channels)} paylaşılır", task_id, post_id)
     results: dict[str, Any] = dict(post.results or {})
     urls = image_urls(settings, post, has_logo)
     for channel in post.channels:
@@ -153,13 +233,25 @@ async def run_publish(
             results[channel] = {"error": str(e)}
     ok = [c for c in post.channels if results.get(c, {}).get("id")]
     status = "published" if len(ok) == len(post.channels) else ("partly_published" if ok else "approved")
+    errors = "; ".join(f"{c}: {results[c]['error']}" for c in post.channels if "error" in results.get(c, {}))
     async with AsyncSession(engine) as db, db.begin():
         await set_tenant(db, tenant_id)
         row = await db.get(Post, post_id)
         row.results = results
         row.status = status
-        row.error = None if status == "published" else "; ".join(
-            f"{c}: {results[c]['error']}" for c in post.channels if "error" in results.get(c, {})
-        )
+        row.error = errors or None
         if ok and row.published_at is None:
             row.published_at = datetime.now(UTC)
+    links = " · ".join(f"{c}: {results[c].get('url') or results[c]['id']}" for c in ok)
+    if status == "published":
+        await activity.step(engine, tenant_id, task_id, "publish", "done", task_status="done")
+        await activity.event(engine, tenant_id, "publisher", "finished", "Paylaşıldı", task_id, post_id)
+        await activity.say(engine, tenant_id, "publisher", f"Paylaşıldı. {links}", task_id, post_id)
+    else:
+        await activity.step(engine, tenant_id, task_id, "publish", "failed", task_status="failed", note=errors)
+        await activity.event(engine, tenant_id, "publisher", "failed", f"Paylaşım alınmadı: {errors}", task_id, post_id)
+        done = f" Paylaşılan: {links}." if ok else ""
+        await activity.say(
+            engine, tenant_id, "publisher", f"Paylaşım tam alınmadı: {errors}.{done} Yenidən cəhd etmək üçün təsdiqləyin.",
+            task_id, post_id,
+        )

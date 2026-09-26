@@ -4,7 +4,7 @@ Nothing is published without a person pressing Publish (CLAUDE.md principle 5; t
 default autonomy policy is human approval).
 """
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
@@ -24,6 +24,8 @@ from del_social.llm import LLM
 from del_social.media.storage import MediaNotConfigured, signed_url
 from del_social.models import MediaAsset, Post
 from del_social.posts import service
+from del_social.team import activity, work
+from del_social.team.timing import baku_label
 from del_social.routes.media import _current_logo, get_analyst
 from del_social.routes.products import get_product
 from del_social.tenants.permissions import Permission
@@ -82,6 +84,8 @@ class PostOut(BaseModel):
     cost_usd: str | None
     approved_at: datetime | None
     published_at: datetime | None
+    scheduled_at: datetime | None
+    task_id: uuid.UUID | None
     created_at: datetime
 
 
@@ -103,7 +107,7 @@ def _out(post: Post, has_logo: bool) -> PostOut:
         with_logo=post.with_logo, channels=post.channels, notes=post.notes, photos=photos, options=options,
         question=gen.get("question"), chosen_option=post.chosen_option, caption=post.caption, error=post.error,
         results=post.results or {}, cost_usd=gen.get("cost_usd"), approved_at=post.approved_at,
-        published_at=post.published_at, created_at=post.created_at,
+        published_at=post.published_at, scheduled_at=post.scheduled_at, task_id=post.task_id, created_at=post.created_at,
     )
 
 
@@ -112,34 +116,6 @@ async def _get(db: AsyncSession, post_id: uuid.UUID) -> Post:
     if post is None or post.status == "archived":
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Post not found")
     return post
-
-
-async def _photos(db: AsyncSession, body: PostIn) -> list[MediaAsset]:
-    if body.asset_ids:
-        assets = []
-        for asset_id in body.asset_ids:
-            asset = await db.get(MediaAsset, asset_id)
-            if asset is None or asset.deleted_at is not None:
-                raise HTTPException(status.HTTP_404_NOT_FOUND, "Photo not found")
-            assets.append(asset)
-    elif body.product_id:
-        await get_product(db, body.product_id)
-        assets = list((await db.scalars(
-            select(MediaAsset).where(MediaAsset.product_id == body.product_id, MediaAsset.deleted_at.is_(None))
-            .order_by(MediaAsset.position, MediaAsset.created_at)
-        )).all())
-        assets = [a for a in assets if service.publishable(a)][:10]
-    else:
-        raise HTTPException(422, "Choose a product or photos")
-    if not assets:
-        raise HTTPException(status.HTTP_409_CONFLICT, "This product has no publishable photos yet")
-    blocked = [a for a in assets if not service.publishable(a)]
-    if blocked:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Some photos can't be published: reference images, unfinished photos or AI edits waiting for approval",
-        )
-    return assets
 
 
 @router.get("", response_model=list[PostOut])
@@ -166,25 +142,15 @@ async def create_post(
     """Start a post: the Copywriter and Brand Guardian write three caption options in the background."""
     if llm is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "The writing agents are not configured on the server")
-    assets = await _photos(db, body)
-    product = await get_product(db, body.product_id) if body.product_id else None
-    fmt = body.format or ((assets[0].analysis or {}).get("best_format") or "feed")
-    post_id = uuid.uuid4()
-    post = Post(
-        post_id=post_id, tenant_id=ctx.tenant_id, status="generating",
-        product_id=product.product_id if product else assets[0].product_id,
-        asset_ids=[a.asset_id for a in assets], format=fmt, with_logo=body.with_logo,
-        channels=list(dict.fromkeys(body.channels)), notes=body.notes.strip(),
-        brief=service.build_brief(post_id, product, assets, body.notes).model_dump(mode="json"),
-        created_by=ctx.account.account_id,
-    )
-    # Committed before the job starts (background tasks run before get_db commits)
-    async with AsyncSession(engine, expire_on_commit=False) as own, own.begin():
-        await set_tenant(own, ctx.tenant_id)
-        own.add(post)
-        await own.flush()
-        await own.refresh(post)
-    background.add_task(service.run_generation, engine=engine, llm=llm, tenant_id=ctx.tenant_id, post_id=post_id)
+    try:
+        post = await work.start_post(
+            db=db, engine=engine, llm=llm, schedule=background.add_task, tenant_id=ctx.tenant_id,
+            account_id=ctx.account.account_id, product_id=body.product_id, asset_ids=body.asset_ids,
+            fmt=body.format, with_logo=body.with_logo, channels=list(body.channels), notes=body.notes,
+        )
+    except work.WorkError as e:
+        code = status.HTTP_404_NOT_FOUND if "not found" in str(e) else (422 if "Choose" in str(e) else status.HTTP_409_CONFLICT)
+        raise HTTPException(code, str(e)) from None
     return _out(post, await _current_logo(db) is not None)
 
 
@@ -277,11 +243,77 @@ async def publish(
             row.approved_by, row.approved_at = ctx.account.account_id, datetime.now(UTC)
         await own.flush()
         await own.refresh(row)
+    await activity.step(engine, ctx.tenant_id, row.task_id, "approval", "done", task_status="running")
     background.add_task(
         service.run_publish, engine=engine, settings=get_settings(), meta=meta, vault=vault,
         tenant_id=ctx.tenant_id, post_id=post_id, has_logo=has_logo, poll=get_settings().image_edit_poll_seconds,
     )
     return _out(row, has_logo)
+
+
+class ReviseIn(BaseModel):
+    instruction: str = Field(min_length=2, max_length=1000)  # what to change, in any language
+
+
+@router.post("/{post_id}/revise", response_model=PostOut, status_code=status.HTTP_202_ACCEPTED)
+async def revise(
+    post_id: uuid.UUID,
+    body: ReviseIn,
+    background: BackgroundTasks,
+    ctx: TenantContext = Depends(can_approve),
+    db: AsyncSession = Depends(get_db),
+    engine: AsyncEngine = Depends(get_engine),
+    llm: LLM | None = Depends(get_analyst),
+) -> PostOut:
+    """Tell the Copywriter what to change; it rewrites the chosen option and the Guardian re-checks."""
+    if llm is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "The writing agents are not configured on the server")
+    post = await _get(db, post_id)
+    if post.status != "ready":
+        raise HTTPException(status.HTTP_409_CONFLICT, "Only posts waiting for approval can be revised")
+    async with AsyncSession(engine) as own, own.begin():
+        await set_tenant(own, ctx.tenant_id)
+        from del_social.models import ChatMessage
+
+        own.add(ChatMessage(tenant_id=ctx.tenant_id, role="user", text=body.instruction.strip(), task_id=post.task_id,
+                            author=ctx.account.account_id))
+    background.add_task(service.revise, engine=engine, llm=llm, tenant_id=ctx.tenant_id, post_id=post_id,
+                        instruction=body.instruction.strip())
+    return _out(post, await _current_logo(db) is not None)
+
+
+@router.post("/{post_id}/approve", response_model=PostOut, status_code=status.HTTP_202_ACCEPTED)
+async def approve(
+    post_id: uuid.UUID,
+    body: PublishIn,
+    background: BackgroundTasks,
+    ctx: TenantContext = Depends(can_approve),
+    db: AsyncSession = Depends(get_db),
+    engine: AsyncEngine = Depends(get_engine),
+    meta: MetaClient | None = Depends(get_meta_optional),
+    vault: TokenVault | None = Depends(get_vault_optional),
+) -> PostOut:
+    """Approve: goes out at its planned time, or now if it has none (or the time has passed)."""
+    post = await _get(db, post_id)
+    now = datetime.now(UTC)
+    if post.scheduled_at is None or post.scheduled_at <= now + timedelta(minutes=1):
+        return await publish(post_id, body, background, ctx, db, engine, meta, vault)
+    if not body.confirm:
+        raise HTTPException(422, "Approving needs an explicit confirmation")
+    if post.status != "ready" or not (post.caption or "").strip():
+        raise HTTPException(status.HTTP_409_CONFLICT, "This post is not ready to approve")
+    assets = [await db.get(MediaAsset, a) for a in post.asset_ids]
+    if not all(a is not None and service.publishable(a) for a in assets):
+        raise HTTPException(status.HTTP_409_CONFLICT, "A photo in this post can no longer be published")
+    post.status = "scheduled"
+    post.approved_by, post.approved_at = ctx.account.account_id, now
+    await db.flush()
+    await db.refresh(post)
+    when = baku_label(post.scheduled_at)
+    await activity.step(engine, ctx.tenant_id, post.task_id, "approval", "done", task_status="scheduled")
+    await activity.event(engine, ctx.tenant_id, "publisher", "info", f"{when} üçün planlaşdırıldı", post.task_id, post_id)
+    await activity.say(engine, ctx.tenant_id, "publisher", f"Təsdiqləndi. {when}-də (Bakı) avtomatik paylaşılacaq.", post.task_id)
+    return _out(post, await _current_logo(db) is not None)
 
 
 @router.post("/{post_id}/archive", status_code=status.HTTP_204_NO_CONTENT)

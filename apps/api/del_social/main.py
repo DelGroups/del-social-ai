@@ -1,5 +1,7 @@
 import asyncio
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 import asyncpg
 from fastapi import FastAPI
@@ -9,14 +11,31 @@ from redis.asyncio import Redis
 
 from del_social import __version__
 from del_social.core.config import get_settings
-from del_social.routes import auth, brand, connections, evals, media, platform, posts, products, tenants, usage
+from del_social.routes import auth, brand, connections, evals, media, platform, posts, products, team, tenants, usage
 
 settings = get_settings()
 
 # httpx logs request URLs at INFO; Telegram bot tokens are part of the URL (ADR 003)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    """Background loop that publishes approved posts at their time (del_social.team.scheduler)."""
+    from del_social.core import deps
+    from del_social.team import lead, scheduler
+
+    task = None
+    meta, vault = deps.get_meta_optional(deps._http()), deps._vault()
+    if settings.scheduler_enabled and meta is not None and vault is not None:
+        task = asyncio.create_task(scheduler.loop(engine=deps._engine(), settings=settings, meta=meta, vault=vault))
+    yield
+    if task is not None:
+        task.cancel()
+    await lead.settle()
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title="DEL SOCIAL AI",
     version=__version__,
     # No public API docs in production
@@ -43,6 +62,7 @@ app.include_router(evals.router)
 app.include_router(media.router)
 app.include_router(products.router)
 app.include_router(posts.router)
+app.include_router(team.router)
 app.include_router(media.public_router)
 app.include_router(connections.callback_router)
 

@@ -6,6 +6,7 @@ with the approval pause; the logic stays here. The result is plain JSON so it ca
 stored (eval_items now, content_options later).
 """
 import uuid
+from collections.abc import Awaitable, Callable
 from decimal import Decimal
 
 from del_social.agents import brand_guardian, copywriter
@@ -16,6 +17,13 @@ from del_social.knowledge.brand_profile import BrandProfile
 from del_social.llm import LLM
 
 MAX_REVISIONS = 2
+
+# (agent, kind, title) → the Team Room's live panel; optional so evals run without it
+OnEvent = Callable[[str, str, str], Awaitable[None]]
+
+
+async def _noop(agent: str, kind: str, title: str) -> None:
+    return None
 
 
 def _snapshot(profile: BrandProfile, options: list[CopyOption], verdicts: list[OptionVerdict], revised: set[int]) -> list[dict]:
@@ -32,13 +40,18 @@ def _snapshot(profile: BrandProfile, options: list[CopyOption], verdicts: list[O
 
 
 async def generate_for_brief(
-    llm: LLM, tenant_id: uuid.UUID | None, profile: BrandProfile, brief: Brief, max_revisions: int = MAX_REVISIONS
+    llm: LLM, tenant_id: uuid.UUID | None, profile: BrandProfile, brief: Brief, max_revisions: int = MAX_REVISIONS,
+    on_event: OnEvent = _noop,
 ) -> dict:
     cost = Decimal(0)
+    await on_event("copywriter", "started", "3 variant yazır (AZ + RU)")
     written = await copywriter.write_options(llm, tenant_id, profile, brief)
     options = list(written.output.options)
     question = written.output.question
+    await on_event("copywriter", "finished", "3 variant hazırdır")
+    await on_event("brand_guardian", "started", "Dil, qadağan sözlər və iddialar yoxlanılır")
     verdicts, reviewed = await brand_guardian.review(llm, tenant_id, profile, brief, options)
+    await on_event("brand_guardian", "finished", f"{sum(v.verdict == 'pass' for v in verdicts)}/3 variant qaydasındadır")
     cost += (written.cost_usd or 0) + (reviewed.cost_usd or 0)
     attempts = [{"options": _snapshot(profile, options, verdicts, set()), "rewritten": [0, 1, 2]}]
 
@@ -48,10 +61,14 @@ async def generate_for_brief(
             break
         kept = [o for i, o in enumerate(options) if i not in flagged]
         request = brand_guardian.revision_request([(options[i], verdicts[i]) for i in flagged])
+        await on_event("copywriter", "started", f"Nəzarətçinin qeydlərinə görə {len(flagged)} variantı düzəldir")
         revised = await copywriter.revise_options(llm, tenant_id, profile, brief, kept, request, len(flagged))
+        await on_event("copywriter", "finished", "Düzəliş hazırdır")
+        await on_event("brand_guardian", "started", "Düzəlişlər yoxlanılır")
         new_verdicts, re_reviewed = await brand_guardian.review(
             llm, tenant_id, profile, brief, revised.output.options
         )
+        await on_event("brand_guardian", "finished", "Yoxlama bitdi")
         cost += (revised.cost_usd or 0) + (re_reviewed.cost_usd or 0)
         for slot, option, verdict in zip(flagged, revised.output.options, new_verdicts):
             options[slot], verdicts[slot] = option, verdict

@@ -70,8 +70,19 @@ def _merge_tags(existing: list[str], new: list[str]) -> list[str]:
 async def run_analysis(
     *, engine: AsyncEngine, llm: LLM, store: MediaStore, tenant_id: uuid.UUID, asset_id: uuid.UUID
 ) -> None:
+    from del_social.team import activity  # the Team Room shows the analyst at work
+
     async with _locks[tenant_id]:
+        await activity.event(engine, tenant_id, "media_analyst", "started", "Şəkli təhlil edir")
         await _run(engine, llm, store, tenant_id, asset_id)
+        async with AsyncSession(engine) as db, db.begin():
+            await set_tenant(db, tenant_id)
+            row = await db.get(MediaAsset, asset_id)
+            a = row.analysis or {}
+        if a.get("status") == "done":
+            await activity.event(engine, tenant_id, "media_analyst", "finished", f"Təhlil edildi: {a.get('title_az', '')}")
+        else:
+            await activity.event(engine, tenant_id, "media_analyst", "failed", f"Təhlil alınmadı: {a.get('error', '')}")
 
 
 async def _run(engine: AsyncEngine, llm: LLM, store: MediaStore, tenant_id: uuid.UUID, asset_id: uuid.UUID) -> None:

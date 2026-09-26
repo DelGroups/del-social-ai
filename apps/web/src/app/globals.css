@@ -69,3 +69,11 @@ body {
   background: var(--bg);
   color: var(--text);
 }
+
+/* Team Room diagram: a link animates while that agent works */
+.team-link { stroke: var(--border); stroke-width: 2; fill: none; }
+.team-link-live { stroke: var(--accent); stroke-width: 2; fill: none; stroke-dasharray: 6 6; animation: team-flow 0.8s linear infinite; }
+.team-node-busy { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent); animation: team-pulse 1.4s ease-in-out infinite; }
+@keyframes team-flow { to { stroke-dashoffset: -12; } }
+@keyframes team-pulse { 50% { box-shadow: 0 0 0 3px var(--bg), 0 0 0 9px transparent; } }
+@media (prefers-reduced-motion: reduce) { .team-link-live, .team-node-busy { animation: none; } }

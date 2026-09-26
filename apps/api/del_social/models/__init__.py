@@ -11,15 +11,18 @@ from del_social.models.membership import MemberRole, Membership
 from del_social.models.password_reset import PasswordReset
 from del_social.models.post import Post
 from del_social.models.product import Product
+from del_social.models.team import AgentEvent, ChatMessage, Task
 from del_social.models.tenant import Tenant
 from del_social.models.tenant_secret import TenantSecret
 
 __all__ = [
     "Account",
+    "AgentEvent",
     "AuthSession",
     "Base",
     "BrandProfileVersion",
     "Channel",
+    "ChatMessage",
     "Connection",
     "ConnectionStatus",
     "EvalItem",
@@ -32,6 +35,7 @@ __all__ = [
     "PasswordReset",
     "Post",
     "Product",
+    "Task",
     "Tenant",
     "TenantSecret",
 ]

@@ -50,7 +50,11 @@
     "brand": "Brand",
     "evals": "Evals",
     "media": "Photos",
-    "posts": "Posts"
+    "posts": "Posts",
+    "home": "Team",
+    "approvals": "Approvals",
+    "reports": "Reports",
+    "settings": "Settings"
   },
   "members": {
     "title": "Members",
@@ -484,13 +488,18 @@
       "approved": "approved",
       "publishing": "publishing",
       "published": "published",
-      "partly_published": "partly published"
+      "partly_published": "partly published",
+      "scheduled": "scheduled"
     },
     "orderHint": "Photo order in the post (the first is the cover). Use the arrows, remove ✕ or add another photo of the product, then save.",
     "cover": "cover",
     "addPhoto": "add photo",
     "saveOrder": "Save photo order",
-    "orderSaved": "Photo order saved"
+    "orderSaved": "Photo order saved",
+    "scheduledLong": "Approved. It will be published automatically on {when} (Baku time).",
+    "approveScheduled": "Approve · {when}",
+    "approveConfirm": "Approve? It will be published automatically on {when}.",
+    "approved": "Approved and scheduled."
   },
   "pageSetup": {
     "title": "Page setup",
@@ -509,5 +518,107 @@
     "igBio": "Bio (max 150)",
     "igLink": "Link",
     "igSteps": "Also in Edit profile: category \"Furniture Store\", contact buttons (WhatsApp, call), address."
+  },
+  "team": {
+    "chatTitle": "Chat with the Team Lead",
+    "teamTitle": "Team · live",
+    "leadIdle": "Give instructions; the team does the work and asks you only for approval.",
+    "leadThinking": "The Team Lead is thinking…",
+    "empty": "Write your first instruction, e.g. “Prepare a post of the Wendy wardrobe for tomorrow evening”.",
+    "placeholder": "Write an instruction… (Enter to send, Shift+Enter for a new line)",
+    "send": "Send",
+    "suggest1": "Prepare a post of the Wendy wardrobe for tomorrow evening",
+    "suggest2": "What is waiting for my approval?",
+    "suggest3": "Analyse the new photos",
+    "agents": {
+      "team_lead": "Team Lead",
+      "media_analyst": "Photo Analyst",
+      "copywriter": "Copywriter",
+      "brand_guardian": "Brand Guardian",
+      "visual_editor": "Visual editor",
+      "publisher": "Publisher",
+      "image_request": "Visual editor",
+      "system_check": "System",
+      "image_editor": "Visual editor"
+    },
+    "steps": {
+      "photos": "Photos selected",
+      "copy": "Copywriter writes",
+      "guard": "Brand check",
+      "approval": "Your approval",
+      "publish": "Publishing"
+    },
+    "kpi": {
+      "waiting": "Waiting for you",
+      "running": "In progress",
+      "scheduled": "Scheduled",
+      "published": "Published (recent)",
+      "costToday": "AI cost today",
+      "costMonth": "AI cost this month"
+    },
+    "working": "working",
+    "doneToday": "{count} today",
+    "noActivity": "No work yet",
+    "upcoming": "Next posts",
+    "noneScheduled": "Nothing scheduled",
+    "recentlyPublished": "Recently published",
+    "activity": "Activity",
+    "unanalysed": "{count} photos not analysed yet",
+    "card": {
+      "ready": "Waiting for your approval",
+      "generating": "Being written",
+      "scheduled": "Approved · scheduled",
+      "publishing": "Publishing",
+      "published": "Published",
+      "partly_published": "Partly published",
+      "approved": "Approved",
+      "failed": "Failed"
+    },
+    "verdict": {
+      "pass": "Guardian: OK",
+      "fix": "Guardian: has notes",
+      "block": "Guardian: blocked"
+    },
+    "writing": "The Copywriter is writing…",
+    "more": "Show all",
+    "less": "Show less",
+    "openPost": "open",
+    "approveAt": "Approve · {when}",
+    "approveNow": "Approve and publish",
+    "askChange": "Ask for a change",
+    "details": "Details",
+    "confirmScheduled": "Approve? It will be published automatically at the planned time.",
+    "confirmNow": "Publish now to the live {channels} pages?",
+    "yes": "Yes, approve",
+    "cancel": "Cancel",
+    "changePlaceholder": "What should change? e.g. “it has round handles, don't write handleless”",
+    "sendChange": "Send to the Copywriter",
+    "approvalsTitle": "Approvals",
+    "nothingWaiting": "Nothing is waiting for you. The team will bring the next post here."
+  },
+  "settingsHub": {
+    "title": "Settings",
+    "brand": {
+      "title": "Brand profile",
+      "hint": "What the team knows about the company: voice, rules, terminology."
+    },
+    "connections": {
+      "title": "Connections",
+      "hint": "Instagram, Facebook, Telegram, and page details."
+    },
+    "members": {
+      "title": "Members",
+      "hint": "Who has access and their roles."
+    },
+    "evals": {
+      "title": "Agent tests",
+      "hint": "Quality tests of the writing agents."
+    }
+  },
+  "reports": {
+    "title": "Reports",
+    "soon": "Detailed reports (reach, engagement, best content, competitors) with PDF export arrive with the Analyst agent. For now: what was published and what the AI cost.",
+    "published": "Published posts ({count})",
+    "nonePublished": "Nothing published yet."
   }
 }
