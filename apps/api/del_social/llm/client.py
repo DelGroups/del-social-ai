@@ -96,7 +96,7 @@ class LLM:
         max_tokens: int = 4096,
     ) -> LLMResult[T]:
         model = model_for(self._settings, tier)
-        trace_id = str(uuid.uuid4())
+        trace_id = uuid.uuid4().hex  # also a valid OpenTelemetry trace id
         started = datetime.now(UTC)
         t0 = time.monotonic()
         resp = None
@@ -132,6 +132,8 @@ class LLM:
                     trace_id=trace_id,
                     tenant_id=tenant_id,
                     agent=prompt.agent,
+                    prompt_name=prompt.agent,
+                    prompt_version=prompt.version,
                     prompt_ref=prompt.ref,
                     model=model,
                     input=user,

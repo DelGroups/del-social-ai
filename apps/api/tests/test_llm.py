@@ -91,14 +91,25 @@ class FakeLangfuse:
     def __init__(self):
         self.batches: list[dict] = []
         self.auth: list[str] = []
+        self.versions: list[str | None] = []
         self.fail = False
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         if self.fail:
             raise httpx.ConnectError("down")
         self.auth.append(request.headers["authorization"])
+        self.versions.append(request.headers.get("x-langfuse-ingestion-version"))
+        assert request.url.path == "/api/public/otel/v1/traces"
         self.batches.append(json.loads(request.content))
-        return httpx.Response(207, json={"successes": [], "errors": []})
+        return httpx.Response(200, json={})
+
+
+def span_attrs(span: dict) -> dict[str, str]:
+    out = {}
+    for a in span["attributes"]:
+        v = a["value"]
+        out[a["key"]] = v.get("stringValue", v.get("intValue", v.get("arrayValue")))
+    return out
 
 
 @pytest.fixture
@@ -137,12 +148,17 @@ async def test_successful_call_is_structured_recorded_and_traced(fakes, admin, t
     assert row["prompt_ref"].startswith("system_check@v1#")
 
     assert lf.auth[0] == "Basic " + base64.b64encode(f"{LF_PUBLIC}:{LF_SECRET}".encode()).decode()
-    events = lf.batches[0]["batch"]
-    assert [e["type"] for e in events] == ["trace-create", "generation-create"]
-    gen = events[1]["body"]
-    assert gen["traceId"] == r.trace_id and gen["model"] == "claude-sonnet-5"
-    assert gen["usageDetails"]["output"] == 300 and gen["costDetails"]["total"] == pytest.approx(0.00556)
-    assert events[0]["body"]["userId"] == str(tenants["a"])
+    assert lf.versions[0] == "4"
+    span = lf.batches[0]["resourceSpans"][0]["scopeSpans"][0]["spans"][0]
+    attrs = span_attrs(span)
+    assert span["traceId"] == r.trace_id and len(r.trace_id) == 32
+    assert attrs["langfuse.observation.type"] == "generation"
+    assert attrs["langfuse.observation.model.name"] == "claude-sonnet-5"
+    assert json.loads(attrs["langfuse.observation.usage_details"])["output"] == 300
+    assert json.loads(attrs["langfuse.observation.cost_details"])["total"] == pytest.approx(0.00556)
+    assert attrs["langfuse.user.id"] == str(tenants["a"])
+    assert attrs["langfuse.observation.prompt.version"] == "1"
+    assert "Salam" in attrs["langfuse.observation.output"]
     assert API_KEY not in json.dumps(lf.batches)
 
 
@@ -161,7 +177,8 @@ async def test_failed_call_is_recorded_and_raised(fakes, admin, tenants):
     assert API_KEY not in str(e.value)
     row = await admin.fetchrow("SELECT * FROM llm_calls WHERE tenant_id = $1", tenants["a"])
     assert row["status"] == "error" and "500" in row["error"]
-    assert lf.batches[0]["batch"][1]["body"]["level"] == "ERROR"
+    span = lf.batches[0]["resourceSpans"][0]["scopeSpans"][0]["spans"][0]
+    assert span["status"]["code"] == 2 and span_attrs(span)["langfuse.observation.level"] == "ERROR"
 
 
 async def test_output_that_breaks_the_schema_is_an_error(fakes, admin, tenants):
