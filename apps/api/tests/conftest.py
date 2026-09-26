@@ -58,42 +58,78 @@ async def admin(migrated_db: str) -> AsyncIterator[asyncpg.Connection]:
 
 
 @pytest.fixture
-async def tenants(admin: asyncpg.Connection) -> AsyncIterator[dict[str, uuid.UUID]]:
-    """Two tenants, two users each, one secret each. Removed afterwards."""
+async def account_factory(admin: asyncpg.Connection) -> AsyncIterator:
+    """Create global accounts (bypassing RLS as admin); all are removed afterwards."""
+    created: list[uuid.UUID] = []
+
+    async def make(email: str | None = None, **fields) -> uuid.UUID:
+        account_id = uuid.uuid4()
+        await admin.execute(
+            "INSERT INTO accounts (account_id, email, password_hash, is_active, is_platform_admin)"
+            " VALUES ($1, $2, 'not-a-real-hash', $3, $4)",
+            account_id,
+            email or f"{account_id}@acc.test",
+            fields.get("is_active", True),
+            fields.get("is_platform_admin", False),
+        )
+        created.append(account_id)
+        return account_id
+
+    try:
+        yield make
+    finally:
+        # Memberships are removed by the tenant fixtures; sessions/resets cascade.
+        await admin.execute("DELETE FROM accounts WHERE account_id = ANY($1::uuid[])", created)
+
+
+@pytest.fixture
+async def tenants(admin: asyncpg.Connection, account_factory) -> AsyncIterator[dict[str, uuid.UUID]]:
+    """Two tenants with two members and one secret each. Removed afterwards.
+
+    Keys: "a", "b" (tenant ids) and "a_owner", "a_viewer", "b_owner", "b_approver" (account ids).
+    """
     a, b = uuid.uuid4(), uuid.uuid4()
     await admin.executemany(
         "INSERT INTO tenants (tenant_id, name) VALUES ($1, $2)",
         [(a, "Tenant A"), (b, "Tenant B")],
     )
-    await admin.executemany(
-        "INSERT INTO users (tenant_id, email, role) VALUES ($1, $2, $3)",
-        [
-            (a, f"owner-{a}@a.test", "owner"),
-            (a, f"viewer-{a}@a.test", "viewer"),
-            (b, f"owner-{b}@b.test", "owner"),
-            (b, f"approver-{b}@b.test", "approver"),
-        ],
-    )
+    ids: dict[str, uuid.UUID] = {"a": a, "b": b}
+    for key, tenant, role in [
+        ("a_owner", a, "owner"),
+        ("a_viewer", a, "viewer"),
+        ("b_owner", b, "owner"),
+        ("b_approver", b, "approver"),
+    ]:
+        ids[key] = await account_factory()
+        await admin.execute(
+            "INSERT INTO memberships (tenant_id, account_id, role) VALUES ($1, $2, $3)",
+            tenant,
+            ids[key],
+            role,
+        )
     await admin.executemany(
         "INSERT INTO tenant_secrets (tenant_id, key, encrypted_value) VALUES ($1, $2, $3)",
         [(a, "meta_token", b"ciphertext-a"), (b, "meta_token", b"ciphertext-b")],
     )
     try:
-        yield {"a": a, "b": b}
+        yield ids
     finally:
-        ids = [a, b]
-        await admin.execute("DELETE FROM tenant_secrets WHERE tenant_id = ANY($1::uuid[])", ids)
-        await admin.execute("DELETE FROM users WHERE tenant_id = ANY($1::uuid[])", ids)
-        await admin.execute("DELETE FROM tenants WHERE tenant_id = ANY($1::uuid[])", ids)
+        tids = [a, b]
+        for table in ("invitations", "memberships", "tenant_secrets", "tenants"):
+            await admin.execute(f"DELETE FROM {table} WHERE tenant_id = ANY($1::uuid[])", tids)
 
 
 @asynccontextmanager
 async def as_app(
-    conn: asyncpg.Connection, tenant_id: uuid.UUID | None = None
+    conn: asyncpg.Connection,
+    tenant_id: uuid.UUID | None = None,
+    account_id: uuid.UUID | None = None,
 ) -> AsyncIterator[asyncpg.Connection]:
-    """One transaction as the restricted app role, optionally scoped to a tenant."""
+    """One transaction as the restricted app role, optionally scoped to a tenant and/or account."""
     async with conn.transaction():
         await conn.execute(f"SET LOCAL ROLE {APP_ROLE}")
         if tenant_id is not None:
             await conn.execute("SELECT set_config('app.tenant_id', $1, true)", str(tenant_id))
+        if account_id is not None:
+            await conn.execute("SELECT set_config('app.account_id', $1, true)", str(account_id))
         yield conn

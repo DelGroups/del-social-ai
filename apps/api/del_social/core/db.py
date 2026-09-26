@@ -20,3 +20,14 @@ async def set_tenant(session: AsyncSession, tenant_id: uuid.UUID) -> None:
     await session.execute(
         text("SELECT set_config('app.tenant_id', :tid, true)"), {"tid": str(tenant_id)}
     )
+
+
+async def set_account(session: AsyncSession, account_id: uuid.UUID) -> None:
+    """Scope the current transaction to one signed-in account (ADR 002).
+
+    Same rules as set_tenant(): transaction-local; unset means the account-scoped
+    tables (accounts, auth_sessions, password_resets) return no rows.
+    """
+    await session.execute(
+        text("SELECT set_config('app.account_id', :aid, true)"), {"aid": str(account_id)}
+    )
