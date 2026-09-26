@@ -4,10 +4,11 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState } from "react";
 
-import { Alert, Button, Field, Input } from "@/components/ui";
+import { AccountEmailField, PasswordInput } from "@/components/client";
+import { Alert, Button, Field } from "@/components/ui";
 import { ApiError, api } from "@/lib/client-api";
 
-export function ResetForm({ token }: { token: string }) {
+export function ResetForm({ token, email }: { token: string; email: string }) {
   const t = useTranslations();
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -56,11 +57,12 @@ export function ResetForm({ token }: { token: string }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      <AccountEmailField label={t("login.email")} email={email} />
       <Field label={t("reset.newPassword")} hint={t("common.passwordHint")}>
-        <Input name="password" type="password" autoComplete="new-password" minLength={10} maxLength={128} required />
+        <PasswordInput name="password" autoComplete="new-password" minLength={10} maxLength={128} required />
       </Field>
       <Field label={t("reset.confirm")}>
-        <Input name="confirm" type="password" autoComplete="new-password" required />
+        <PasswordInput name="confirm" autoComplete="new-password" required />
       </Field>
       {error && <Alert tone="error">{error}</Alert>}
       <Button type="submit" disabled={busy} className="w-full">

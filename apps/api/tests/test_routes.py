@@ -7,7 +7,7 @@ import httpx
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from del_social.cli import CliError, create_platform_admin
+from del_social.cli import CliError, create_platform_admin, set_password
 from del_social.core.deps import allowed_origins, get_db, get_redis
 from del_social.core.security import hash_password, verify_password
 from del_social.core.sessions import SESSION_COOKIE, create_session
@@ -384,6 +384,9 @@ async def test_password_reset_link(client, account_factory, session_for, login_a
     assert url.startswith("https://app.test/reset-password/")
     token = link_token(url)
 
+    info = await client.get(f"/auth/password-resets/{token}")
+    assert info.status_code == 200 and info.json() == {"email": email}
+
     weak = await client.post(f"/auth/password-resets/{token}", json={"new_password": "short"}, headers=O)
     assert weak.status_code == 422
     used = await client.post(f"/auth/password-resets/{token}", json={"new_password": NEW_PASSWORD}, headers=O)
@@ -392,6 +395,7 @@ async def test_password_reset_link(client, account_factory, session_for, login_a
     assert (await client.post("/auth/login", json={"email": email, "password": NEW_PASSWORD}, headers=O)).status_code == 200
     reused = await client.post(f"/auth/password-resets/{token}", json={"new_password": NEW_PASSWORD}, headers=O)
     assert reused.status_code == 410
+    assert (await client.get(f"/auth/password-resets/{token}")).status_code == 410
 
 
 # --- CLI ---
@@ -412,3 +416,14 @@ async def test_cli_creates_platform_admin(admin, migrated_db):
             await create_platform_admin(plain_dsn(migrated_db), new_email(), "short")
     finally:
         await admin.execute("DELETE FROM accounts WHERE email = $1", email)
+
+
+async def test_cli_set_password_signs_out_everywhere(client, session_for, login_account, migrated_db):
+    account_id, email = login_account
+    old_session = await session_for(account_id)
+    await set_password(plain_dsn(migrated_db), email.upper(), NEW_PASSWORD)
+    assert (await client.get("/auth/me", headers=old_session)).status_code == 401
+    ok = await client.post("/auth/login", json={"email": email, "password": NEW_PASSWORD}, headers=O)
+    assert ok.status_code == 200
+    with pytest.raises(CliError):
+        await set_password(plain_dsn(migrated_db), new_email(), NEW_PASSWORD)

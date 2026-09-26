@@ -40,9 +40,10 @@ export async function Shell({
                 {t("home.platform")}
               </Link>
             )}
-            <Link href="/account" className="text-muted hover:text-text" title={me.email}>
+            <Link href="/account" className="text-muted hover:text-text">
               {t("common.account")}
             </Link>
+            <span className="rounded-md border border-border px-2 py-1 text-xs text-muted">{me.email}</span>
             <SignOutButton />
           </div>
         </div>

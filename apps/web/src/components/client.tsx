@@ -19,6 +19,38 @@ import type { Membership } from "@/lib/types";
 
 import { Button, Input, Select } from "./ui";
 
+/** Password field with a show/hide toggle, so people can see exactly what they typed. */
+export function PasswordInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  const t = useTranslations("common");
+  const [visible, setVisible] = useState(false);
+  const label = visible ? t("hidePassword") : t("showPassword");
+  return (
+    <div className="relative">
+      <Input {...props} type={visible ? "text" : "password"} className="pr-16" />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={label}
+        title={label}
+        className="absolute inset-y-0 right-0 px-3 text-xs text-muted hover:text-text"
+      >
+        {visible ? "\u25C9" : "\u25CE"}
+      </button>
+    </div>
+  );
+}
+
+/** Read-only email above new-password fields: tells people (and password managers)
+ *  which account the password belongs to. */
+export function AccountEmailField({ label, email }: { label: string; email: string }) {
+  return (
+    <label className="block space-y-1">
+      <span className="text-sm font-medium">{label}</span>
+      <Input type="email" name="username" autoComplete="username" value={email} readOnly />
+    </label>
+  );
+}
+
 /** A one-time link with a copy button. */
 export function CopyField({ value }: { value: string }) {
   const t = useTranslations("common");

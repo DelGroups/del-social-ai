@@ -43,7 +43,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
           <SignOutButton />
         </>
       ) : (
-        <AcceptForm token={token} signedIn={Boolean(me)} />
+        <AcceptForm token={token} email={invitation.email} signedIn={Boolean(me)} />
       )}
       {!me && (
         <p className="text-xs text-muted">
