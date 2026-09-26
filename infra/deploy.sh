@@ -4,10 +4,14 @@
 # Run by GitHub Actions over SSH as a *forced command*: the deploy key in
 # ~/.ssh/authorized_keys can execute only this script, with no shell, no PTY
 # and no forwarding. Any command the client sends is ignored.
-# Migrations are NOT run here (see docs/decisions/001-multi-tenant-rls.md).
+# Order: build images -> back up the database -> apply migrations -> restart.
+# If the backup or a migration fails, the running containers are left untouched
+# (docs/decisions/004-automatic-migrations.md).
 set -euo pipefail
 
 APP_DIR=/opt/del-social-ai
+BACKUP_DIR=/root/backups
+KEEP_BACKUPS=20
 
 # Everything lives in main() so bash has parsed the whole file before the
 # `git reset` below replaces it on disk.
@@ -29,8 +33,16 @@ main() {
     after=$(git rev-parse --short HEAD)
     echo "==> $before -> $after"
 
-    echo "==> building and starting containers"
-    docker compose up -d --build --remove-orphans
+    echo "==> building images"
+    docker compose build --quiet api web migrate </dev/null
+
+    backup_database "$before"
+
+    echo "==> applying migrations"
+    docker compose run --rm -T migrate alembic upgrade head </dev/null
+
+    echo "==> starting containers"
+    docker compose up -d --remove-orphans </dev/null
 
     echo "==> waiting for services to be healthy"
     for _ in $(seq 1 45); do
@@ -46,6 +58,20 @@ main() {
     docker compose ps
     docker compose logs --tail=40 api web
     exit 1
+}
+
+# Compressed pg_dump before every deploy; the newest $KEEP_BACKUPS are kept.
+backup_database() {
+    local file
+    mkdir -p "$BACKUP_DIR"
+    chmod 700 "$BACKUP_DIR"
+    file="$BACKUP_DIR/deploy-$(date -u +%Y%m%dT%H%M%SZ)-$1.sql.gz"
+    echo "==> backing up database -> $file"
+    docker compose exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB"' </dev/null         | gzip > "$file.partial"
+    gzip -t "$file.partial"
+    mv "$file.partial" "$file"
+    chmod 600 "$file"
+    ls -1t "$BACKUP_DIR"/deploy-*.sql.gz | tail -n +$((KEEP_BACKUPS + 1)) | xargs -r rm --
 }
 
 # True when every service that defines a healthcheck reports "healthy".
