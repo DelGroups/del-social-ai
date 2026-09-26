@@ -350,6 +350,12 @@ async def analyze_all(
             MediaAsset.analyzed_at.is_(None), MediaAsset.parent_asset_id.is_(None),
         ).order_by(MediaAsset.created_at)
     )).all()
+    # Marked queued first, so the panel shows progress and keeps refreshing until each is done
+    async with AsyncSession(engine) as own, own.begin():
+        await set_tenant(own, ctx.tenant_id)
+        await own.execute(
+            sql_update(MediaAsset).where(MediaAsset.asset_id.in_(ids)).values(analysis={"status": "queued"})
+        )
     for asset_id in ids:
         _schedule_analysis(background, engine, analyst, store, ctx.tenant_id, asset_id)
     return AnalyzeAllOut(queued=len(ids))

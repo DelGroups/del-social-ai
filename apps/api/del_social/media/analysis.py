@@ -9,6 +9,7 @@ on the photo for the other agents and the panel.
 """
 import asyncio
 import logging
+import re
 import uuid
 from collections import defaultdict
 from datetime import UTC, datetime
@@ -34,11 +35,34 @@ MAX_COVERS = 8
 _locks: defaultdict[uuid.UUID, asyncio.Lock] = defaultdict(asyncio.Lock)
 
 
+LATIN = re.compile(r"[A-Za-zəğıöüşçƏĞİÖÜŞÇ]")
+# The ranges below are U+0400–U+04FF (Cyrillic), written as characters
+CYRILLIC = re.compile(r"[Ѐ-ӿ]")
+HASHTAG_LATIN = re.compile(r"^#[0-9A-Za-z_əğıöüşçƏĞİÖÜŞÇ]{2,40}$")
+HASHTAG_CYRILLIC = re.compile(r"^#[0-9_Ѐ-ӿ]{2,40}$")
+
+
+def _one_script(text: str) -> bool:
+    """Latin (incl. Azerbaijani letters) or Cyrillic, never both in one word (e.g. "#şkафкупе")."""
+    return not (LATIN.search(text) and CYRILLIC.search(text))
+
+
+def clean_hashtags(tags: list[str], limit: int) -> list[str]:
+    out: list[str] = []
+    seen: set[str] = set()
+    for t in tags:
+        t = t.strip()
+        if (HASHTAG_LATIN.match(t) or HASHTAG_CYRILLIC.match(t)) and t.lower() not in seen:
+            seen.add(t.lower())
+            out.append(t)
+    return out[:limit]
+
+
 def _merge_tags(existing: list[str], new: list[str]) -> list[str]:
     out = list(existing)
     for t in new:
         t = t.strip().lower()[:40]
-        if t and t not in out:
+        if t and t not in out and _one_script(t):
             out.append(t)
     return out[:30]
 
@@ -132,9 +156,11 @@ async def _run(engine: AsyncEngine, llm: LLM, store: MediaStore, tenant_id: uuid
                     )
                 )
                 row.position = 0 if last is None else last + 1
+            findings = a.model_dump(mode="json")
+            findings["hashtags"] = clean_hashtags(a.hashtags, min(profile.hashtags.max_per_post, 30))
             row.analysis = {
                 "status": "done",
-                **a.model_dump(mode="json"),
+                **findings,
                 "product_action": product_action,
                 "cost_usd": str(result.cost_usd) if result.cost_usd is not None else None,
                 "prompt": result.trace_id,

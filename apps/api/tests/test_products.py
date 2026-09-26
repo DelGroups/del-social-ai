@@ -102,3 +102,18 @@ async def test_post_logo_choice_and_landscape(client, tenants, session_for):
     green_now = await client.get(path_of(photo["urls"]["landscape-logo"]))
     assert corner(green_now.content, (1080, 566))[1] > 150  # the chosen (green) logo
     assert (await client.post(murl(tenants["a"], f"/{photo['asset_id']}/default-logo"), headers={**owner, **O})).status_code == 409
+
+
+async def test_merge_products(client, tenants, session_for):
+    owner = await session_for(tenants["a_owner"])
+    a = (await client.post(purl(tenants["a"]), json={"name": "şkaf wendi modeli"}, headers={**owner, **O})).json()
+    b = (await client.post(purl(tenants["a"]), json={"name": "Wendy qarderobu"}, headers={**owner, **O})).json()
+    a_ids = [(await upload(client, tenants["a"], owner, jpeg(1200, 1200, color=(i * 50, 0, 0)), product_id=a["product_id"])).json()["asset_id"] for i in (1, 2)]
+    b_id = (await upload(client, tenants["a"], owner, jpeg(1200, 1200, color=(0, 0, 150)), product_id=b["product_id"])).json()["asset_id"]
+    merged = await client.post(purl(tenants["a"], f"/{a['product_id']}/merge"), json={"into_product_id": b["product_id"]}, headers={**owner, **O})
+    assert merged.status_code == 200 and merged.json()["photos"] == 3
+    photos = (await client.get(murl(tenants["a"], f"?product_id={b['product_id']}"), headers=owner)).json()
+    assert [m["asset_id"] for m in photos] == [b_id, *a_ids] and [m["position"] for m in photos] == [0, 1, 2]
+    assert [p["name"] for p in (await client.get(purl(tenants["a"]), headers=owner)).json()] == ["Wendy qarderobu"]
+    same = await client.post(purl(tenants["a"], f"/{b['product_id']}/merge"), json={"into_product_id": b["product_id"]}, headers={**owner, **O})
+    assert same.status_code == 409

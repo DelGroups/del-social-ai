@@ -140,3 +140,41 @@ async def test_analyse_all_and_failures(client, tenants, session_for):
     assert retry.status_code == 202
     assert (await listing(client, tenants["a"], owner))[failed["asset_id"]]["analysis"]["status"] == "done"
     assert (await client.post(murl(tenants["a"], "/analyze-all"), headers={**owner, **O})).json() == {"queued": 0}
+
+
+def test_hashtags_are_cleaned_by_code():
+    from del_social.media.analysis import _merge_tags, clean_hashtags
+
+    tags = ["#DelFurniture", "#qarderob", "#şkафкупе", "#шкафкупе", "#Qarderob", "#bad tag", "#мебель", "qarderob", "#x"]
+    assert clean_hashtags(tags, 10) == ["#DelFurniture", "#qarderob", "#шкафкупе", "#мебель"]
+    assert clean_hashtags(tags, 2) == ["#DelFurniture", "#qarderob"]
+    assert _merge_tags(["qarderob"], ["Ağ", "şkафкупе", "qarderob", "шкаф"]) == ["qarderob", "ağ", "шкаф"]
+
+
+async def test_mixed_script_hashtags_never_stored(client, analyst, tenants, session_for):
+    owner = await session_for(tenants["a_owner"])
+    analyst.script.append(analysis(hashtags=["#DelFurniture", "#şkафкупе", "#шкафкупе"]))
+    photo = (await upload(client, tenants["a"], owner, jpeg(1200, 1200))).json()
+    stored = (await listing(client, tenants["a"], owner))[photo["asset_id"]]["analysis"]["hashtags"]
+    assert stored == ["#DelFurniture", "#шкафкупе"]
+
+
+async def test_analyse_all_marks_photos_queued_first(client, tenants, session_for):
+    """The panel refreshes while photos are queued/running; they must be marked before the job starts."""
+    from del_social.main import app
+    from del_social.routes.media import get_analyst
+
+    owner = await session_for(tenants["a_owner"])
+    app.dependency_overrides[get_analyst] = lambda: None
+    photo = (await upload(client, tenants["a"], owner, jpeg(1200, 1200))).json()
+    seen: list[str] = []
+
+    class Peek(FakeAnalyst):
+        async def structured(self, **kw):
+            seen.append("called")
+            return await super().structured(**kw)
+
+    app.dependency_overrides[get_analyst] = lambda: Peek()
+    await client.post(murl(tenants["a"], "/analyze-all"), headers={**owner, **O})
+    assert seen == ["called"]
+    assert (await listing(client, tenants["a"], owner))[photo["asset_id"]]["analysis"]["status"] == "done"

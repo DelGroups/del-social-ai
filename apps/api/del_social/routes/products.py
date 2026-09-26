@@ -103,6 +103,35 @@ async def delete_product(
     product.deleted_at = datetime.now(UTC)
 
 
+class MergeIn(BaseModel):
+    into_product_id: uuid.UUID
+
+
+@router.post("/{product_id}/merge", response_model=ProductOut)
+async def merge(
+    product_id: uuid.UUID, body: MergeIn, ctx: TenantContext = Depends(can_manage), db: AsyncSession = Depends(get_db)
+) -> ProductOut:
+    """Move every photo of this product to another one (after its photos) and remove this product."""
+    if body.into_product_id == product_id:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Choose a different product")
+    source = await get_product(db, product_id)
+    target = await get_product(db, body.into_product_id)
+    last = await db.scalar(
+        select(func.max(MediaAsset.position)).where(MediaAsset.product_id == target.product_id, MediaAsset.deleted_at.is_(None))
+    )
+    start = 0 if last is None else last + 1
+    moving = (await db.scalars(
+        select(MediaAsset).where(MediaAsset.product_id == source.product_id, MediaAsset.deleted_at.is_(None))
+        .order_by(MediaAsset.position, MediaAsset.created_at)
+    )).all()
+    for offset, asset in enumerate(moving):
+        asset.product_id = target.product_id
+        asset.position = start + offset
+    source.deleted_at = datetime.now(UTC)
+    await db.flush()
+    return await _out(db, target)
+
+
 @router.put("/{product_id}/order", response_model=ProductOut)
 async def reorder(
     product_id: uuid.UUID, body: OrderIn, ctx: TenantContext = Depends(can_manage), db: AsyncSession = Depends(get_db)
