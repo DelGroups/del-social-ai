@@ -17,7 +17,7 @@ COPY del_social ./del_social
 COPY alembic.ini ./
 COPY migrations ./migrations
 
-RUN useradd --system --uid 10001 app
+RUN useradd --system --uid 10001 app     && mkdir -p /data/media && chown app:app /data/media
 USER app
 
 EXPOSE 8000

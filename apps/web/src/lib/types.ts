@@ -155,3 +155,22 @@ export type EvalRunDetail = EvalRunSummary & { items: EvalItem[] };
 
 // Mirrors Permission.APPROVE_CONTENT
 export const canApprove = (role: Role) => role !== "viewer";
+
+export type MediaAsset = {
+  asset_id: string;
+  kind: "photo" | "logo";
+  filename: string;
+  width: number;
+  height: number;
+  bytes: number;
+  tags: string[];
+  description: string;
+  focal_x: number;
+  focal_y: number;
+  enhance: boolean;
+  created_at: string;
+  urls: Record<string, string>; // signed, ~24h: thumb, feed, square, feed-logo, square-logo
+};
+
+// Mirrors Permission.MANAGE_MEDIA
+export const canManageMedia = (role: Role) => role === "owner" || role === "admin";

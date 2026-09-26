@@ -48,7 +48,8 @@
     "comingSoon": "Sosial media üzrə süni intellekt komandanız (strategiya, məzmun, təsdiqlər, paylaşım) 1-ci mərhələdə gələcək. Hələlik kimin giriş hüququ olduğunu idarə edə bilərsiniz.",
     "connections": "Bağlantılar",
     "brand": "Brend",
-    "evals": "Sınaqlar"
+    "evals": "Sınaqlar",
+    "media": "Şəkillər"
   },
   "members": {
     "title": "Üzvlər",
@@ -271,5 +272,40 @@
       "needs_edit": "Düzəliş lazımdır",
       "wrong": "Yanlışdır"
     }
+  },
+  "media": {
+    "title": "Şəkil kitabxanası",
+    "intro": "Məhsullarınızın və layihələrinizin real şəkilləri, həmçinin loqonuz. Postlar bu şəkillərdən istifadə edir: sistem onları yalnız Instagram formatına kəsir, işığı və kontrastı yüngülcə düzəldir və loqonuzu əlavə edə bilər. Məhsulun özü heç vaxt dəyişdirilmir.",
+    "uploadTitle": "Yükləmə",
+    "files": "Şəkillər",
+    "filesHint": "JPEG, PNG, WEBP və ya HEIC (iPhone). Bir neçəsini birdən seçə bilərsiniz.",
+    "kind": "Növ",
+    "kindPhoto": "Şəkil",
+    "kindLogo": "Loqo",
+    "description": "Şəkildə nə göstərilir",
+    "descriptionHint": "Bir cümlə; agentlər postu yazarkən bundan istifadə edir (məs. \"Qulpsuz qapılı ağ quraşdırılmış qarderob\").",
+    "tags": "Teqlər",
+    "tagsHint": "Vergüllə ayırın, məs. qarderob, yataq otağı",
+    "upload": "Yüklə",
+    "uploading": "{total} şəkildən {current}-i yüklənir…",
+    "logoTitle": "Loqo",
+    "logoHint": "Post tələb etdikdə şəklin aşağı sağ küncünə əlavə olunur. Şəffaf fonlu PNG ən yaxşı görünür.",
+    "noLogo": "Hələ loqo yüklənməyib. Yükləyərkən \"Loqo\" növünü seçin.",
+    "photosTitle": "Şəkillər ({count})",
+    "allTags": "Hamısı",
+    "empty": "Hələ şəkil yoxdur.",
+    "noDescription": "Təsvir yoxdur",
+    "focalHint": "Şəklin ən vacib hissəsinə klikləyin: kəsmə zamanı o hissə kadrda qalır.",
+    "original": "Orijinal",
+    "previewFeed": "Instagram 4:5",
+    "previewSquare": "Kvadrat 1:1",
+    "previewAlt": "Post şəklinin görünüşü",
+    "previewHint": "Paylaşılacaq şəkil məhz budur. Dəyişikliklərdən sonra yeniləmək üçün yadda saxlayın.",
+    "enhance": "İşıq və kontrastın yüngül düzəlişi (rənglər dəyişmir)",
+    "save": "Yadda saxla",
+    "saved": "Yadda saxlanıldı",
+    "close": "Bağla",
+    "delete": "Sil",
+    "deleteConfirm": "Bu şəkil silinsin? Artıq paylaşılmış postlara təsir etmir."
   }
 }

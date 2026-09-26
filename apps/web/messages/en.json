@@ -48,7 +48,8 @@
     "comingSoon": "Your AI social media team (strategy, content, approvals, publishing) arrives in Phase 1. For now you can manage who has access.",
     "connections": "Connections",
     "brand": "Brand",
-    "evals": "Evals"
+    "evals": "Evals",
+    "media": "Photos"
   },
   "members": {
     "title": "Members",
@@ -271,5 +272,40 @@
       "needs_edit": "Needs edit",
       "wrong": "Wrong"
     }
+  },
+  "media": {
+    "title": "Photo library",
+    "intro": "Real photos of your products and projects, plus your logo. Posts use these photos: the system only crops them to Instagram's format, gently corrects light and contrast, and can add your logo. The product itself is never changed.",
+    "uploadTitle": "Upload",
+    "files": "Photos",
+    "filesHint": "JPEG, PNG, WEBP or HEIC (iPhone). You can select several at once.",
+    "kind": "Type",
+    "kindPhoto": "Photo",
+    "kindLogo": "Logo",
+    "description": "What the photo shows",
+    "descriptionHint": "One sentence; the agents use it when writing the post (e.g. \"White built-in wardrobe with handleless doors\").",
+    "tags": "Tags",
+    "tagsHint": "Comma-separated, e.g. qarderob, yataq otağı",
+    "upload": "Upload",
+    "uploading": "Uploading {current} of {total}…",
+    "logoTitle": "Logo",
+    "logoHint": "Added to the bottom-right corner of post images when a post asks for it. A transparent PNG looks best.",
+    "noLogo": "No logo uploaded yet. Choose type \"Logo\" when uploading.",
+    "photosTitle": "Photos ({count})",
+    "allTags": "All",
+    "empty": "No photos yet.",
+    "noDescription": "No description",
+    "focalHint": "Click on the most important part of the photo: crops keep it in frame.",
+    "original": "Original",
+    "previewFeed": "Instagram 4:5",
+    "previewSquare": "Square 1:1",
+    "previewAlt": "How the post image will look",
+    "previewHint": "This is exactly the image that will be published. Save to update it after changes.",
+    "enhance": "Gentle light and contrast correction (colours stay the same)",
+    "save": "Save",
+    "saved": "Saved",
+    "close": "Close",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this photo? Posts that already used it are not affected."
   }
 }

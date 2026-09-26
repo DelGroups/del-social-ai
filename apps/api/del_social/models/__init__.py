@@ -6,6 +6,7 @@ from del_social.models.connection import Channel, Connection, ConnectionStatus
 from del_social.models.evals import EvalItem, EvalRun
 from del_social.models.invitation import Invitation
 from del_social.models.llm_call import LlmCall
+from del_social.models.media import MediaAsset
 from del_social.models.membership import MemberRole, Membership
 from del_social.models.password_reset import PasswordReset
 from del_social.models.tenant import Tenant
@@ -23,6 +24,7 @@ __all__ = [
     "EvalRun",
     "Invitation",
     "LlmCall",
+    "MediaAsset",
     "MemberRole",
     "Membership",
     "PasswordReset",

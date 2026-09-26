@@ -13,6 +13,12 @@ class Settings(BaseSettings):
     allowed_origins: str = ""
     app_base_url: str = "http://localhost:3000"  # panel URL used in invitation/reset links
 
+    secret_key: str = ""  # signs public media URLs (and future server-side tokens)
+
+    # Media library (docs/phase-1-plan.md §3): local volume, public signed URLs on the API domain
+    media_root: str = "/data/media"
+    media_public_url: str = "http://localhost:8000"  # https://api.del-groups.com in production
+
     # Channel connections (ADR 003). Empty = that feature is shown as "not configured".
     token_vault_key: str = ""  # 32 random bytes, hex or base64: openssl rand -hex 32
     meta_app_id: str = ""

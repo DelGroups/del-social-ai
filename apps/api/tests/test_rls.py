@@ -10,7 +10,7 @@ from del_social.models import MemberRole, Membership, Tenant
 
 from .conftest import as_app
 
-TENANT_TABLES = {"tenants", "memberships", "tenant_secrets", "invitations", "connections", "brand_profiles", "llm_calls", "eval_runs", "eval_items"}
+TENANT_TABLES = {"tenants", "memberships", "tenant_secrets", "invitations", "connections", "brand_profiles", "llm_calls", "eval_runs", "eval_items", "media_assets"}
 
 
 # --- Reads: each tenant sees only its own rows ---
