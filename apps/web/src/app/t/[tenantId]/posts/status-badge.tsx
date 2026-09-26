@@ -5,6 +5,7 @@ const STYLE: Record<string, string> = {
   publishing: "border-accent text-accent",
   ready: "border-border text-text",
   approved: "border-border text-text",
+  scheduled: "border-success text-success",
   published: "border-success text-success",
   partly_published: "border-danger text-danger",
   failed: "border-danger text-danger",

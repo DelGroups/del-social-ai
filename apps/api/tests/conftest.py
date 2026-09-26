@@ -32,6 +32,7 @@ os.environ.setdefault("REDIS_URL", os.environ.get("TEST_REDIS_URL", "redis://unu
 os.environ.setdefault("APP_BASE_URL", "https://app.test")
 os.environ.setdefault("APP_ENV", "test")
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
+os.environ.setdefault("SCHEDULER_ENABLED", "false")
 os.environ.setdefault("MEDIA_PUBLIC_URL", "https://api.test")
 os.environ.setdefault("MEDIA_ROOT", os.path.join(os.environ.get("TMPDIR", "/tmp"), f"del-media-test-{os.getpid()}"))
 
@@ -172,7 +173,7 @@ async def tenants(admin: asyncpg.Connection, account_factory) -> AsyncIterator[d
         yield ids
     finally:
         tids = [a, b]
-        for table in ("posts", "media_assets", "products", "eval_items", "eval_runs", "llm_calls", "brand_profiles", "connections", "invitations", "memberships", "tenant_secrets", "tenants"):
+        for table in ("agent_events", "chat_messages", "tasks", "posts", "media_assets", "products", "eval_items", "eval_runs", "llm_calls", "brand_profiles", "connections", "invitations", "memberships", "tenant_secrets", "tenants"):
             await admin.execute(f"DELETE FROM {table} WHERE tenant_id = ANY($1::uuid[])", tids)
 
 

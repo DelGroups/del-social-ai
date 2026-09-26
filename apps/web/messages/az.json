@@ -50,7 +50,11 @@
     "brand": "Brend",
     "evals": "Sınaqlar",
     "media": "Şəkillər",
-    "posts": "Postlar"
+    "posts": "Postlar",
+    "home": "Komanda",
+    "approvals": "Təsdiqlər",
+    "reports": "Hesabatlar",
+    "settings": "Tənzimləmələr"
   },
   "members": {
     "title": "Üzvlər",
@@ -484,13 +488,18 @@
       "approved": "təsdiqlənib",
       "publishing": "paylaşılır",
       "published": "paylaşılıb",
-      "partly_published": "qismən paylaşılıb"
+      "partly_published": "qismən paylaşılıb",
+      "scheduled": "planlaşdırılıb"
     },
     "orderHint": "Postda şəkillərin ardıcıllığı (birincisi üz qabığıdır). Oxlardan istifadə edin, ✕ ilə silin və ya məhsulun başqa şəklini əlavə edin, sonra yadda saxlayın.",
     "cover": "üz qabığı",
     "addPhoto": "şəkil əlavə et",
     "saveOrder": "Şəkil ardıcıllığını saxla",
-    "orderSaved": "Şəkil ardıcıllığı saxlanıldı"
+    "orderSaved": "Şəkil ardıcıllığı saxlanıldı",
+    "scheduledLong": "Təsdiqlənib. {when} tarixində (Bakı vaxtı) avtomatik paylaşılacaq.",
+    "approveScheduled": "Təsdiqlə · {when}",
+    "approveConfirm": "Təsdiqləyirsiniz? {when} tarixində avtomatik paylaşılacaq.",
+    "approved": "Təsdiqləndi və planlaşdırıldı."
   },
   "pageSetup": {
     "title": "Səhifə tənzimləmələri",
@@ -509,5 +518,107 @@
     "igBio": "Bio (maks. 150)",
     "igLink": "Link",
     "igSteps": "Profili redaktə et bölməsində həmçinin: \"Furniture Store\" kateqoriyası, əlaqə düymələri (WhatsApp, zəng), ünvan."
+  },
+  "team": {
+    "chatTitle": "Rəhbərlə söhbət",
+    "teamTitle": "Komanda · canlı",
+    "leadIdle": "Tapşırıq verin; komanda işi görür və yalnız təsdiqinizi soruşur.",
+    "leadThinking": "Rəhbər düşünür…",
+    "empty": "İlk tapşırığınızı yazın, məs. “Wendy qarderobu üçün sabah axşam post hazırla”.",
+    "placeholder": "Tapşırıq yazın… (Enter göndərir, Shift+Enter yeni sətir)",
+    "send": "Göndər",
+    "suggest1": "Wendy qarderobu üçün sabah axşam post hazırla",
+    "suggest2": "Təsdiqimi gözləyən nə var?",
+    "suggest3": "Yeni şəkilləri təhlil et",
+    "agents": {
+      "team_lead": "Rəhbər",
+      "media_analyst": "Şəkil analitiki",
+      "copywriter": "Kopirayter",
+      "brand_guardian": "Brend nəzarətçisi",
+      "visual_editor": "Vizual redaktor",
+      "publisher": "Paylaşım",
+      "image_request": "Vizual redaktor",
+      "system_check": "Sistem",
+      "image_editor": "Vizual redaktor"
+    },
+    "steps": {
+      "photos": "Şəkillər seçildi",
+      "copy": "Kopirayter yazır",
+      "guard": "Brend yoxlaması",
+      "approval": "Sizin təsdiqiniz",
+      "publish": "Paylaşım"
+    },
+    "kpi": {
+      "waiting": "Sizi gözləyir",
+      "running": "İcra olunur",
+      "scheduled": "Planlaşdırılıb",
+      "published": "Paylaşılıb (son)",
+      "costToday": "Bu gün AI xərci",
+      "costMonth": "Bu ay AI xərci"
+    },
+    "working": "işləyir",
+    "doneToday": "bu gün {count}",
+    "noActivity": "Hələ iş yoxdur",
+    "upcoming": "Növbəti postlar",
+    "noneScheduled": "Planlaşdırılmış post yoxdur",
+    "recentlyPublished": "Son paylaşılanlar",
+    "activity": "Fəaliyyət",
+    "unanalysed": "{count} şəkil hələ təhlil olunmayıb",
+    "card": {
+      "ready": "Təsdiqinizi gözləyir",
+      "generating": "Yazılır",
+      "scheduled": "Təsdiqlənib · planlaşdırılıb",
+      "publishing": "Paylaşılır",
+      "published": "Paylaşılıb",
+      "partly_published": "Qismən paylaşılıb",
+      "approved": "Təsdiqlənib",
+      "failed": "Alınmadı"
+    },
+    "verdict": {
+      "pass": "Nəzarətçi: qaydasındadır",
+      "fix": "Nəzarətçi: qeydləri var",
+      "block": "Nəzarətçi: qadağandır"
+    },
+    "writing": "Kopirayter yazır…",
+    "more": "Hamısını göstər",
+    "less": "Qısalt",
+    "openPost": "aç",
+    "approveAt": "Təsdiqlə · {when}",
+    "approveNow": "Təsdiqlə və paylaş",
+    "askChange": "Dəyişiklik istə",
+    "details": "Ətraflı",
+    "confirmScheduled": "Təsdiqləyirsiniz? Planlaşdırılmış vaxtda avtomatik paylaşılacaq.",
+    "confirmNow": "İndi canlı {channels} səhifələrində paylaşılsın?",
+    "yes": "Bəli, təsdiqlə",
+    "cancel": "Ləğv et",
+    "changePlaceholder": "Nə dəyişməlidir? məs. “dairəvi qulpları var, qulpsuz yazma”",
+    "sendChange": "Kopirayterə göndər",
+    "approvalsTitle": "Təsdiqlər",
+    "nothingWaiting": "Sizi gözləyən heç nə yoxdur. Komanda növbəti postu bura gətirəcək."
+  },
+  "settingsHub": {
+    "title": "Tənzimləmələr",
+    "brand": {
+      "title": "Brend profili",
+      "hint": "Komandanın şirkət haqqında bildikləri: ton, qaydalar, terminologiya."
+    },
+    "connections": {
+      "title": "Bağlantılar",
+      "hint": "Instagram, Facebook, Telegram və səhifə məlumatları."
+    },
+    "members": {
+      "title": "Üzvlər",
+      "hint": "Kimin girişi var və rolları."
+    },
+    "evals": {
+      "title": "Agent sınaqları",
+      "hint": "Yazı agentlərinin keyfiyyət sınaqları."
+    }
+  },
+  "reports": {
+    "title": "Hesabatlar",
+    "soon": "Ətraflı hesabatlar (əhatə, qarşılıqlı əlaqə, ən yaxşı məzmun, rəqiblər) PDF ilə Analitik agentlə gələcək. Hələlik: nə paylaşılıb və AI nə qədər xərc edib.",
+    "published": "Paylaşılan postlar ({count})",
+    "nonePublished": "Hələ heç nə paylaşılmayıb."
   }
 }

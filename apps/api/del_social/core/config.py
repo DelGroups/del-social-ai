@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     image_edit_poll_seconds: float = 3.0
     image_edit_timeout_seconds: float = 300.0
 
+    # Publishes approved posts at their time (off in tests)
+    scheduler_enabled: bool = True
+
     # Channel connections (ADR 003). Empty = that feature is shown as "not configured".
     token_vault_key: str = ""  # 32 random bytes, hex or base64: openssl rand -hex 32
     meta_app_id: str = ""

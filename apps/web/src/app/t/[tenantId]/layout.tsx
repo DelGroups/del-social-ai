@@ -21,13 +21,12 @@ export default async function TenantLayout({
       me={me}
       tenantId={tenantId}
       nav={[
-        { href: `/t/${tenantId}`, label: t("overview") },
-        { href: `/t/${tenantId}/members`, label: t("members") },
+        { href: `/t/${tenantId}`, label: t("home") },
+        { href: `/t/${tenantId}/approvals`, label: t("approvals") },
         { href: `/t/${tenantId}/posts`, label: t("posts") },
-        { href: `/t/${tenantId}/brand`, label: t("brand") },
         { href: `/t/${tenantId}/media`, label: t("media") },
-        { href: `/t/${tenantId}/connections`, label: t("connections") },
-        { href: `/t/${tenantId}/evals`, label: t("evals") },
+        { href: `/t/${tenantId}/reports`, label: t("reports") },
+        { href: `/t/${tenantId}/settings`, label: t("settings") },
       ]}
     >
       {children}
