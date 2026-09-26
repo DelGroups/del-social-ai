@@ -280,3 +280,15 @@ async def test_effort_is_sent_and_recorded(fakes, admin, tenants):
     assert ref.endswith("+medium")
     await call(llm, tenants["a"])
     assert "effort" not in fa.requests[1]["body"]["output_config"]
+
+
+async def test_images_are_sent_before_the_text(fakes, tenants):
+    llm, fa, _ = fakes
+    await llm.structured(
+        tenant_id=tenants["a"], prompt=load_prompt("system_check"), user="What is this?", output=Caption,
+        images=[b"\xff\xd8fake-jpeg-1", b"\xff\xd8fake-jpeg-2"],
+    )
+    content = fa.requests[0]["body"]["messages"][0]["content"]
+    assert [c["type"] for c in content] == ["image", "image", "text"]
+    assert content[0]["source"] == {"type": "base64", "media_type": "image/jpeg", "data": base64.b64encode(b"\xff\xd8fake-jpeg-1").decode()}
+    assert content[2]["text"] == "What is this?"

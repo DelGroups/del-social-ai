@@ -25,6 +25,7 @@ Image.MAX_IMAGE_PIXELS = MAX_PIXELS
 VARIANTS: dict[str, tuple[int, int | None]] = {
     "thumb": (480, None),
     "full": (2048, None),  # input for AI edits: large, uncropped, untouched tone
+    "analysis": (1280, None),  # what the Photo Analyst sees (not served publicly)
     "feed": (1080, 1350),  # Instagram portrait 4:5
     "square": (1080, 1080),
     "landscape": (1080, 566),  # Instagram's widest ratio, 1.91:1 (wide renders keep their width)

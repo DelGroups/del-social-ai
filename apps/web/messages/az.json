@@ -381,6 +381,52 @@
     "deleteProductConfirm": "Bu məhsul silinsin? Şəkilləri kitabxanada qalır.",
     "previewLandscape": "Geniş 1.91:1",
     "useOnPosts": "Postlarda istifadə et",
-    "postLogo": "Postlarda istifadə olunur"
+    "postLogo": "Postlarda istifadə olunur",
+    "analyzing": "Təhlil olunur…",
+    "analysisFailed": "Təhlil alınmadı",
+    "analysisTitle": "Şəkil analitiki",
+    "analyzingLong": "Şəkil analitiki bu şəklə baxır. Başlığı, təsviri, teqləri, məhsulu, fokus nöqtəsini və heşteqləri özü doldurur.",
+    "notAnalyzed": "Hələ təhlil olunmayıb.",
+    "analyze": "Təhlil et",
+    "reanalyze": "Yenidən təhlil et",
+    "analyzeAll": "Bütün şəkilləri təhlil et",
+    "analyzeAllHint": "Şəkil analitiki olmadan və ya o əlçatan olmayanda yüklənmiş şəkillər.",
+    "analyzeAllDone": "{count} şəkil təhlil üçün növbəyə qoyuldu.",
+    "looksLike": {
+      "render": "3D render",
+      "photo": "Kamera şəkli",
+      "unclear": "Render və ya şəkil: aydın deyil"
+    },
+    "aCategory": "Kateqoriya",
+    "aRoom": "Otaq",
+    "aStyle": "Üslub",
+    "aColors": "Rənglər",
+    "aMaterials": "Görünən materiallar",
+    "aFeatures": "Xüsusiyyətlər",
+    "aBestFormat": "Ən yaxşı format",
+    "aHashtags": "Təklif olunan heşteqlər",
+    "aQuality": "Aşkarlanan şəkil problemləri",
+    "formats": {
+      "feed": "Instagram 4:5",
+      "square": "Kvadrat 1:1",
+      "landscape": "Geniş 1.91:1"
+    },
+    "productAction": {
+      "created": "Bu şəkil üçün yeni məhsul yaradıldı.",
+      "joined": "Mövcud məhsula əlavə olundu (eyni model)."
+    },
+    "quality": {
+      "dark": "çox qaranlıq",
+      "overexposed": "çox işıqlı",
+      "noisy": "səs-küy",
+      "blurry": "bulanıq",
+      "reflections": "əks olunmalar",
+      "clutter": "qarışıqlıq",
+      "low_resolution": "aşağı keyfiyyət",
+      "watermark": "su nişanı",
+      "text_on_image": "şəkildə mətn",
+      "people": "insanlar",
+      "tilted": "əyri"
+    }
   }
 }

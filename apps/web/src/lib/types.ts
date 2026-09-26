@@ -190,6 +190,7 @@ export type MediaAsset = {
   product_id: string | null;
   position: number;
   default_logo: boolean;
+  analysis: PhotoAnalysis | null;
   publishable: boolean;
   created_at: string;
   urls: Record<string, string>; // signed, ~24h: thumb, feed, square, feed-logo, square-logo
@@ -205,4 +206,23 @@ export type ProductInfo = {
   description: string;
   photos: number;
   created_at: string;
+};
+
+export type PhotoAnalysis = {
+  status: "queued" | "running" | "done" | "failed";
+  error?: string;
+  looks_like?: "render" | "photo" | "unclear";
+  title_az?: string;
+  category?: string;
+  room?: string | null;
+  style?: string[];
+  colors?: string[];
+  materials_visible?: string[];
+  features?: string[];
+  hashtags?: string[];
+  best_format?: "feed" | "square" | "landscape";
+  quality_issues?: string[];
+  suggested_edits?: string[];
+  product_action?: "created" | "joined" | null;
+  cost_usd?: string | null;
 };

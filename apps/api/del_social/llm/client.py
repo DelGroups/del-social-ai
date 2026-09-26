@@ -7,6 +7,7 @@ Every call:
 - is recorded in llm_calls for its tenant (tokens, cost computed by code, latency)
   and traced to Langfuse, whether it succeeds or fails.
 """
+import base64
 import enum
 import logging
 import time
@@ -81,6 +82,16 @@ def _usage(resp: object) -> Usage:
     )
 
 
+def _content(user: str, images: list[bytes] | None) -> str | list[dict]:
+    if not images:
+        return user
+    blocks: list[dict] = [
+        {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": base64.b64encode(i).decode()}}
+        for i in images
+    ]
+    return [*blocks, {"type": "text", "text": user}]
+
+
 def _validate(resp: object, output: type[T]) -> tuple[T | None, str | None]:
     """The JSON text block → output model, or a short reason (never the content itself)."""
     stop = getattr(resp, "stop_reason", None)
@@ -122,6 +133,7 @@ class LLM:
         tier: Tier = Tier.DEFAULT,
         max_tokens: int = 4096,
         effort: Effort | None = None,
+        images: list[bytes] | None = None,  # JPEGs shown to the model before the text
     ) -> LLMResult[T]:
         model = model_for(self._settings, tier)
         prompt_ref = prompt.ref + (f"+{effort.value}" if effort else "")
@@ -138,7 +150,7 @@ class LLM:
                 model=model,
                 max_tokens=max_tokens,
                 system=[{"type": "text", "text": prompt.text, "cache_control": {"type": "ephemeral"}}],
-                messages=[{"role": "user", "content": user}],
+                messages=[{"role": "user", "content": _content(user, images)}],
                 output_config=self._output_config(output, effort),
             )
             parsed, error = _validate(resp, output)
@@ -165,7 +177,7 @@ class LLM:
                     prompt_version=prompt.version,
                     prompt_ref=prompt_ref,
                     model=model,
-                    input=user,
+                    input=user if not images else f"[{len(images)} image(s)]\n{user}",
                     output=parsed.model_dump_json() if parsed is not None else None,
                     error=error,
                     usage=usage,
