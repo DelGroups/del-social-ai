@@ -226,3 +226,34 @@ export type PhotoAnalysis = {
   product_action?: "created" | "joined" | null;
   cost_usd?: string | null;
 };
+
+export type PostOption = {
+  angle: string;
+  caption: string;
+  caption_az: string;
+  caption_ru: string;
+  hashtags: string[];
+  verdict: "pass" | "fix" | "block";
+  findings: { source: string; code: string; severity: string; message: string }[];
+};
+
+export type PostInfo = {
+  post_id: string;
+  status: "generating" | "ready" | "failed" | "approved" | "publishing" | "published" | "partly_published";
+  product_id: string | null;
+  format: "feed" | "square" | "landscape";
+  with_logo: boolean;
+  channels: string[];
+  notes: string;
+  photos: { asset_id: string; url: string }[];
+  options: PostOption[];
+  question: string | null;
+  chosen_option: number | null;
+  caption: string | null;
+  error: string | null;
+  results: Record<string, { id?: string; url?: string; error?: string; account?: string }>;
+  cost_usd: string | null;
+  approved_at: string | null;
+  published_at: string | null;
+  created_at: string;
+};

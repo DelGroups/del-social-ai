@@ -85,6 +85,21 @@ class MetaClient:
     async def api(self, path: str, token: str, **params: str) -> dict[str, Any]:
         return await self._get(path, {**params, "access_token": token, "appsecret_proof": self._proof(token)})
 
+    async def post(self, path: str, token: str, **data: str) -> dict[str, Any]:
+        """A write call (publish, update). The token goes in the form body, never in a logged URL."""
+        try:
+            r = await self._http.post(
+                f"{self._graph}/{path}",
+                data={**data, "access_token": token, "appsecret_proof": self._proof(token)},
+            )
+            body = r.json()
+        except (httpx.HTTPError, ValueError):
+            raise MetaError("Meta could not be reached") from None
+        if r.status_code >= 400 or "error" in body:
+            message = (body.get("error") or {}).get("message") or "Meta rejected the request"
+            raise MetaError(message[:300])
+        return body
+
     async def exchange_code(self, code: str, redirect_uri: str) -> str:
         """Authorization code → long-lived user token (~60 days)."""
         short = await self._get(

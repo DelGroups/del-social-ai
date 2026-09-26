@@ -49,7 +49,8 @@
     "connections": "Bağlantılar",
     "brand": "Brend",
     "evals": "Sınaqlar",
-    "media": "Şəkillər"
+    "media": "Şəkillər",
+    "posts": "Postlar"
   },
   "members": {
     "title": "Üzvlər",
@@ -430,5 +431,72 @@
     },
     "mergeInto": "Birləşdir…",
     "mergeConfirm": "“{from}” məhsulunun bütün şəkilləri “{into}” məhsuluna köçürülsün və “{from}” silinsin?"
+  },
+  "posts": {
+    "title": "Postlar",
+    "empty": "Hələ post yoxdur.",
+    "writing": "Agentlər yazır…",
+    "photoCount": "{count} şəkil",
+    "newTitle": "Yeni post",
+    "product": "Məhsul",
+    "productHint": "Məhsulun paylaşıla bilən bütün şəkilləri, öz ardıcıllığı ilə (2+ şəkil = karusel).",
+    "format": "Format",
+    "formatAuto": "Avtomatik (Şəkil analitikinin seçimi)",
+    "withLogo": "loqo ilə",
+    "noLogo": "loqosuz",
+    "notes": "Agentlər üçün qeydlər (istəyə bağlı)",
+    "notesHint": "məs. \"pulsuz ölçü götürməni qeyd et\" və ya \"yeni mənzil sahibləri üçün\"",
+    "create": "Post yarat",
+    "createHint": "Kopirayter və Brend nəzarətçisi üç mətn variantı yazır (≈$0.05–0.10).",
+    "noProducts": "Əvvəlcə Şəkillər bölməsində şəkilli məhsul əlavə edin.",
+    "postTitle": "Post",
+    "preview": "Önizləmə (dəqiq paylaşılacaq kimi)",
+    "options": "Mətn variantları",
+    "finalCaption": "Son mətn (dəyişə bilərsiniz)",
+    "saveCaption": "Mətni yadda saxla",
+    "saved": "Yadda saxlanıldı",
+    "generatingLong": "Kopirayter və Brend nəzarətçisi üç variant yazır. Təxminən bir dəqiqə çəkir; səhifə özü yenilənir.",
+    "publishingLong": "Canlı səhifələrdə paylaşılır…",
+    "publish": "İndi paylaş",
+    "retryPublish": "Qalan səhifələrdə paylaş",
+    "publishConfirm": "Bu post İNDİ canlı {channels} səhifələrində paylaşılsın? Bunu buradan geri qaytarmaq olmur.",
+    "publishStarted": "Paylaşım başladı.",
+    "results": "Paylaşıldı",
+    "openPost": "Postu aç",
+    "regenerate": "Yeni variantlar yaz",
+    "archive": "Arxivə köçür",
+    "archiveConfirm": "Bu post arxivə köçürülsün?",
+    "verdict": {
+      "pass": "Nəzarətçi: qaydasındadır",
+      "fix": "Nəzarətçi: düzəliş lazımdır",
+      "block": "Nəzarətçi: qadağandır"
+    },
+    "status": {
+      "generating": "yazılır",
+      "ready": "yoxlamaya hazırdır",
+      "failed": "alınmadı",
+      "approved": "təsdiqlənib",
+      "publishing": "paylaşılır",
+      "published": "paylaşılıb",
+      "partly_published": "qismən paylaşılıb"
+    }
+  },
+  "pageSetup": {
+    "title": "Səhifə tənzimləmələri",
+    "intro": "Qoşulmuş səhifələrin profil məlumatları. Facebook məlumatları birbaşa buradan təyin olunur; Instagram bio-su və hər iki profil şəkli yalnız tətbiqlərdə dəyişdirilə bilər (Meta API ilə icazə vermir), ona görə aşağıdakı mətnləri kopyalayın.",
+    "about": "Qısa təsvir (Haqqında)",
+    "description": "Tam təsvir",
+    "website": "Veb sayt",
+    "phone": "Telefon",
+    "emails": "E-poçtlar",
+    "emailsHint": "Vergüllə ayırın",
+    "fbApply": "Facebook səhifəsinə tətbiq et",
+    "fbDone": "Facebook səhifəsinin məlumatları yeniləndi.",
+    "fbManual": "Profil şəkli və üz qabığı: onları Facebook-da yükləyin (Şəkillər bölməsindəki loqo profil şəkli kimi uyğundur).",
+    "igManual": "Instagram → Profili redaktə et: aşağıdakı adı, bio-nu və linki yapışdırın, profil şəklini dairəvi loqonuz edin.",
+    "igName": "Ad (axtarışda görünür, maks. 30)",
+    "igBio": "Bio (maks. 150)",
+    "igLink": "Link",
+    "igSteps": "Profili redaktə et bölməsində həmçinin: \"Furniture Store\" kateqoriyası, əlaqə düymələri (WhatsApp, zəng), ünvan."
   }
 }

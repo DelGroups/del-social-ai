@@ -9,7 +9,7 @@ from redis.asyncio import Redis
 
 from del_social import __version__
 from del_social.core.config import get_settings
-from del_social.routes import auth, brand, connections, evals, media, platform, products, tenants, usage
+from del_social.routes import auth, brand, connections, evals, media, platform, posts, products, tenants, usage
 
 settings = get_settings()
 
@@ -42,6 +42,7 @@ app.include_router(usage.router)
 app.include_router(evals.router)
 app.include_router(media.router)
 app.include_router(products.router)
+app.include_router(posts.router)
 app.include_router(media.public_router)
 app.include_router(connections.callback_router)
 
