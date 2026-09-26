@@ -18,7 +18,7 @@ from decimal import Decimal
 
 import httpx
 import yaml
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from del_social.agents import brand_guardian
@@ -29,7 +29,7 @@ from del_social.core.config import get_settings
 from del_social.core.db import make_engine, set_tenant
 from del_social.knowledge.brand_profile import BrandProfile
 from del_social.llm import LLM, LLMError, build_llm, load_prompt
-from del_social.models import BrandProfileVersion, EvalItem, EvalRun
+from del_social.models import BrandProfileVersion, EvalItem, EvalRun, LlmCall
 
 CONCURRENCY = 4
 
@@ -66,6 +66,7 @@ async def run(tenant_id: uuid.UUID, suite: str, cases: list[dict]) -> uuid.UUID:
     settings = get_settings()
     engine = make_engine(settings.database_url)
     version, profile = await _load_profile(engine, tenant_id)
+    started = datetime.now(UTC)
     prompts = {a: load_prompt(a).ref for a in (["copywriter", "brand_guardian"] if suite == "copywriter" else ["brand_guardian"])}
 
     async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
@@ -112,12 +113,18 @@ async def run(tenant_id: uuid.UUID, suite: str, cases: list[dict]) -> uuid.UUID:
 
     async with AsyncSession(engine) as db, db.begin():
         await set_tenant(db, tenant_id)
+        # Every call during the run, failed ones included (they are billed too)
+        total = await db.scalar(
+            select(func.coalesce(func.sum(LlmCall.cost_usd), 0)).where(
+                LlmCall.created_at >= started, LlmCall.agent.in_(list(prompts))
+            )
+        )
         await db.execute(
             update(EvalRun).where(EvalRun.run_id == run_row.run_id)
             .values(status="done", cost_usd=total, finished_at=datetime.now(UTC))
         )
     await engine.dispose()
-    print(f"done: cost ${total}", flush=True)
+    print(f"done: cost ${total} (all calls, failed ones included)", flush=True)
     return run_row.run_id
 
 

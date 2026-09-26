@@ -81,7 +81,7 @@ async def review(
         user=user,
         output=GuardianOutput,
         tier=Tier.DEFAULT,
-        max_tokens=4000,
+        max_tokens=16000,  # a ceiling, not a cost: includes the model's thinking
     )
     by_index = {r.index: r for r in result.output.reviews}
     verdicts = []
