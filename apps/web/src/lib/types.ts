@@ -107,3 +107,50 @@ export type AgentUsage = {
 export type Usage = { month: string; calls: number; cost_usd: string; by_agent: AgentUsage[] };
 
 export const canViewUsage = (role: Role) => role === "owner" || role === "admin";
+
+export type EvalRating = "publishable" | "needs_edit" | "wrong";
+
+export type EvalOption = {
+  angle: string;
+  caption: string;
+  caption_az: string;
+  caption_ru: string;
+  hashtags: string[];
+  alt_text: string;
+  verdict: "pass" | "fix" | "block";
+  findings: { source: string; code: string; severity: "fix" | "block"; message: string }[];
+};
+
+export type EvalItem = {
+  item_id: string;
+  position: number;
+  brief: Record<string, unknown>;
+  result: { options: EvalOption[]; passed: number; revisions: number; question: string | null; cost_usd: string } | null;
+  error: string | null;
+  ratings: Record<string, EvalRating>;
+  note: string | null;
+  rated_at: string | null;
+};
+
+export type EvalRunSummary = {
+  run_id: string;
+  suite: "copywriter" | "brand_guardian";
+  status: "running" | "done" | "failed";
+  brand_version: number;
+  prompt_refs: Record<string, string>;
+  briefs_total: number;
+  completed: number;
+  failed: number;
+  rated: number;
+  successes: number;
+  success_rate: number | null;
+  target: number;
+  cost_usd: string;
+  created_at: string;
+  finished_at: string | null;
+};
+
+export type EvalRunDetail = EvalRunSummary & { items: EvalItem[] };
+
+// Mirrors Permission.APPROVE_CONTENT
+export const canApprove = (role: Role) => role !== "viewer";

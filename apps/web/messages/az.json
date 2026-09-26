@@ -47,7 +47,8 @@
     "yourRole": "Rolunuz: {role}",
     "comingSoon": "Sosial media üzrə süni intellekt komandanız (strategiya, məzmun, təsdiqlər, paylaşım) 1-ci mərhələdə gələcək. Hələlik kimin giriş hüququ olduğunu idarə edə bilərsiniz.",
     "connections": "Bağlantılar",
-    "brand": "Brend"
+    "brand": "Brend",
+    "evals": "Sınaqlar"
   },
   "members": {
     "title": "Üzvlər",
@@ -235,5 +236,39 @@
     "tokens": "Tokenlər (giriş / çıxış)",
     "cost": "Xərc",
     "errors": "{count} uğursuz"
+  },
+  "evals": {
+    "title": "Agent sınaqları",
+    "intro": "Süni intellekt agentlərinin nümunə tapşırıqlar üzrə sınaq nəticələri. Hər variantı qiymətləndirin: 1-ci mərhələnin məqsədi tapşırıqların ən azı 80%-ində dəyişiklik etmədən paylaşa biləcəyiniz bir variantın olmasıdır.",
+    "empty": "Hələ sınaq aparılmayıb.",
+    "progress": "{completed}/{total} hazırdır · {rated} qiymətləndirilib",
+    "successes": "Qiymətləndirilmiş {rated} tapşırıqdan {successes}-ində paylaşıla bilən variant var",
+    "versions": "Brend profili v{brand} · promptlar: {prompts}",
+    "howToRate": "Paylaşıla bilər = olduğu kimi paylaşardınız. Düzəliş lazımdır = yaxşıdır, amma nəyisə dəyişərdiniz. Yanlışdır = istifadə edilə bilməz.",
+    "revisions": "{count, plural, =0 {Düzəliş olmayıb} other {# düzəliş}}",
+    "findings": "{count} qeyd",
+    "notePlaceholder": "İstəyə bağlı qeyd: nəyi dəyişərdiniz və ya niyə yanlışdır?",
+    "save": "Qiyməti yadda saxla",
+    "saved": "Yadda saxlanıldı",
+    "rated": "qiymətləndirilib",
+    "rateAll": "Əvvəlcə hər üç variantı qiymətləndirin",
+    "case": "Hal",
+    "expected": "Gözlənilən",
+    "got": "Nəticə",
+    "findingsCol": "Qeydlər",
+    "suite": {
+      "copywriter": "Kopirayter + Brend nəzarətçisi",
+      "brand_guardian": "Brend nəzarətçisinin yoxlamaları"
+    },
+    "verdict": {
+      "pass": "Nəzarətçi: keçdi",
+      "fix": "Nəzarətçi: düzəliş",
+      "block": "Nəzarətçi: qadağa"
+    },
+    "rating": {
+      "publishable": "Paylaşıla bilər",
+      "needs_edit": "Düzəliş lazımdır",
+      "wrong": "Yanlışdır"
+    }
   }
 }
