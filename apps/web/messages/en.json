@@ -10,10 +10,22 @@
     "error": "Something went wrong. Please try again.",
     "tooMany": "Too many attempts. Try again in 15 minutes.",
     "passwordHint": "At least 10 characters",
-    "mismatch": "Passwords do not match"
+    "mismatch": "Passwords do not match",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
-  "roles": { "owner": "Owner", "admin": "Admin", "approver": "Approver", "viewer": "Viewer" },
-  "themes": { "midnight": "Midnight", "daylight": "Daylight", "graphite": "Graphite", "sage": "Sage" },
+  "roles": {
+    "owner": "Owner",
+    "admin": "Admin",
+    "approver": "Approver",
+    "viewer": "Viewer"
+  },
+  "themes": {
+    "midnight": "Midnight",
+    "daylight": "Daylight",
+    "graphite": "Graphite",
+    "sage": "Sage"
+  },
   "login": {
     "title": "Sign in",
     "email": "Email",

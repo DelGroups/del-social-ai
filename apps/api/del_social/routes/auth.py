@@ -75,6 +75,10 @@ class ResetIn(BaseModel):
     new_password: str = Field(max_length=1024)
 
 
+class ResetInfo(BaseModel):
+    email: str
+
+
 # --- helpers ---
 
 
@@ -305,6 +309,27 @@ async def accept_invitation(
 
 
 # --- password reset links (issued by a platform admin) ---
+
+
+@router.get("/password-resets/{token}", response_model=ResetInfo)
+async def get_password_reset(
+    token: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    limiter: RateLimiter = Depends(get_rate_limiter),
+) -> ResetInfo:
+    """Which account a valid link is for, so the page can show it and password managers
+    save the new password under the right email. Holding the link already grants the reset."""
+    key = await _guard_link_lookup(limiter, request)
+    account_id = await db.scalar(
+        text("SELECT auth_password_reset_by_token(:h)"), {"h": hash_token(token)}
+    )
+    if account_id is None:
+        await limiter.record(key, LOGIN_WINDOW_SECONDS)
+        raise HTTPException(status.HTTP_410_GONE, "This link is invalid or has expired")
+    await set_account(db, account_id)
+    email = await db.scalar(select(Account.email).where(Account.account_id == account_id))
+    return ResetInfo(email=email)
 
 
 @router.post(

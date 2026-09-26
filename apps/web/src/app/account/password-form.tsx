@@ -3,7 +3,8 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { Alert, Button, Field, Input } from "@/components/ui";
+import { PasswordInput } from "@/components/client";
+import { Alert, Button, Field } from "@/components/ui";
 import { ApiError, api } from "@/lib/client-api";
 
 export function PasswordForm() {
@@ -47,13 +48,13 @@ export function PasswordForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <Field label={t("account.current")}>
-        <Input name="current" type="password" autoComplete="current-password" required />
+        <PasswordInput name="current" autoComplete="current-password" required />
       </Field>
       <Field label={t("account.new")} hint={t("common.passwordHint")}>
-        <Input name="new" type="password" autoComplete="new-password" minLength={10} maxLength={128} required />
+        <PasswordInput name="new" autoComplete="new-password" minLength={10} maxLength={128} required />
       </Field>
       <Field label={t("reset.confirm")}>
-        <Input name="confirm" type="password" autoComplete="new-password" required />
+        <PasswordInput name="confirm" autoComplete="new-password" required />
       </Field>
       {message && <Alert tone={message.tone}>{message.text}</Alert>}
       <Button type="submit" disabled={busy}>

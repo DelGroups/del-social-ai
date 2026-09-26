@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Alert, Button, Field, Input } from "@/components/ui";
+import { AccountEmailField, PasswordInput } from "@/components/client";
+import { Alert, Button, Field } from "@/components/ui";
 import { ApiError, api } from "@/lib/client-api";
 import type { Me } from "@/lib/types";
 
-export function AcceptForm({ token, signedIn }: { token: string; signedIn: boolean }) {
+export function AcceptForm({ token, email, signedIn }: { token: string; email: string; signedIn: boolean }) {
   const t = useTranslations();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -55,11 +56,12 @@ export function AcceptForm({ token, signedIn }: { token: string; signedIn: boole
     <form onSubmit={onSubmit} className="space-y-4">
       {!signedIn && (
         <>
+          <AccountEmailField label={t("login.email")} email={email} />
           <Field label={t("invite.choosePassword")} hint={t("common.passwordHint")}>
-            <Input name="password" type="password" autoComplete="new-password" minLength={10} maxLength={128} required />
+            <PasswordInput name="password" autoComplete="new-password" minLength={10} maxLength={128} required />
           </Field>
           <Field label={t("invite.confirmPassword")}>
-            <Input name="confirm" type="password" autoComplete="new-password" required />
+            <PasswordInput name="confirm" autoComplete="new-password" required />
           </Field>
         </>
       )}

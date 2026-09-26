@@ -10,10 +10,22 @@
     "error": "Xəta baş verdi. Yenidən cəhd edin.",
     "tooMany": "Çox sayda cəhd. 15 dəqiqədən sonra yenidən cəhd edin.",
     "passwordHint": "Ən azı 10 simvol",
-    "mismatch": "Şifrələr uyğun gəlmir"
+    "mismatch": "Şifrələr uyğun gəlmir",
+    "showPassword": "Şifrəni göstər",
+    "hidePassword": "Şifrəni gizlət"
   },
-  "roles": { "owner": "Sahib", "admin": "Admin", "approver": "Təsdiqləyici", "viewer": "İzləyici" },
-  "themes": { "midnight": "Gecə", "daylight": "Gündüz", "graphite": "Qrafit", "sage": "Adaçayı" },
+  "roles": {
+    "owner": "Sahib",
+    "admin": "Admin",
+    "approver": "Təsdiqləyici",
+    "viewer": "İzləyici"
+  },
+  "themes": {
+    "midnight": "Gecə",
+    "daylight": "Gündüz",
+    "graphite": "Qrafit",
+    "sage": "Adaçayı"
+  },
   "login": {
     "title": "Daxil ol",
     "email": "E-poçt",
