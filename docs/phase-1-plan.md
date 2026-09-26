@@ -1,8 +1,17 @@
 # Phase 1 plan — Vertical slice on Del Furniture
 
-- **Status:** Draft for Alireza's review
+- **Status:** Draft for Alireza's review. Product decisions in §0 were answered on 2026-09-26.
 - **Date:** 2026-09-26
 - **Done when (CLAUDE.md):** ≥ 80% of eval outputs are publishable without edits, and one real post is published through the system.
+
+## 0. Decisions (Alireza, 2026-09-26)
+
+| Question | Answer |
+|---|---|
+| Language | **Both in one caption:** Azerbaijani first, then Russian, in the same post |
+| Frequency | **Every day (7 posts/week)**, each post on both Instagram and Facebook |
+| Photos | **Alireza provides product photos.** The system prepares them for the post (see §3) |
+| Approval | **Both Telegram and the panel.** The first approver to act decides |
 
 ## 1. What Phase 1 delivers
 
@@ -48,10 +57,11 @@ This is one versioned document per tenant. Editing it creates a new version, and
 
 Image generation is Phase 2. In Phase 1:
 
-- The panel has a **media library**: the team uploads real product and showroom photos, tagged by category.
+- The panel has a **media library**: Alireza uploads real product and showroom photos, tagged by category and product.
 - For each slot, the Social Media Manager picks candidate photos by tag. The approver can swap the photo in the approval step.
+- **Photo preparation in Phase 1 is done by code, never by an image model.** Steps: crop to the Instagram ratio (4:5 or 1:1, with the product kept in frame), light brightness/contrast/colour correction, and an optional Del Furniture logo in a corner. The product always stays exactly as photographed.
+- **Phase 2:** the Visual Designer adds AI edits (new background, room staging, frame extension, text overlay with real fonts), with a check that the product itself is unchanged.
 - The files live on the server volume. Meta fetches them from a short-lived signed URL at `api.del-groups.com/media/...`.
-- No text is drawn on photos in Phase 1.
 
 ## 4. Agents in this phase
 
@@ -101,7 +111,7 @@ Every agent can also return a `question` instead of an answer. The graph then pa
 ## 9. Tracing and cost
 
 - Every LLM call goes through one wrapper. It sends the trace to Langfuse and writes a row to `llm_calls`.
-- **Rough cost for Del Furniture:** a weekly plan plus about 5–7 slots × 3 options plus Guardian checks is on the order of a few US dollars per month. This will be measured from `llm_calls` after the first week.
+- **Rough cost for Del Furniture:** a weekly plan plus 7 slots × 3 options plus Guardian checks is on the order of a few US dollars per month. This will be measured from `llm_calls` after the first week.
 
 ## 10. Evals (the Phase 1 done criterion)
 
