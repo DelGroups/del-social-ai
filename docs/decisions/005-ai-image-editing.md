@@ -1,6 +1,6 @@
 # ADR 005: AI photo editing and image rights
 
-- **Status:** Accepted. Alireza asked for all five edits now, on 2026-09-27. The reference-image rule below was proposed by Claude and is pending his confirmation.
+- **Status:** Accepted, revised the same day. Alireza asked for all five edits now (2026-09-27), then asked that they be configured **per photo** instead of switched on per company. The reference-image rule below was proposed by Claude and is pending his confirmation.
 - **Date:** 2026-09-27
 - **Phase:** 1 (pulled forward from the Phase 2 Visual Designer)
 - **Changes:** docs/agent-team.md, Visual Designer rule "generated furniture must not misrepresent real items" (see Rights)
@@ -19,9 +19,19 @@ His answer on 4–5: rendered or AI-altered products are fine as long as they lo
 
 ## Decision
 
-### Switches
-- Five switches live in the brand profile under `image_editing`. **All are off by default**, and only owners and admins can turn them on.
-- The API refuses a disabled edit (403). The panel shows only the enabled ones.
+### Per-photo settings (a "recipe")
+- **No company-wide switches.** Each photo has its own recipe with five options, each with its own on/off tick and details:
+  - enhance;
+  - remove (what to remove);
+  - background (new surroundings, optionally a reference room);
+  - recolor (the new colour or finish);
+  - swap (the new product, optionally a reference product image).
+  - There is also a "main product" field for the whole recipe.
+- **The recipe is saved with the photo** (`media_assets.edit_recipe`) and reused next time.
+- **"Apply" makes one new version with everything ticked:**
+  - the instruction edits go to the editor model as one combined instruction;
+  - enhance runs last, on that result, with fal's output URL chained straight into the next step.
+- Anyone who manages media (owner, admin) can apply a recipe. The `image_editing` switches left in old brand profile versions are ignored.
 
 ### Models (config, not code)
 - **Background, remove, recolour and swap:** one instruction-based editor, `IMAGE_EDIT_MODEL`, default `fal-ai/flux-2-pro/edit`. It takes up to 9 reference images and costs about $0.03 per output megapixel.
@@ -46,7 +56,7 @@ His answer on 4–5: rendered or AI-altered products are fine as long as they lo
 |---|---|
 | `own`: our work | yes |
 | `licensed` | yes |
-| `render`: a visualisation (renders; AI background, recolour or swap) | yes, but the text must not present it as a finished client project |
+| `render`: a visualisation (renders; AI background, recolour or swap) | yes, with the same confident copy as any post (Alireza, 2026-09-27: no disclaimers, no AI labels) |
 | `reference`: someone else's image, e.g. saved from Pinterest | **never**; inspiration only |
 
 Rules applied by code:
@@ -64,4 +74,5 @@ Using such images as style or product references to edit our own photos is allow
 
 ## Consequences
 - Edits run as background jobs inside the API process. A restart during an edit leaves it `pending`. The queue worker (step 7) will make jobs durable.
-- The Copywriter must know the source of the photo it writes for, so that a render is never called a finished project. This is wired in step 5, when briefs are built from library photos.
+- Nothing published carries an AI label or watermark. The "AI" and "Render" badges exist only inside the panel.
+- Published images are re-encoded without metadata, so Meta's C2PA/IPTC-based "AI info" label is not triggered by our files. Invisible pixel watermarks that some models embed cannot be ruled out; they will be checked in the model comparison.
