@@ -3,6 +3,7 @@
 The LLM is replaced by a scripted fake: these tests never call Anthropic.
 """
 import json
+import re
 import uuid
 from decimal import Decimal
 from pathlib import Path
@@ -14,10 +15,10 @@ from del_social.agents import brand_guardian
 from del_social.agents.brand_guardian import GuardianOutput, OptionReview
 from del_social.agents.brand_guardian.checks import az_lower
 from del_social.agents.common import Brief, assemble_caption, brand_context
-from del_social.agents.copywriter import CopyOption, CopyOutput
+from del_social.agents.copywriter import CopyOption, CopyOutput, RevisedOptions
 from del_social.agents.pipeline import generate_for_brief
 from del_social.knowledge.brand_profile import BrandProfile
-from del_social.llm import LLMResult
+from del_social.llm import LLMError, LLMResult
 from del_social.llm.pricing import Usage
 
 from .conftest import O
@@ -124,25 +125,36 @@ class FakeLLM:
         self.copy_script = copy_script
         self.guardian_issues = guardian_issues or {}
         self.users: list[tuple[str, str]] = []
+        self.revise_count: int | None = None  # force a wrong count to test the guard
 
-    async def structured(self, *, tenant_id, prompt, user, output, tier, max_tokens):
+    async def structured(self, *, tenant_id, prompt, user, output, tier, max_tokens, effort=None):
         self.users.append((prompt.agent, user))
-        if output is CopyOutput:
+        if output in (CopyOutput, RevisedOptions):
             opts = self.copy_script.pop(0) if len(self.copy_script) > 1 else self.copy_script[0]
-            out = CopyOutput(options=opts)
+            if output is RevisedOptions:
+                n = int(re.search(r"Rewrite exactly (\d+)", user).group(1))
+                out = RevisedOptions(options=opts[: self.revise_count if self.revise_count is not None else n])
+            else:
+                out = CopyOutput(options=opts)
         else:
             n = user.count('"index":')
             out = GuardianOutput(reviews=[OptionReview(index=i, issues=self.guardian_issues.get(i, [])) for i in range(n)])
         return LLMResult(out, "fake-model", Usage(10, 5), Decimal("0.010000"), 1, uuid.uuid4().hex)
 
 
-async def test_fix_loop_revises_until_clean():
-    llm = FakeLLM([[GOOD, CHEAP, GOOD], [GOOD, GOOD, GOOD]])
+async def test_fix_loop_rewrites_only_flagged_options():
+    llm = FakeLLM([[GOOD, CHEAP, GOOD], [GOOD]])
     result = await generate_for_brief(llm, None, PROFILE, BRIEF)
     assert result["revisions"] == 1 and result["passed"] == 3
     assert [o["verdict"] for o in result["attempts"][0]["options"]] == ["pass", "fix", "pass"]
-    revision_prompt = [u for agent, u in llm.users if agent == "copywriter"][1]
-    assert "<revision_request>" in revision_prompt and "Ucuz" in revision_prompt and "keep it unchanged" in revision_prompt
+    assert result["attempts"][1]["rewritten"] == [1]
+    assert [o["revised"] for o in result["options"]] == [False, True, False]
+    calls = [(a, u) for a, u in llm.users]
+    revise_prompt = calls[2][1]
+    assert calls[2][0] == "copywriter"
+    assert "<revision_request>" in revise_prompt and "Ucuz" in revise_prompt and "<kept_options>" in revise_prompt
+    assert "Rewrite exactly 1 option" in revise_prompt
+    assert calls[3][0] == "brand_guardian" and calls[3][1].count('"index":') == 1  # only the new option re-reviewed
     assert result["options"][0]["caption"].endswith("#DelFurniture #mebel")
     assert Decimal(result["cost_usd"]) == Decimal("0.040")
 
@@ -152,6 +164,13 @@ async def test_fix_loop_stops_after_two_revisions():
     result = await generate_for_brief(llm, None, PROFILE, BRIEF)
     assert result["revisions"] == 2 and result["passed"] == 0
     assert len([a for a, _ in llm.users if a == "copywriter"]) == 3
+
+
+async def test_revision_with_wrong_count_is_an_error():
+    llm = FakeLLM([[GOOD, CHEAP, CHEAP], [GOOD, GOOD, GOOD]])
+    llm.revise_count = 1  # two were flagged, the model returns one
+    with pytest.raises(LLMError, match="Expected 2"):
+        await generate_for_brief(llm, None, PROFILE, BRIEF)
 
 
 async def test_guardian_review_findings_and_missing_review():

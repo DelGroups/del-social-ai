@@ -4,11 +4,11 @@ import httpx
 from sqlalchemy.ext.asyncio import AsyncEngine
 
 from del_social.core.config import Settings
-from del_social.llm.client import LLM, LLMError, LLMResult, Tier
+from del_social.llm.client import LLM, Effort, LLMError, LLMResult, Tier
 from del_social.llm.prompts import Prompt, load_prompt
 from del_social.llm.tracing import Tracer
 
-__all__ = ["LLM", "LLMError", "LLMResult", "Prompt", "Tier", "build_llm", "load_prompt"]
+__all__ = ["LLM", "Effort", "LLMError", "LLMResult", "Prompt", "Tier", "build_llm", "load_prompt"]
 
 
 class LLMNotConfigured(RuntimeError):
