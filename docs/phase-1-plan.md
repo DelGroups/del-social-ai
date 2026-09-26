@@ -126,9 +126,9 @@ Every agent can also return a `question` instead of an answer. The graph then pa
 2. **LLM layer:** Anthropic client wrapper, prompt files, Langfuse and cost logging, eval runner.
 3. **Copywriter + Brand Guardian + evals:** first quality check by Alireza before anything else is built on top.
 4. **Media library:** upload and tag photos, signed media URLs.
-5. **Social Media Manager + graph + approval queue in the panel.**
+5. **Social Media Manager + graph + approval queue in the panel.** A slot has 1–10 photos: a single photo, or a multi-photo (carousel) post built from one product's photos in their saved order, all in the same format (4:5, 1:1 or 1.91:1).
 6. **Telegram approval bot.**
-7. **Scheduler + publishing to Instagram/Facebook,** then the first real post after explicit confirmation.
+7. **Scheduler + publishing to Instagram/Facebook,** including carousels (Instagram: one container per photo, then a carousel container; Facebook: a multi-photo post). Then the first real post, after explicit confirmation.
 
 ## 12. What Alireza needs to provide
 
@@ -136,3 +136,48 @@ Every agent can also return a `question` instead of an answer. The graph then pa
 - The brand profile answers (form in step 1).
 - 20–50 good product/showroom photos.
 - Review of the eval outputs in step 3.
+
+
+## 13. Added to the roadmap (Alireza, 2026-09-27)
+
+### Products and multi-photo posts (built in step 4 + the products PR)
+- A product (for example "Wendy wardrobe") groups all its photos in order; the first photo is the cover.
+- The panel previews the carousel in 4:5, 1:1 or 1.91:1 (wide renders keep their width).
+- The post logo is chosen explicitly: the full logo for posts, the round crop for the profile picture.
+
+### A. Live operations dashboard ("operations room")
+- **Agents as an animated diagram:** Team Lead, Social Media Manager, Copywriter, Brand Guardian, Visual Designer, Community Manager, Analyst, Researcher, Sales, plus the tools (scheduler, publishing, Meta, Telegram).
+  - When work passes between them, the connection animates.
+  - Each agent shows what it is doing now, its queue, its last result and its cost today.
+- **Live activity feed and queues:** waiting, running, waiting for approval, scheduled, published or failed.
+- **Technology:**
+  - Every graph step and job writes an event (an `agent_events` table with RLS).
+  - The panel receives events live over Server-Sent Events.
+  - The diagram is drawn with SVG and React Flow.
+- **When:** v1 right after step 7. That is when the graph and the worker produce the first real events. It then grows as each Phase 2 agent is added.
+
+### B. Professional reports with PDF export
+- **Analyst:** Phase 2, once posts are live and Meta insights exist.
+  - Page growth: followers, reach, impressions.
+  - Engagement per post, format and time of day.
+  - Best and worst content.
+  - Approval and rejection rates, and AI cost.
+  - Delivered as weekly and monthly reports.
+- **Researcher:** competitor analysis, Phase 2.
+  - For competitors' Instagram business accounts: posting frequency, formats, topics, likes and comments, via Meta's business discovery.
+  - Meta shows no one's reach except your own.
+  - Trends and occasions.
+  - Suggestions go into the approval queue; nothing changes automatically.
+- **Customer service report:** with the Community Manager, Phase 2. Volumes, response times, categories, sentiment, escalations.
+- **Sales report:** with the Sales Consultant, Phase 3. Inquiries, quotes, leads, and conversion from the ERP.
+- **PDF export of every report:**
+  - branded, in az, ru or en;
+  - rendered on the server from HTML, with real fonts for ə ş ğ and Cyrillic;
+  - also sendable to Telegram.
+
+### Proposed order after Phase 1
+1. Dashboard v1.
+2. Analyst reports + PDF.
+3. Researcher.
+4. Community Manager + customer service report.
+5. The rest of Phase 2.

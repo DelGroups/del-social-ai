@@ -27,6 +27,7 @@ VARIANTS: dict[str, tuple[int, int | None]] = {
     "full": (2048, None),  # input for AI edits: large, uncropped, untouched tone
     "feed": (1080, 1350),  # Instagram portrait 4:5
     "square": (1080, 1080),
+    "landscape": (1080, 566),  # Instagram's widest ratio, 1.91:1 (wide renders keep their width)
 }
 ENHANCE_STRENGTH = 0.5
 LOGO_WIDTH = 0.16  # of the image width

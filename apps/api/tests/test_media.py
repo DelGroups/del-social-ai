@@ -155,7 +155,7 @@ async def test_upload_list_frame_serve_delete(client, tenants, session_for):
     asset = r.json()
     assert (asset["width"], asset["height"]) == (2400, 1600)
     assert asset["tags"] == ["qarderob", "yataq otağı"]
-    assert set(asset["urls"]) == {"thumb", "feed", "square"}
+    assert set(asset["urls"]) == {"thumb", "feed", "square", "landscape"}
 
     again = await upload(client, tenants["a"], owner, jpeg(2400, 1600))
     assert again.json()["asset_id"] == asset["asset_id"]  # same file stored once
