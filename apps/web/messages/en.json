@@ -47,7 +47,8 @@
     "yourRole": "Your role: {role}",
     "comingSoon": "Your AI social media team (strategy, content, approvals, publishing) arrives in Phase 1. For now you can manage who has access.",
     "connections": "Connections",
-    "brand": "Brand"
+    "brand": "Brand",
+    "evals": "Evals"
   },
   "members": {
     "title": "Members",
@@ -235,5 +236,39 @@
     "tokens": "Tokens in / out",
     "cost": "Cost",
     "errors": "{count} failed"
+  },
+  "evals": {
+    "title": "Agent evals",
+    "intro": "Test runs of the AI agents on sample briefs. Rate every option: the Phase 1 goal is that at least 80% of briefs have one option you would publish without edits.",
+    "empty": "No eval runs yet.",
+    "progress": "{completed}/{total} done · {rated} rated",
+    "successes": "{successes} of {rated} rated briefs have a publishable option",
+    "versions": "Brand profile v{brand} · prompts: {prompts}",
+    "howToRate": "Publishable = you would post it exactly as written. Needs edit = good, but you would change something. Wrong = not usable.",
+    "revisions": "{count, plural, =0 {No revisions} one {# revision} other {# revisions}}",
+    "findings": "{count, plural, one {# finding} other {# findings}}",
+    "notePlaceholder": "Optional note: what would you change, or why is it wrong?",
+    "save": "Save rating",
+    "saved": "Saved",
+    "rated": "rated",
+    "rateAll": "Rate all three options first",
+    "case": "Case",
+    "expected": "Expected",
+    "got": "Result",
+    "findingsCol": "Findings",
+    "suite": {
+      "copywriter": "Copywriter + Brand Guardian",
+      "brand_guardian": "Brand Guardian checks"
+    },
+    "verdict": {
+      "pass": "Guardian: pass",
+      "fix": "Guardian: fix",
+      "block": "Guardian: block"
+    },
+    "rating": {
+      "publishable": "Publishable",
+      "needs_edit": "Needs edit",
+      "wrong": "Wrong"
+    }
   }
 }

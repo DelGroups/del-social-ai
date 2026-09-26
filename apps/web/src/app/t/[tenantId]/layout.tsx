@@ -25,6 +25,7 @@ export default async function TenantLayout({
         { href: `/t/${tenantId}/members`, label: t("members") },
         { href: `/t/${tenantId}/brand`, label: t("brand") },
         { href: `/t/${tenantId}/connections`, label: t("connections") },
+        { href: `/t/${tenantId}/evals`, label: t("evals") },
       ]}
     >
       {children}

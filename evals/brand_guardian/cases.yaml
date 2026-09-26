@@ -1,0 +1,167 @@
+# Brand Guardian eval cases for Del Furniture (docs/phase-1-plan.md §10).
+# expect: pass | fix | block. A bad case counts as caught when the verdict is not "pass";
+# a good case is correct only when the verdict is "pass". Target: every bad case caught.
+
+- id: bad-competitor
+  expect: block
+  brief: {id: g01, topic: Wardrobe project, photo: White wardrobe}
+  option:
+    caption_az: Bizim qarderoblar Embawood-dan daha keyfiyyətlidir. Fərdi ölçülərdə hazırlayırıq, bizimlə əlaqə saxlayın.
+    caption_ru: Наши шкафы качественнее, чем у Embawood. Изготавливаем по индивидуальным размерам, свяжитесь с нами.
+    hashtags: ["#DelFurniture", "#qarderob"]
+- id: bad-never-word
+  expect: fix
+  brief: {id: g02, topic: Kitchen, photo: Modern kitchen}
+  option:
+    caption_az: Ucuz və keyfiyyətli mətbəx mebeli axtarırsınız? Fərdi layihəniz üçün bizimlə əlaqə saxlayın.
+    caption_ru: Ищете недорогую и качественную кухню? Свяжитесь с нами для индивидуального проекта.
+    hashtags: ["#DelFurniture", "#mebel"]
+- id: bad-shock-price
+  expect: fix
+  brief: {id: g03, topic: Showroom, photo: Showroom}
+  option:
+    caption_az: Şok qiymət! Salonumuza gəlin və yeni kolleksiyamızla tanış olun.
+    caption_ru: Шокирующие цены! Приходите в наш салон и познакомьтесь с новой коллекцией.
+    hashtags: ["#DelFurniture"]
+- id: bad-price-manat
+  expect: fix
+  brief: {id: g04, topic: Wardrobe, photo: Wardrobe}
+  option:
+    caption_az: Fərdi ölçülü qarderoblar cəmi 500 manatdan başlayır. Sifariş üçün bizə yazın.
+    caption_ru: Шкафы по индивидуальным размерам всего от 500 манатов. Пишите нам для заказа.
+    hashtags: ["#DelFurniture", "#qarderob"]
+- id: bad-discount-percent
+  expect: fix
+  brief: {id: g05, topic: Kitchen, photo: Kitchen}
+  option:
+    caption_az: Bu ay bütün mətbəx sifarişlərinə 20% endirim. Fürsəti qaçırmayın!
+    caption_ru: В этом месяце скидка 20% на все кухни. Не упустите возможность!
+    hashtags: ["#DelFurniture", "#mebel"]
+- id: bad-phone
+  expect: fix
+  brief: {id: g06, topic: Measurement service, photo: Specialist measuring}
+  option:
+    caption_az: Pulsuz ölçü götürmə xidmətimizdən yararlanın. Zəng edin +994 50 444 86 00.
+    caption_ru: Воспользуйтесь бесплатным замером. Звоните +994 50 444 86 00.
+    hashtags: ["#DelFurniture"]
+- id: bad-link
+  expect: fix
+  brief: {id: g07, topic: Office furniture, photo: Office}
+  option:
+    caption_az: Ofis mebeli layihələrimizlə tanış olun. Ətraflı məlumat saytımızdadır - del-furniture.com
+    caption_ru: Ознакомьтесь с нашими проектами офисной мебели. Подробнее на сайте del-furniture.com
+    hashtags: ["#DelFurniture", "#ofismebeli"]
+- id: bad-too-many-hashtags
+  expect: fix
+  brief: {id: g08, topic: Bedroom, photo: Bedroom}
+  option:
+    caption_az: Yataq otağınız üçün fərdi dizaynlı mebel. Layihəniz üçün bizimlə əlaqə saxlayın.
+    caption_ru: Мебель для спальни по индивидуальному дизайну. Свяжитесь с нами для вашего проекта.
+    hashtags: ["#DelFurniture", "#DelGroups", "#Polywood", "#mebel", "#mebelsifarisi", "#ofismebeli", "#interyerdizayn", "#baku", "#azerbaycan", "#qarderob", "#mdfmebel", "#dizayn"]
+- id: bad-turkish-words
+  expect: fix
+  brief: {id: g09, topic: Living room furniture, photo: TV wall unit}
+  option:
+    caption_az: Harika bir qonaq otağı için şimdi bizimlə əlaqə saxlayın. Sizin için en güzel dizaynı hazırlayırıq.
+    caption_ru: Свяжитесь с нами, чтобы создать прекрасную гостиную. Мы подготовим для вас лучший дизайн.
+    hashtags: ["#DelFurniture", "#interyerdizayn"]
+- id: bad-foreign-letter
+  expect: fix
+  brief: {id: g10, topic: Welcome, photo: Showroom}
+  option:
+    caption_az: Salam, xoş gəldiniz mebel dükkänına! Premium mebel həlləri üçün bizə müraciət edin.
+    caption_ru: Здравствуйте, добро пожаловать в мебельный салон! Обращайтесь к нам за премиальными решениями.
+    hashtags: ["#DelFurniture"]
+- id: bad-az-spelling
+  expect: fix
+  brief: {id: g11, topic: MDF quality, photo: MDF edge}
+  option:
+    caption_az: Mebellerimiz keyfiyetli MDF materialindan hazirlanir ve uzun muddet xidmet edir. Bizimle elaqe saxlayin.
+    caption_ru: Наша мебель изготовлена из качественного МДФ и служит долгие годы. Свяжитесь с нами.
+    hashtags: ["#DelFurniture", "#mdfmebel"]
+- id: bad-ru-grammar
+  expect: fix
+  brief: {id: g12, topic: Wardrobe, photo: Wardrobe}
+  option:
+    caption_az: Qarderobunuz məkanınıza tam uyğun hazırlanır. Fərdi dizayn üçün WhatsApp-a yazın.
+    caption_ru: Ваша шкаф изготовлен полностью под ваше помещении. Для индивидуальный дизайн пишите в WhatsApp.
+    hashtags: ["#DelFurniture", "#qarderob"]
+- id: bad-invented-warranty
+  expect: fix
+  brief: {id: g13, topic: Bedroom furniture quality, photo: Bedroom}
+  option:
+    caption_az: Bütün mebellərimizə 10 il zəmanət veririk. Keyfiyyətə arxayın olun və bizimlə əlaqə saxlayın.
+    caption_ru: Мы даём гарантию 10 лет на всю нашу мебель. Будьте уверены в качестве и свяжитесь с нами.
+    hashtags: ["#DelFurniture"]
+- id: bad-political
+  expect: block
+  brief: {id: g14, topic: Office furniture, photo: Office}
+  option:
+    caption_az: Hökumətin son qərarları biznesləri çətin vəziyyətə salıb, amma biz ofisiniz üçün ən yaxşı mebeli hazırlayırıq.
+    caption_ru: Последние решения правительства поставили бизнес в трудное положение, но мы делаем лучшую мебель для вашего офиса.
+    hashtags: ["#DelFurniture", "#ofismebeli"]
+- id: bad-disparaging
+  expect: block
+  brief: {id: g15, topic: Quality, photo: Workshop}
+  option:
+    caption_az: Başqa firmaların mebeli bir ildən sonra dağılır. Keyfiyyətsiz mebelə pul xərcləməyin, bizi seçin.
+    caption_ru: Мебель других фирм разваливается через год. Не тратьте деньги на некачественную мебель, выбирайте нас.
+    hashtags: ["#DelFurniture"]
+- id: bad-informal
+  expect: fix
+  brief: {id: g16, topic: Kitchen, photo: Kitchen}
+  option:
+    caption_az: Sən də belə mətbəx istəyirsən? Tez bizə yaz, sənin üçün hazırlayaq!
+    caption_ru: Ты тоже хочешь такую кухню? Пиши нам скорее, сделаем для тебя!
+    hashtags: ["#DelFurniture", "#mebel"]
+- id: bad-emoji
+  expect: fix
+  brief: {id: g17, topic: Children's room, photo: Kids room}
+  option:
+    caption_az: 🎉🎉🎉 Uşaq otağı üçün fərdi mebel! 😍😍🔥🔥 Bizimlə əlaqə saxlayın! 🚀🚀✨
+    caption_ru: 🎉🎉🎉 Индивидуальная мебель для детской! 😍😍🔥🔥 Свяжитесь с нами! 🚀🚀✨
+    hashtags: ["#DelFurniture"]
+- id: bad-mismatch
+  expect: fix
+  brief: {id: g18, topic: Office conference table, photo: Conference table}
+  option:
+    caption_az: İclas otağınız üçün fərdi ölçülü masa hazırlayırıq. Layihəniz üçün bizimlə əlaqə saxlayın.
+    caption_ru: Мы создаём уютные детские комнаты для ваших малышей. Напишите нам в WhatsApp.
+    hashtags: ["#DelFurniture", "#ofismebeli"]
+- id: bad-cyrillic-in-az
+  expect: fix
+  brief: {id: g19, topic: Hallway, photo: Hallway furniture}
+  option:
+    caption_az: Dəhlizinizə uyğun мебель hazırlayırıq. Fərdi dizayn üçün bizə yazın.
+    caption_ru: Изготавливаем мебель для вашей прихожей. Пишите нам для индивидуального дизайна.
+    hashtags: ["#DelFurniture"]
+- id: bad-off-brief
+  expect: fix
+  brief: {id: g20, topic: Executive desk for a director's office, photo: Walnut executive desk}
+  option:
+    caption_az: Yeni mətbəxiniz ailənizin ən sevimli məkanı olacaq. Mətbəx layihəniz üçün bizimlə əlaqə saxlayın.
+    caption_ru: Ваша новая кухня станет любимым местом всей семьи. Свяжитесь с нами для проекта кухни.
+    hashtags: ["#DelFurniture", "#mebel"]
+
+# --- Good captions: must pass ---
+- id: good-wardrobe
+  expect: pass
+  brief: {id: g21, topic: New custom wardrobe project, photo: White floor-to-ceiling wardrobe}
+  option:
+    caption_az: Məkanınızın hər bir santimetrini dəyərləndirin. Xüsusi dizaynla hazırladığımız yeni qarderob layihəmiz həm funksionallığı, həm də zərifliyi özündə birləşdirir. Siz də evinizə uyğun premium həllər axtarırsınızsa, bizimlə əlaqə saxlayın.
+    caption_ru: Идеальное решение для вашего пространства. Наш новый шкаф, созданный по индивидуальному дизайну, сочетает в себе функциональность и элегантность. Если вы ищете премиальные решения для своего дома, свяжитесь с нами.
+    hashtags: ["#DelFurniture", "#qarderob", "#mebel"]
+- id: good-office
+  expect: pass
+  brief: {id: g22, topic: New office furniture project, photo: Modern office with custom desks}
+  option:
+    caption_az: Ofisiniz şirkətinizin vizit kartıdır. Peşəkar komandamız tərəfindən hazırlanmış yeni ofis mebeli layihəmizlə tanış olun. Uğurlu iş mühiti yaratmaq üçün fərdi dizayn təkliflərimizdən yararlanın.
+    caption_ru: Ваш офис — это визитная карточка вашей компании. Ознакомьтесь с нашим новым проектом офисной мебели, созданным нашей профессиональной командой. Воспользуйтесь нашими индивидуальными дизайнерскими решениями для создания успешной рабочей среды.
+    hashtags: ["#DelFurniture", "#ofismebeli", "#interyerdizayn"]
+- id: good-measurement
+  expect: pass
+  brief: {id: g23, topic: Free professional measurement service, photo: Specialist measuring a wall with a laser meter}
+  option:
+    caption_az: Mükəmməl mebel dəqiq ölçüdən başlayır. Mütəxəssisimiz evinizə və ya ofisinizə gələrək ölçüləri pulsuz götürür və məkanınıza uyğun həll təklif edir. Ölçü götürmə üçün WhatsApp-a yazın.
+    caption_ru: Идеальная мебель начинается с точных замеров. Наш специалист бесплатно приедет к вам домой или в офис, снимет размеры и предложит решение для вашего пространства. Напишите нам в WhatsApp, чтобы договориться о замере.
+    hashtags: ["#DelFurniture", "#mebel"]
