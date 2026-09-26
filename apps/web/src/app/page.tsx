@@ -1,48 +1,38 @@
-// Phase 0 placeholder: proves web → api → postgres/redis wiring end to end.
-export const dynamic = "force-dynamic";
+import { getTranslations } from "next-intl/server";
+import Link from "next/link";
+import { redirect } from "next/navigation";
 
-type Ready = { status: string; checks: Record<string, string> };
-
-async function getApiStatus(): Promise<Ready | null> {
-  const base = process.env.API_INTERNAL_URL ?? "http://api:8000";
-  try {
-    const res = await fetch(`${base}/ready`, { cache: "no-store", signal: AbortSignal.timeout(3000) });
-    return (await res.json()) as Ready;
-  } catch {
-    return null;
-  }
-}
+import { Shell } from "@/components/shell";
+import { Alert, PageTitle } from "@/components/ui";
+import { requireMe } from "@/lib/server-api";
 
 export default async function Home() {
-  const status = await getApiStatus();
-  const rows: [string, string][] = status
-    ? [["api", "ok"], ...Object.entries(status.checks)]
-    : [["api", "unreachable"]];
-
+  const me = await requireMe();
+  // One company and nothing else to choose: go straight in
+  if (me.memberships.length === 1 && !me.is_platform_admin) {
+    redirect(`/t/${me.memberships[0].tenant_id}`);
+  }
+  const t = await getTranslations();
   return (
-    <main style={{ maxWidth: 480, margin: "0 auto", padding: "80px 16px" }}>
-      <h1 style={{ fontSize: 28, margin: 0 }}>
-        DEL SOCIAL <span style={{ color: "var(--accent)" }}>AI</span>
-      </h1>
-      <p style={{ opacity: 0.7, marginTop: 8 }}>Phase 0 — system status</p>
-      <ul style={{ listStyle: "none", padding: 0, marginTop: 24 }}>
-        {rows.map(([name, value]) => (
-          <li
-            key={name}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              background: "var(--surface)",
-              padding: "12px 16px",
-              borderRadius: 8,
-              marginBottom: 8,
-            }}
-          >
-            <span>{name}</span>
-            <span>{value === "ok" ? "✅ ok" : `❌ ${value}`}</span>
-          </li>
-        ))}
-      </ul>
-    </main>
+    <Shell me={me}>
+      <PageTitle>{t("home.title")}</PageTitle>
+      {me.memberships.length === 0 ? (
+        <Alert>{t("home.empty")}</Alert>
+      ) : (
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {me.memberships.map((m) => (
+            <li key={m.tenant_id}>
+              <Link
+                href={`/t/${m.tenant_id}`}
+                className="block rounded-lg border border-border bg-surface p-4 hover:border-accent"
+              >
+                <span className="block font-medium">{m.tenant_name}</span>
+                <span className="text-sm text-muted">{t(`roles.${m.role}`)}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Shell>
   );
 }
