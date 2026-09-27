@@ -86,6 +86,15 @@ export type BrandProfileData = {
   occasions: string[];
   image_editing: Record<"background" | "remove_objects" | "enhance" | "recolor" | "swap_product", boolean>;
   mention_prices: boolean;
+  market?: {
+    competitors_instagram: string[];
+    watch_sites: string[];
+    keywords: string[];
+    notes: string;
+    report_language: "az" | "ru" | "en" | "fa";
+    daily_research: boolean;
+    daily_briefing: boolean;
+  };
 };
 
 export type BrandProfileOut = {
@@ -285,6 +294,7 @@ export type ChatMsg = {
   created_at: string;
   task: TaskInfo | null;
   post: PostInfo | null;
+  payload: CardPayload | null;
 };
 
 export type LiveInfo = {
@@ -355,4 +365,75 @@ export type TenantOverview = {
   margin_month_usd: string | null;
   open_request_plan: string | null;
   open_request_at: string | null;
+};
+
+// Daily work (ADR 008): market research and the Team Lead's morning report
+export type Finding = { title: string; detail: string; evidence: string; confidence: "low" | "medium" | "high" };
+export type PostIdea = { product_id: string | null; product_name: string; angle: string; why: string; format: string };
+export type MarketReportData = {
+  headline: string;
+  summary: string;
+  demand: Finding[];
+  colors_materials: Finding[];
+  competitors: Finding[];
+  customer_voice: Finding[];
+  opportunities: Finding[];
+  post_ideas: PostIdea[];
+  questions: string[];
+  data_gaps: string[];
+};
+export type SuggestionData = {
+  title: string;
+  why: string;
+  action: "create_post" | "none";
+  product_id: string | null;
+  when: string | null;
+  notes: string | null;
+  status: "open" | "started";
+  post_id?: string;
+};
+export type BriefingData = {
+  greeting: string;
+  yesterday: string;
+  market: string;
+  today_plan: string[];
+  suggestions: SuggestionData[];
+  questions: string[];
+};
+export type CardPayload =
+  | { type: "market"; report_id: string; headline: string; ideas: number; questions: string[] }
+  | { type: "briefing"; report_id: string; briefing: BriefingData; market_report_id: string | null };
+
+export type AccountStats = {
+  posts_last_7_days: number;
+  posts_last_30_days: number;
+  avg_likes: number;
+  avg_comments: number;
+  engagement_rate_percent: number | null;
+  post_types: Record<string, number>;
+};
+export type CollectedAccount = {
+  username?: string;
+  entry?: string;
+  name?: string;
+  followers?: number | null;
+  error?: string;
+  stats?: AccountStats;
+  top_posts?: { date: string; likes: number; comments: number; caption: string; permalink: string | null; type: string }[];
+  recent_customer_comments?: { date: string; on_post: string; text: string }[];
+};
+export type DailyRow = {
+  report_id: string;
+  kind: "market" | "briefing";
+  day: string;
+  status: "running" | "done" | "failed";
+  headline: string | null;
+  error: string | null;
+  created_at: string;
+  finished_at: string | null;
+};
+export type DailyFull = DailyRow & {
+  input: { own?: CollectedAccount | null; competitors?: CollectedAccount[]; facts?: Record<string, unknown> };
+  output: (MarketReportData | BriefingData) | null;
+  sources: { title: string; url: string }[];
 };

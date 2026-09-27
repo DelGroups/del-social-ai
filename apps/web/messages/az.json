@@ -12,7 +12,8 @@
     "passwordHint": "Ən azı 10 simvol",
     "mismatch": "Şifrələr uyğun gəlmir",
     "showPassword": "Şifrəni göstər",
-    "hidePassword": "Şifrəni gizlət"
+    "hidePassword": "Şifrəni gizlət",
+    "close": "Bağla"
   },
   "roles": {
     "owner": "Sahib",
@@ -51,10 +52,12 @@
     "evals": "Sınaqlar",
     "media": "Şəkillər",
     "posts": "Postlar",
-    "home": "Komanda",
+    "home": "Əsas səhifə",
     "approvals": "Təsdiqlər",
     "reports": "Hesabatlar",
-    "settings": "Tənzimləmələr"
+    "settings": "Tənzimləmələr",
+    "team": "Komanda",
+    "menu": "Menyu"
   },
   "members": {
     "title": "Üzvlər",
@@ -193,7 +196,8 @@
       "rules": "Qaydalar",
       "hashtags": "Heşteqlər",
       "examples": "Nümunə postlar",
-      "occasions": "Xüsusi günlər"
+      "occasions": "Xüsusi günlər",
+      "market": "Bazar və gündəlik hesabatlar"
     },
     "f": {
       "basics": {
@@ -242,7 +246,16 @@
         "bad": "Bəyənmədiyimiz postlar"
       },
       "occasions": "Brendin qeyd etdiyi günlər",
-      "terminology": "Terminologiyamız: düzgün söz və nəyi yazmamaq lazımdır (hər sətirdə bir, məs. \"Membran fasad — yox: membran örtüklü MDF fasad\")"
+      "terminology": "Terminologiyamız: düzgün söz və nəyi yazmamaq lazımdır (hər sətirdə bir, məs. \"Membran fasad — yox: membran örtüklü MDF fasad\")",
+      "market": {
+        "competitors_instagram": "Rəqiblərin Instagram hesabları (hər sətirdə bir, məs. @mebel_baku)",
+        "watch_sites": "İzləniləcək saytlar və marketpleyslər",
+        "keywords": "Axtarış sözləri (az / ru)",
+        "notes": "Araşdırmaçı üçün qeydlər",
+        "report_language": "Gündəlik hesabatların dili",
+        "daily_research": "Hər səhər bazar araşdırması (08:00)",
+        "daily_briefing": "Hər səhər Rəhbərin hesabatı (09:00)"
+      }
     },
     "opt": {
       "formal": "Rəsmi (siz / вы)",
@@ -256,7 +269,11 @@
       "az_ru_same_caption": "Azərbaycan + rus dili bir mətndə",
       "az": "Yalnız Azərbaycan dili",
       "ru": "Yalnız rus dili",
-      "alternate": "Azərbaycan və rus dilində növbə ilə"
+      "alternate": "Azərbaycan və rus dilində növbə ilə",
+      "lang_az": "Azərbaycan dili",
+      "lang_ru": "Rus dili",
+      "lang_en": "İngilis dili",
+      "lang_fa": "Fars dili"
     }
   },
   "usage": {
@@ -564,7 +581,10 @@
       "publisher": "Paylaşım",
       "image_request": "Vizual redaktor",
       "system_check": "Sistem",
-      "image_editor": "Vizual redaktor"
+      "image_editor": "Vizual redaktor",
+      "market_researcher": "Bazar analitiki",
+      "daily_briefing": "Rəhbər",
+      "web_researcher": "Bazar analitiki"
     },
     "steps": {
       "photos": "Şəkillər seçildi",
@@ -674,7 +694,8 @@
           "name": "Video redaktor",
           "hint": "Reels və qısa videolar"
         }
-      }
+      },
+      "researchSchedule": "hər gün 08:00"
     }
   },
   "settingsHub": {
@@ -764,6 +785,157 @@
     "requestedShort": "İstənilib",
     "requested": "{date} tarixində {plan} paketini istədiniz. Tamamlamaq üçün sizinlə əlaqə saxlayacağıq.",
     "paymentNote": "Ödəniş hesab-faktura və ya bank köçürməsi ilə; paket ödənişdən sonra aktivləşir. Onlayn ödəniş tezliklə.",
-    "ownerOnly": "Paketi yalnız şirkət sahibi dəyişə bilər."
+    "ownerOnly": "Paketi yalnız şirkət sahibi dəyişə bilər.",
+    "daysLeft": "{days} gün qalıb",
+    "manage": "Paketi idarə et"
+  },
+  "roster": {
+    "title": "Komandanız",
+    "intro": "Hər agentin öz işi və qrafiki var və Rəhbərə hesabat verir; Rəhbər isə hər səhər sizə hesabat verir.",
+    "reportsToYou": "sizə hesabat verir",
+    "reportsToLead": "Rəhbərə hesabat verir",
+    "lastReport": "son hesabat {date}: {status}",
+    "status": {
+      "running": "hazırlanır",
+      "done": "hazırdır",
+      "failed": "alınmadı"
+    },
+    "comingTitle": "Komandaya növbəti qoşulanlar",
+    "team_lead": {
+      "role": "Marketinq meneceri və koordinator",
+      "schedule": "Hər gün 09:00 · və siz yazanda",
+      "duties": [
+        "Hər səhər sizə hesabat verir: nə edildi, bazar nə deyir, bu günün planı",
+        "Bir kliklə başlada biləcəyiniz post və kampaniyalar təklif edir",
+        "Tapşırıqlarınızı işə çevirir və komanda arasında bölür",
+        "Paketiniz daxilində həftəlik paylaşım planını bərabər saxlayır"
+      ]
+    },
+    "market_researcher": {
+      "role": "Bazar araşdırması",
+      "schedule": "Hər gün 08:00",
+      "duties": [
+        "Rəqiblərin Instagramını izləyir: nə paylaşırlar və hansı postlar işləyir",
+        "Müştərilərinizin şərhlərdə nə soruşduğunu oxuyur",
+        "İnternetdə tələbi, populyar modelləri, rəngləri və yerli tədbirləri axtarır",
+        "Sübutlarla hesabat və məhsullarınız üçün post ideyaları yazır"
+      ]
+    },
+    "media_analyst": {
+      "role": "Şəkil təhlili",
+      "schedule": "Şəkil əlavə edən kimi",
+      "duties": [
+        "Hər şəkli adlandırır, etiketləyir və təsvir edir",
+        "Şəkilləri məhsullara qruplaşdırır",
+        "Ən yaxşı kadrı tapır və keyfiyyət problemlərini göstərir"
+      ]
+    },
+    "copywriter": {
+      "role": "Mətn yazarı (az / ru)",
+      "schedule": "Hər post üçün",
+      "duties": [
+        "Hər post üçün üç fərqli mətn variantı yazır",
+        "Sadə sözlə dediyiniz düzəlişlərə görə yenidən yazır",
+        "Brendin tonundan, terminlərindən və heşteqlərindən istifadə edir"
+      ]
+    },
+    "brand_guardian": {
+      "role": "Keyfiyyət nəzarəti",
+      "schedule": "Hər şey paylaşılmazdan əvvəl",
+      "duties": [
+        "Hər mətni brend qaydaları və qadağan sözlərlə yoxlayır",
+        "Orfoqrafiyanı, iddiaları və platforma limitlərini yoxlayır",
+        "Zəif variantları yenidən yazmağa qaytarır"
+      ]
+    },
+    "visual_editor": {
+      "role": "Şəkil redaktəsi",
+      "schedule": "Şəklin redaktə resepti olanda",
+      "duties": [
+        "Keyfiyyəti yaxşılaşdırır, obyektləri silir, fonu və ya rəngi dəyişir",
+        "Hər redaktə təsdiqinizi gözləyir"
+      ]
+    },
+    "publisher": {
+      "role": "Paylaşım",
+      "schedule": "Təsdiqlənmiş vaxtda",
+      "duties": [
+        "Təsdiqlənmiş postları vaxtında Instagram və Facebook-da paylaşır",
+        "Təsdiqiniz olmadan heç nə paylaşmır"
+      ]
+    }
+  },
+  "daily": {
+    "run": {
+      "market": "Bazarı indi araşdır",
+      "briefing": "Səhər hesabatı indi"
+    },
+    "confirm": {
+      "market": "Bu günün bazar araşdırması indi aparılsın? AI krediti istifadə olunur (təxminən $0.15).",
+      "briefing": "Rəhbərin hesabatı indi hazırlansın? Az miqdarda AI krediti istifadə olunur."
+    },
+    "started": {
+      "market": "Araşdırma başladı; hesabat Komanda otağında görünəcək.",
+      "briefing": "Rəhbər hesabatı yazır.",
+      "post": "başladı"
+    },
+    "briefingTitle": "Rəhbərin səhər hesabatı",
+    "marketTitle": "Bazar araşdırması",
+    "marketToday": "Bu gün bazarda",
+    "openMarket": "Bazar hesabatını aç",
+    "todayPlan": "Bu günün planı",
+    "suggestions": "Təkliflər",
+    "doIt": "Hazırla",
+    "questions": "Sizə suallar",
+    "answerInChat": "Aşağıda söhbətdə cavab verin.",
+    "fullReport": "Tam hesabat",
+    "ideasCount": "{count, plural, =0 {post ideyası yoxdur} other {# post ideyası}}",
+    "marketList": "Bazar araşdırması",
+    "marketListHint": "Hər səhər 08:00: rəqiblər, müştərilər, internet.",
+    "briefingList": "Rəhbərin hesabatları",
+    "briefingListHint": "Hər səhər 09:00: görülən iş, plan, təkliflər.",
+    "noneYet": "Hələ yoxdur. İlk hesabat sabah səhər gələcək, ya da indi başladın.",
+    "confidence": {
+      "low": "zəif sübut",
+      "medium": "ehtimal",
+      "high": "güclü sübut"
+    },
+    "numbersTitle": "Rəqəmlər (kodla hesablanıb)",
+    "numbersHint": "Hər hesabın son 20 postu üzrə orta göstəricilər. Qarşılıqlı əlaqə = (bəyənmə + şərh) / izləyici.",
+    "col": {
+      "account": "Hesab",
+      "followers": "İzləyici",
+      "posts7": "Post 7g",
+      "posts30": "Post 30g",
+      "likes": "Orta bəyənmə",
+      "comments": "Orta şərh",
+      "er": "Qarşılıqlı əlaqə"
+    },
+    "us": "biz",
+    "notVisible": "görünmür",
+    "topPosts": "Rəqiblərin son ən yaxşı postları",
+    "open": "aç",
+    "customerComments": "Müştərilərin postlarımız altında yazdıqları (son 14 gün)",
+    "back": "Hesabatlar",
+    "running": "Hesabat hazırlanır. Bir dəqiqədən sonra yeniləyin.",
+    "failed": "Hesabat hazırlanmadı",
+    "sec": {
+      "demand": "Müştərilər nə istəyir",
+      "colors": "Rənglər və materiallar",
+      "competitors": "Rəqiblər",
+      "customers": "Bizim müştərilər",
+      "opportunities": "İmkanlar",
+      "ideas": "Post ideyaları",
+      "gaps": "Suallar və çatışmayan məlumat"
+    },
+    "format": {
+      "photo": "şəkil",
+      "carousel": "karusel",
+      "reel": "reels",
+      "story": "stori"
+    },
+    "ideasHint": "Rəhbər ən yaxşı ideyaları bir kliklə başlada biləcəyiniz təkliflərə çevirir.",
+    "sources": "İnternet mənbələri",
+    "madeAt": "Hazırlanıb: {at}"
   }
 }

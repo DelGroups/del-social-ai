@@ -8,13 +8,12 @@ import type { PlanStatus } from "@/lib/types";
 const daysLeft = (iso: string) => Math.max(0, Math.ceil((Date.parse(iso) - Date.now()) / 86_400_000));
 
 export async function PlanBar({ tenantId, plan }: { tenantId: string; plan: PlanStatus | null }) {
-  if (!plan) return null;
+  if (!plan || plan.state === "ok") return null; // the sidebar card shows the package; this bar only warns
   const t = await getTranslations("plan");
   const href = `/t/${tenantId}/plan`;
   const { posts } = plan;
   const pct = posts.limit ? Math.min(100, Math.round((posts.used / posts.limit) * 100)) : 0;
-  const tone =
-    plan.state === "ok" ? "border-border" : plan.state === "warning" ? "border-accent" : "border-danger";
+  const tone = plan.state === "warning" ? "border-accent" : "border-danger";
 
   let message: string | null = null;
   if (plan.state === "none") message = t("banner.none");
@@ -40,7 +39,7 @@ export async function PlanBar({ tenantId, plan }: { tenantId: string; plan: Plan
               <>
                 <span className="h-1.5 w-24 overflow-hidden rounded-full bg-bg" aria-hidden="true">
                   <span
-                    className={`block h-full rounded-full ${plan.state === "ok" ? "bg-success" : plan.state === "warning" ? "bg-accent" : "bg-danger"}`}
+                    className={`block h-full rounded-full ${plan.state === "warning" ? "bg-accent" : "bg-danger"}`}
                     style={{ width: `${pct}%` }}
                   />
                 </span>
@@ -60,7 +59,7 @@ export async function PlanBar({ tenantId, plan }: { tenantId: string; plan: Plan
       )}
       {message && <span className={plan.state === "warning" ? "text-accent" : "text-danger"}>{message}</span>}
       <Link href={href} className="rounded-md border border-border px-2.5 py-1 text-xs hover:border-accent">
-        {plan.state === "ok" ? t("details") : t("upgrade")}
+        {t("upgrade")}
       </Link>
     </div>
   );

@@ -4,18 +4,8 @@
 // shows what it is doing right now with its own small animation.
 import { useTranslations } from "next-intl";
 
+import { AGENT_COLOR } from "@/lib/agents";
 import type { LiveInfo, LiveJob } from "@/lib/types";
-
-export const AGENT_COLOR: Record<string, string> = {
-  team_lead: "#6C5CE7",
-  media_analyst: "#0E9F9F",
-  copywriter: "#E0752D",
-  brand_guardian: "#2F8F6B",
-  approval: "#F2B01E",
-  publisher: "#3B6FD8",
-  channels: "#C2549B",
-  visual_editor: "#C2549B",
-};
 
 // Stations of the line, left to right. "approval" is you; "channels" is Instagram + Facebook.
 const STATIONS = ["team_lead", "media_analyst", "copywriter", "brand_guardian", "approval", "publisher", "channels"] as const;
@@ -231,6 +221,15 @@ export function LiveStudio({ live }: { live: LiveInfo | null }) {
       {/* The rest of the team: visible now, working as each one is built */}
       <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-2.5">
         <span className="text-[11px] text-muted">{t("studio.moreTeam")}</span>
+        <span className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] ${agents.market_researcher?.state === "working" ? "ls-busy-soft border-accent" : "border-border"}`}>
+          <span className="h-2 w-2 rounded-full" style={{ background: AGENT_COLOR.market_researcher }} />
+          {t("agents.market_researcher")}
+          {agents.market_researcher?.state === "working" ? (
+            <span className="text-accent">· {agents.market_researcher.activity ?? t("working")}</span>
+          ) : (
+            <span className="text-muted">· {t("studio.researchSchedule")}</span>
+          )}
+        </span>
         <span className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] ${agents.visual_editor?.state === "working" ? "ls-busy-soft border-accent" : "border-border"}`}>
           <span className="h-2 w-2 rounded-full" style={{ background: AGENT_COLOR.visual_editor }} />
           {t("agents.visual_editor")}

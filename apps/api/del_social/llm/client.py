@@ -79,7 +79,33 @@ def _usage(resp: object) -> Usage:
         output_tokens=u.output_tokens or 0,
         cache_read_tokens=getattr(u, "cache_read_input_tokens", 0) or 0,
         cache_write_tokens=getattr(u, "cache_creation_input_tokens", 0) or 0,
+        web_searches=getattr(getattr(u, "server_tool_use", None), "web_search_requests", 0) or 0,
     )
+
+
+def _add(a: Usage, b: Usage) -> Usage:
+    return Usage(*(x + y for x, y in zip(
+        (a.input_tokens, a.output_tokens, a.cache_read_tokens, a.cache_write_tokens, a.web_searches),
+        (b.input_tokens, b.output_tokens, b.cache_read_tokens, b.cache_write_tokens, b.web_searches), strict=True,
+    )))
+
+
+@dataclass(frozen=True)
+class Source:
+    title: str
+    url: str
+
+
+@dataclass(frozen=True)
+class ResearchResult:
+    """Notes written from web search results. Untrusted: whoever reads them treats them as data."""
+
+    text: str
+    sources: list[Source]
+    model: str
+    usage: Usage
+    cost_usd: Decimal | None
+    trace_id: str
 
 
 def _content(user: str, images: list[bytes] | None) -> str | list[dict]:
@@ -189,6 +215,77 @@ class LLM:
         if error is not None or parsed is None:
             raise LLMError(error or "No output")
         return LLMResult(parsed, model, usage, cost, latency_ms, trace_id)
+
+    async def research(
+        self,
+        *,
+        tenant_id: uuid.UUID | None,
+        prompt: Prompt,
+        user: str,
+        tier: Tier = Tier.DEFAULT,
+        max_tokens: int = 6000,
+        max_searches: int = 5,
+        country: str = "AZ",
+        city: str = "Baku",
+    ) -> ResearchResult:
+        """Web research with Anthropic's server-side search: free-text notes plus the pages found.
+
+        Kept apart from structured calls: the notes are passed to a structured agent afterwards
+        as untrusted data, so nothing found on the web can steer an agent that has tools.
+        """
+        model = model_for(self._settings, tier)
+        trace_id = uuid.uuid4().hex
+        started = datetime.now(UTC)
+        t0 = time.monotonic()
+        usage = Usage()
+        messages: list[dict] = [{"role": "user", "content": user}]
+        tools = [{
+            "type": "web_search_20250305", "name": "web_search", "max_uses": max_searches,
+            "user_location": {"type": "approximate", "country": country, "city": city, "timezone": "Asia/Baku"},
+        }]
+        text, sources, error = "", {}, None
+        try:
+            for _ in range(4):  # a long search turn may pause; continue it a few times at most
+                resp = await self._client.messages.create(
+                    model=model, max_tokens=max_tokens, tools=tools, messages=messages,
+                    system=[{"type": "text", "text": prompt.text, "cache_control": {"type": "ephemeral"}}],
+                )
+                usage = _add(usage, _usage(resp))
+                for block in resp.content:
+                    if getattr(block, "type", None) == "web_search_tool_result" and isinstance(block.content, list):
+                        for r in block.content:
+                            url = getattr(r, "url", None)
+                            if url:
+                                sources.setdefault(url, Source(title=(getattr(r, "title", "") or url)[:200], url=url))
+                if resp.stop_reason == "pause_turn":
+                    messages = [*messages, {"role": "assistant", "content": resp.content}]
+                    continue
+                text = "".join(b.text for b in resp.content if getattr(b, "type", None) == "text").strip()
+                if resp.stop_reason == "max_tokens":
+                    error = "Output cut off at max_tokens"
+                elif not text:
+                    error = f"No research notes (stop_reason={resp.stop_reason})"
+                break
+            else:
+                error = "Research did not finish"
+        except anthropic.APIStatusError as e:
+            error = f"Anthropic API error {e.status_code}"
+            if e.status_code == 400 and "web_search" in str(e).lower():
+                error += " (web search is not enabled for this organization)"
+        except anthropic.APIConnectionError:
+            error = "Anthropic API could not be reached"
+        latency_ms = int((time.monotonic() - t0) * 1000)
+        cost = cost_usd(model, usage)
+        await self._record(tenant_id, prompt, prompt.ref, model, usage, cost, latency_ms, error, trace_id)
+        if self._tracer is not None:
+            await self._tracer.send(TraceRecord(
+                trace_id=trace_id, tenant_id=tenant_id, agent=prompt.agent, prompt_name=prompt.agent,
+                prompt_version=prompt.version, prompt_ref=prompt.ref, model=model, input=user,
+                output=text or None, error=error, usage=usage, cost_usd=cost, started=started, ended=datetime.now(UTC),
+            ))
+        if error is not None:
+            raise LLMError(error)
+        return ResearchResult(text, list(sources.values())[:40], model, usage, cost, trace_id)
 
     @staticmethod
     def _output_config(output: type[BaseModel], effort: Effort | None) -> dict:

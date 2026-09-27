@@ -12,7 +12,8 @@
     "passwordHint": "At least 10 characters",
     "mismatch": "Passwords do not match",
     "showPassword": "Show password",
-    "hidePassword": "Hide password"
+    "hidePassword": "Hide password",
+    "close": "Close"
   },
   "roles": {
     "owner": "Owner",
@@ -51,10 +52,12 @@
     "evals": "Evals",
     "media": "Photos",
     "posts": "Posts",
-    "home": "Team",
+    "home": "Home",
     "approvals": "Approvals",
     "reports": "Reports",
-    "settings": "Settings"
+    "settings": "Settings",
+    "team": "Team",
+    "menu": "Menu"
   },
   "members": {
     "title": "Members",
@@ -193,7 +196,8 @@
       "rules": "Rules",
       "hashtags": "Hashtags",
       "examples": "Example posts",
-      "occasions": "Occasions"
+      "occasions": "Occasions",
+      "market": "Market and daily reports"
     },
     "f": {
       "basics": {
@@ -242,7 +246,16 @@
         "bad": "Posts we don't like"
       },
       "occasions": "Dates the brand marks",
-      "terminology": "Our terminology: the correct word, and what not to write (one per line, e.g. \"Membran fasad — not: membran örtüklü MDF fasad\")"
+      "terminology": "Our terminology: the correct word, and what not to write (one per line, e.g. \"Membran fasad — not: membran örtüklü MDF fasad\")",
+      "market": {
+        "competitors_instagram": "Competitors' Instagram accounts (one per line, e.g. @mebel_baku)",
+        "watch_sites": "Websites and marketplaces to watch",
+        "keywords": "Search words (az / ru)",
+        "notes": "Notes for the researcher",
+        "report_language": "Language of daily reports",
+        "daily_research": "Market research every morning (08:00)",
+        "daily_briefing": "Team Lead's report every morning (09:00)"
+      }
     },
     "opt": {
       "formal": "Formal (siz / вы)",
@@ -256,7 +269,11 @@
       "az_ru_same_caption": "Azerbaijani + Russian in one caption",
       "az": "Azerbaijani only",
       "ru": "Russian only",
-      "alternate": "Alternate Azerbaijani and Russian posts"
+      "alternate": "Alternate Azerbaijani and Russian posts",
+      "lang_az": "Azerbaijani",
+      "lang_ru": "Russian",
+      "lang_en": "English",
+      "lang_fa": "Persian"
     }
   },
   "usage": {
@@ -564,7 +581,10 @@
       "publisher": "Publisher",
       "image_request": "Visual editor",
       "system_check": "System",
-      "image_editor": "Visual editor"
+      "image_editor": "Visual editor",
+      "market_researcher": "Market Researcher",
+      "daily_briefing": "Team Lead",
+      "web_researcher": "Market Researcher"
     },
     "steps": {
       "photos": "Photos selected",
@@ -674,7 +694,8 @@
           "name": "Video Editor",
           "hint": "Reels and short videos"
         }
-      }
+      },
+      "researchSchedule": "every day 08:00"
     }
   },
   "settingsHub": {
@@ -764,6 +785,157 @@
     "requestedShort": "Requested",
     "requested": "You asked for {plan} on {date}. We will contact you to complete it.",
     "paymentNote": "Payment by invoice or bank transfer; the package is activated once it is paid. Online payment is coming.",
-    "ownerOnly": "Only the company owner can change the package."
+    "ownerOnly": "Only the company owner can change the package.",
+    "daysLeft": "{days} days left",
+    "manage": "Manage package"
+  },
+  "roster": {
+    "title": "Your team",
+    "intro": "Each agent has a job, a schedule and reports to the Team Lead; the Team Lead reports to you every morning.",
+    "reportsToYou": "reports to you",
+    "reportsToLead": "reports to the Team Lead",
+    "lastReport": "last report {date}: {status}",
+    "status": {
+      "running": "in progress",
+      "done": "done",
+      "failed": "failed"
+    },
+    "comingTitle": "Joining the team next",
+    "team_lead": {
+      "role": "Marketing manager and coordinator",
+      "schedule": "Every day 09:00 · and whenever you write",
+      "duties": [
+        "Reports to you every morning: what was done, what the market says, today's plan",
+        "Suggests posts and campaigns you can start with one click",
+        "Turns your instructions into work and splits it across the team",
+        "Keeps the posting plan even across the week, within your package"
+      ]
+    },
+    "market_researcher": {
+      "role": "Market research",
+      "schedule": "Every day 08:00",
+      "duties": [
+        "Watches competitors' Instagram: what they post and which posts work",
+        "Reads what your customers ask in comments",
+        "Searches the web for demand, popular models, colours and local events",
+        "Writes a report with evidence and post ideas for your products"
+      ]
+    },
+    "media_analyst": {
+      "role": "Photo analysis",
+      "schedule": "As soon as you add photos",
+      "duties": [
+        "Names, tags and describes every photo",
+        "Groups photos into products",
+        "Finds the best framing and flags quality problems"
+      ]
+    },
+    "copywriter": {
+      "role": "Copywriting (az / ru)",
+      "schedule": "For every post",
+      "duties": [
+        "Writes three different caption options per post",
+        "Rewrites them from your corrections in plain words",
+        "Uses the brand's voice, terms and hashtags"
+      ]
+    },
+    "brand_guardian": {
+      "role": "Quality control",
+      "schedule": "Before anything goes out",
+      "duties": [
+        "Checks every caption against the brand rules and forbidden words",
+        "Checks spelling, claims and platform limits",
+        "Sends weak options back for a rewrite"
+      ]
+    },
+    "visual_editor": {
+      "role": "Photo editing",
+      "schedule": "When a photo has an edit recipe",
+      "duties": [
+        "Improves quality, removes objects, changes background or colour",
+        "Every edit waits for your approval"
+      ]
+    },
+    "publisher": {
+      "role": "Publishing",
+      "schedule": "At the approved time",
+      "duties": [
+        "Publishes approved posts to Instagram and Facebook on time",
+        "Never publishes anything without your approval"
+      ]
+    }
+  },
+  "daily": {
+    "run": {
+      "market": "Research the market now",
+      "briefing": "Morning report now"
+    },
+    "confirm": {
+      "market": "Run today's market research now? It uses AI credit (about $0.15).",
+      "briefing": "Make the Team Lead's report now? It uses a little AI credit."
+    },
+    "started": {
+      "market": "Research started; the report appears in the Team Room.",
+      "briefing": "The Team Lead is writing the report.",
+      "post": "started"
+    },
+    "briefingTitle": "Team Lead's morning report",
+    "marketTitle": "Market research",
+    "marketToday": "Market today",
+    "openMarket": "Open the market report",
+    "todayPlan": "Today's plan",
+    "suggestions": "Suggestions",
+    "doIt": "Prepare it",
+    "questions": "Questions for you",
+    "answerInChat": "Answer in the chat below.",
+    "fullReport": "Full report",
+    "ideasCount": "{count, plural, =0 {no post ideas} one {# post idea} other {# post ideas}}",
+    "marketList": "Market research",
+    "marketListHint": "Every morning at 08:00: competitors, customers, web.",
+    "briefingList": "Team Lead's reports",
+    "briefingListHint": "Every morning at 09:00: done, plan, suggestions.",
+    "noneYet": "Nothing yet. The first report comes tomorrow morning, or run one now.",
+    "confidence": {
+      "low": "weak evidence",
+      "medium": "likely",
+      "high": "strong evidence"
+    },
+    "numbersTitle": "Numbers (counted by code)",
+    "numbersHint": "Averages over the latest 20 posts of each account. Engagement = (likes + comments) / followers.",
+    "col": {
+      "account": "Account",
+      "followers": "Followers",
+      "posts7": "Posts 7d",
+      "posts30": "Posts 30d",
+      "likes": "Avg likes",
+      "comments": "Avg comments",
+      "er": "Engagement"
+    },
+    "us": "us",
+    "notVisible": "not visible",
+    "topPosts": "Competitors' best recent posts",
+    "open": "open",
+    "customerComments": "What customers wrote under our posts (last 14 days)",
+    "back": "Reports",
+    "running": "The report is being made. Refresh in a minute.",
+    "failed": "The report could not be made",
+    "sec": {
+      "demand": "What customers want",
+      "colors": "Colours and materials",
+      "competitors": "Competitors",
+      "customers": "Our customers",
+      "opportunities": "Opportunities",
+      "ideas": "Post ideas",
+      "gaps": "Questions and missing data"
+    },
+    "format": {
+      "photo": "photo",
+      "carousel": "carousel",
+      "reel": "reel",
+      "story": "story"
+    },
+    "ideasHint": "The Team Lead turns the best ideas into suggestions you can start with one click.",
+    "sources": "Web sources",
+    "madeAt": "Made {at}"
   }
 }

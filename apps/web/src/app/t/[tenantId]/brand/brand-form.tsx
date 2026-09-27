@@ -11,7 +11,7 @@ import type { BrandProfileData, BrandProfileOut } from "@/lib/types";
 
 // Mirrors apps/api/del_social/knowledge/brand_profile.py. Labels: messages brand.f.<path>
 type Kind = "text" | "textarea" | "list" | "blocks" | "select" | "number" | "bool";
-type Spec = { path: string; kind: Kind; options?: string[] };
+type Spec = { path: string; kind: Kind; options?: string[]; optPrefix?: string };
 
 const SECTIONS: { key: string; fields: Spec[] }[] = [
   {
@@ -80,6 +80,18 @@ const SECTIONS: { key: string; fields: Spec[] }[] = [
     ],
   },
   { key: "occasions", fields: [{ path: "occasions", kind: "list" }] },
+  {
+    key: "market",
+    fields: [
+      { path: "market.competitors_instagram", kind: "list" },
+      { path: "market.watch_sites", kind: "list" },
+      { path: "market.keywords", kind: "list" },
+      { path: "market.notes", kind: "textarea" },
+      { path: "market.report_language", kind: "select", options: ["az", "ru", "en", "fa"], optPrefix: "lang_" },
+      { path: "market.daily_research", kind: "bool" },
+      { path: "market.daily_briefing", kind: "bool" },
+    ],
+  },
 ];
 
 const BLOCK_SEPARATOR = /\n\s*---\s*\n/;
@@ -169,7 +181,7 @@ export function BrandForm({ tenantId, canEdit, initial }: Props) {
         <Select {...common} className="w-full" onChange={(e) => update(s, e.target.value)}>
           {s.options!.map((o) => (
             <option key={o} value={o}>
-              {t(`opt.${o}`)}
+              {t(`opt.${s.optPrefix ?? ""}${o}`)}
             </option>
           ))}
         </Select>

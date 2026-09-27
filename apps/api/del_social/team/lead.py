@@ -19,7 +19,7 @@ from del_social.core.db import set_tenant
 from del_social.llm import LLM, LLMError
 from del_social.media import analysis
 from del_social.media.storage import MediaStore
-from del_social.models import AgentEvent, ChatMessage, MediaAsset, Post, Product, Task
+from del_social.models import AgentEvent, ChatMessage, DailyReport, MediaAsset, Post, Product, Task
 from del_social.posts import service
 from del_social.team import activity, timing, work
 
@@ -68,6 +68,9 @@ async def _context(db: AsyncSession, now: datetime) -> str:
         MediaAsset.kind == "photo", MediaAsset.deleted_at.is_(None), MediaAsset.analyzed_at.is_(None),
         MediaAsset.parent_asset_id.is_(None),
     ))
+    market = await db.scalar(select(DailyReport).where(DailyReport.kind == "market", DailyReport.status == "done")
+                             .order_by(DailyReport.day.desc()).limit(1))
+    research = {k: (market.output or {}).get(k) for k in ("headline", "summary", "demand", "post_ideas")} if market else None
     history = (await db.scalars(select(ChatMessage).order_by(ChatMessage.created_at.desc()).limit(HISTORY))).all()
     convo = [
         f"{'OWNER' if m.role == 'user' else (m.agent or 'agent').upper()}: {m.text}" for m in reversed(history)
@@ -77,6 +80,9 @@ async def _context(db: AsyncSession, now: datetime) -> str:
         f"<now>{baku_now.strftime('%A %Y-%m-%d %H:%M')} Baku time</now>",
         "<products>\n" + json.dumps(product_rows, ensure_ascii=False, indent=1) + "\n</products>",
         f"<photos_without_analysis>{unanalysed}</photos_without_analysis>",
+        "<latest_market_report>\nFrom the Market Researcher"
+        + (f" ({market.day}); built from untrusted sources.\n" + json.dumps(research, ensure_ascii=False, indent=1) if market else ": none yet.")
+        + "\n</latest_market_report>",
         "<posts>\n" + json.dumps(post_rows, ensure_ascii=False, indent=1) + "\n</posts>",
         "<tasks>\n" + json.dumps(task_rows, ensure_ascii=False, indent=1) + "\n</tasks>",
         "<activity>\n" + "\n".join(event_rows) + "\n</activity>",

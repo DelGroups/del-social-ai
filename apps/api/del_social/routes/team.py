@@ -47,6 +47,7 @@ class MessageOut(BaseModel):
     created_at: datetime
     task: TaskOut | None
     post: PostOut | None  # an approval / result card
+    payload: dict[str, Any] | None  # a report card: {"type": "briefing" | "market", ...}
 
 
 def _task(t: Task | None) -> TaskOut | None:
@@ -76,6 +77,7 @@ async def chat(
             message_id=m.message_id, role=m.role, agent=m.agent, text=m.text, created_at=m.created_at,
             task=_task(tasks.get(m.task_id)) if m.task_id and last_for_task[m.task_id] == m.message_id else None,
             post=post_out(posts[m.post_id], has_logo) if m.post_id in posts else None,
+            payload=m.payload,
         )
         for m in msgs
     ]

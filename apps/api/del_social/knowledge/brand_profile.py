@@ -109,6 +109,26 @@ DEFAULT_OCCASIONS = [
 ]
 
 
+class ReportLanguage(StrEnum):
+    AZ = "az"
+    RU = "ru"
+    EN = "en"
+    FA = "fa"
+
+
+class Market(_Section):
+    """What the Market Researcher watches every day, and how the team reports to the owner."""
+
+    # Instagram business accounts of competitors, e.g. "@mebel_baku" (public posts via Meta Business Discovery)
+    competitors_instagram: list[Item] = items(15)
+    watch_sites: list[Item] = items(15)  # websites or marketplaces to look at, e.g. "tap.az mebel"
+    keywords: list[Item] = items(20)  # what to search for, e.g. "qarderob Bakı", "шкаф-купе Баку"
+    notes: Long = ""  # anything the researcher should keep in mind
+    report_language: ReportLanguage = ReportLanguage.AZ  # daily reports and briefings
+    daily_research: bool = True  # market research every morning
+    daily_briefing: bool = True  # the Team Lead's report and plan every morning
+
+
 class ImageEditing(_Section):
     """Unused since edits are configured per photo (ADR 005, revised). Kept so saved versions load."""
 
@@ -133,6 +153,7 @@ class BrandProfile(_Section):
     hashtags: Hashtags = Field(default_factory=Hashtags)
     examples: Examples = Field(default_factory=Examples)
     occasions: list[Item] = Field(default_factory=lambda: list(DEFAULT_OCCASIONS), max_length=40)
+    market: Market = Field(default_factory=Market)
     image_editing: ImageEditing = Field(default_factory=ImageEditing)
     # Phase 1 rule (plan §2): posts never mention prices or discounts unless a human writes them in the brief
     mention_prices: bool = False
