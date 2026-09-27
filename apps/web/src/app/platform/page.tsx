@@ -6,6 +6,7 @@ import { Alert, PageTitle } from "@/components/ui";
 import { requireMe } from "@/lib/server-api";
 
 import { PlatformForms } from "./platform-forms";
+import { PlatformTenants } from "./platform-tenants";
 
 export default async function PlatformPage() {
   const me = await requireMe("/platform");
@@ -17,7 +18,10 @@ export default async function PlatformPage() {
       <div className="mb-6">
         <Alert>{t("note")}</Alert>
       </div>
-      <PlatformForms />
+      <div className="space-y-6">
+        <PlatformTenants />
+        <PlatformForms />
+      </div>
     </Shell>
   );
 }

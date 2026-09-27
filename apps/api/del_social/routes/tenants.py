@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from del_social.billing import quota
 from del_social.core.deps import TenantContext, get_db, require_permission
 from del_social.models import Invitation, MemberRole, Membership
 from del_social.tenants.permissions import Permission, has_permission
@@ -120,6 +121,7 @@ async def invite(
     )
     if already_member:
         raise HTTPException(status.HTTP_409_CONFLICT, "This person is already a member")
+    await quota.check_new_member(db)  # the package limits the number of users
     invitation, url = await create_invitation(
         db, ctx.tenant_id, email, body.role, invited_by=ctx.account.account_id
     )

@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from del_social.agents.brand_guardian.checks import INSTAGRAM_CAPTION_LIMIT
+from del_social.billing import quota
 from del_social.connections.meta import MetaClient
 from del_social.core.config import get_settings
 from del_social.core.db import set_tenant
@@ -231,6 +232,7 @@ async def publish(
     post = await _get(db, post_id)
     if post.status not in ("ready", "approved", "partly_published") or not (post.caption or "").strip():
         raise HTTPException(status.HTTP_409_CONFLICT, "This post is not ready to publish")
+    await quota.check_publish(db, post)  # counts against this month's package
     assets = [await db.get(MediaAsset, a) for a in post.asset_ids]
     if not all(a is not None and service.publishable(a) for a in assets):
         raise HTTPException(status.HTTP_409_CONFLICT, "A photo in this post can no longer be published")
@@ -302,6 +304,7 @@ async def approve(
         raise HTTPException(422, "Approving needs an explicit confirmation")
     if post.status != "ready" or not (post.caption or "").strip():
         raise HTTPException(status.HTTP_409_CONFLICT, "This post is not ready to approve")
+    await quota.check_publish(db, post)  # approved posts are reserved, so they always go out
     assets = [await db.get(MediaAsset, a) for a in post.asset_ids]
     if not all(a is not None and service.publishable(a) for a in assets):
         raise HTTPException(status.HTTP_409_CONFLICT, "A photo in this post can no longer be published")

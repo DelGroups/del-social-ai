@@ -1,6 +1,7 @@
 from del_social.models.account import Account
 from del_social.models.auth_session import AuthSession
 from del_social.models.base import Base
+from del_social.models.billing import Plan, PlanRequest, Subscription
 from del_social.models.brand_profile import BrandProfileVersion
 from del_social.models.connection import Channel, Connection, ConnectionStatus
 from del_social.models.evals import EvalItem, EvalRun
@@ -33,8 +34,11 @@ __all__ = [
     "MemberRole",
     "Membership",
     "PasswordReset",
+    "Plan",
+    "PlanRequest",
     "Post",
     "Product",
+    "Subscription",
     "Task",
     "Tenant",
     "TenantSecret",

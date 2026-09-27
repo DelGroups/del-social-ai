@@ -4,9 +4,8 @@ import { redirect } from "next/navigation";
 import { Alert, Card, PageTitle } from "@/components/ui";
 import { formatDateTime } from "@/lib/prefs";
 import { apiGet, requireMe } from "@/lib/server-api";
-import { type PostInfo, type Usage, canViewUsage } from "@/lib/types";
+import type { PostInfo } from "@/lib/types";
 
-const usd = (v: string) => `$${Number(v).toFixed(Number(v) < 1 ? 4 : 2)}`;
 
 export default async function ReportsPage({ params }: { params: Promise<{ tenantId: string }> }) {
   const { tenantId } = await params;
@@ -14,10 +13,7 @@ export default async function ReportsPage({ params }: { params: Promise<{ tenant
   const membership = me.memberships.find((m) => m.tenant_id === tenantId);
   if (!membership) redirect("/");
   const t = await getTranslations();
-  const [{ data: posts }, usage] = await Promise.all([
-    apiGet<PostInfo[]>(`/tenants/${tenantId}/posts`),
-    canViewUsage(membership.role) ? apiGet<Usage>(`/tenants/${tenantId}/usage`) : Promise.resolve({ data: null }),
-  ]);
+  const { data: posts } = await apiGet<PostInfo[]>(`/tenants/${tenantId}/posts`);
   const published = (posts ?? []).filter((p) => p.status === "published" || p.status === "partly_published");
   return (
     <>
@@ -44,22 +40,6 @@ export default async function ReportsPage({ params }: { params: Promise<{ tenant
             </ul>
           )}
         </Card>
-        {usage.data && (
-          <Card title={t("usage.title", { month: usage.data.month })}>
-            <p className="mb-3 text-2xl font-semibold">{usd(usage.data.cost_usd)}</p>
-            <table className="w-full text-left text-sm">
-              <tbody>
-                {usage.data.by_agent.map((a) => (
-                  <tr key={a.agent} className="border-t border-border">
-                    <td className="py-2">{t(`team.agents.${a.agent}`)}</td>
-                    <td className="py-2 text-muted">{t("usage.calls", { count: a.calls })}</td>
-                    <td className="py-2 text-right tabular-nums">{usd(a.cost_usd)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-        )}
       </div>
     </>
   );

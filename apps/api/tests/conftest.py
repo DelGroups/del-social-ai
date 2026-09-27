@@ -165,6 +165,10 @@ async def tenants(admin: asyncpg.Connection, account_factory) -> AsyncIterator[d
             ids[key],
             role,
         )
+    # Unlimited package by default; billing tests switch plans themselves
+    await admin.executemany(
+        "INSERT INTO subscriptions (tenant_id, plan_id) VALUES ($1, 'enterprise')", [(a,), (b,)]
+    )
     await admin.executemany(
         "INSERT INTO tenant_secrets (tenant_id, key, encrypted_value) VALUES ($1, $2, $3)",
         [(a, "meta_token", b"ciphertext-a"), (b, "meta_token", b"ciphertext-b")],
@@ -173,7 +177,7 @@ async def tenants(admin: asyncpg.Connection, account_factory) -> AsyncIterator[d
         yield ids
     finally:
         tids = [a, b]
-        for table in ("agent_events", "chat_messages", "tasks", "posts", "media_assets", "products", "eval_items", "eval_runs", "llm_calls", "brand_profiles", "connections", "invitations", "memberships", "tenant_secrets", "tenants"):
+        for table in ("plan_requests", "subscriptions", "agent_events", "chat_messages", "tasks", "posts", "media_assets", "products", "eval_items", "eval_runs", "llm_calls", "brand_profiles", "connections", "invitations", "memberships", "tenant_secrets", "tenants"):
             await admin.execute(f"DELETE FROM {table} WHERE tenant_id = ANY($1::uuid[])", tids)
 
 

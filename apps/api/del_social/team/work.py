@@ -10,6 +10,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
+from del_social.billing import quota
 from del_social.core.db import set_tenant
 from del_social.models import MediaAsset, Post, Product, Task
 from del_social.posts import service
@@ -68,6 +69,7 @@ async def start_post(
     notes: str = "",
     scheduled_at: datetime | None = None,
 ) -> Post:
+    await quota.check_new_post(db)  # the package must allow another post this month
     product, assets = await select_photos(db, product_id, asset_ids)
     fmt = fmt or ((assets[0].analysis or {}).get("best_format") or "feed")
     post_id, task_id = uuid.uuid4(), uuid.uuid4()
