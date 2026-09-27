@@ -11,7 +11,8 @@ from redis.asyncio import Redis
 
 from del_social import __version__
 from del_social.core.config import get_settings
-from del_social.routes import auth, brand, connections, evals, media, platform, posts, products, team, tenants, usage
+from del_social.billing.quota import QuotaError
+from del_social.routes import auth, brand, connections, evals, media, plan, platform, posts, products, team, tenants, usage
 
 settings = get_settings()
 
@@ -52,7 +53,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
+@app.exception_handler(QuotaError)
+async def quota_exceeded(_, exc: QuotaError) -> JSONResponse:
+    """The package does not allow this: the panel shows the message and a link to upgrade."""
+    return JSONResponse(status_code=402, content={"detail": str(exc), "code": exc.code})
+
+
 app.include_router(auth.router)
+app.include_router(plan.router)
 app.include_router(tenants.router)
 app.include_router(platform.router)
 app.include_router(connections.router)

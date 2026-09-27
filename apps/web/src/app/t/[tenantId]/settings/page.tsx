@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { Card, PageTitle } from "@/components/ui";
 import { requireMe } from "@/lib/server-api";
 
-const ITEMS = ["brand", "connections", "members", "evals"] as const;
+const ITEMS = ["plan", "brand", "connections", "members", "evals"] as const;
 
 export default async function SettingsPage({ params }: { params: Promise<{ tenantId: string }> }) {
   const { tenantId } = await params;

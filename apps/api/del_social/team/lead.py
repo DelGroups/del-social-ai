@@ -14,6 +14,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from del_social.agents import team_lead
+from del_social.billing import quota
 from del_social.core.db import set_tenant
 from del_social.llm import LLM, LLMError
 from del_social.media import analysis
@@ -143,7 +144,7 @@ async def run_lead(
                 for asset_id in ids:
                     spawn(analysis.run_analysis, engine=engine, llm=llm, store=store, tenant_id=tenant_id, asset_id=asset_id)
                 started += 1
-        except (work.WorkError, timing.TimingError) as e:
+        except (work.WorkError, timing.TimingError, quota.QuotaError) as e:
             notes.append(f"Alınmadı: {e}.")
     reply = decision.reply.strip() + ("\n\n" + " ".join(notes) if notes else "")
     await activity.say(engine, tenant_id, "team_lead", reply)

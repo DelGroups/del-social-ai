@@ -108,7 +108,7 @@
   },
   "platform": {
     "title": "Platform admin",
-    "note": "Platform admins cannot see a company's data unless they are a member of it.",
+    "note": "Platform admins cannot see a company's content unless they are a member of it. The list below shows only package and billing numbers; AI cost and margin are visible only here.",
     "createTenant": "Create a company",
     "tenantName": "Company name",
     "ownerEmail": "Owner's email",
@@ -118,7 +118,32 @@
     "resetEmail": "Account email",
     "issue": "Create link",
     "resetCreated": "Reset link (valid 1 hour, single use). Send it only to the account owner:",
-    "noAccount": "No account with this email"
+    "noAccount": "No account with this email",
+    "tenantsTitle": "Companies and packages",
+    "loadError": "Could not load the companies.",
+    "noTenants": "No companies yet.",
+    "plans": {
+      "basic": "Basic",
+      "pro": "Pro",
+      "enterprise": "Enterprise",
+      "tiny": "Tiny"
+    },
+    "noPlan": "No package",
+    "until": "until {date}",
+    "noEnd": "No end date",
+    "posts": "posts {used}+{scheduled} / {limit}",
+    "counts": "{members} users · {channels} channels",
+    "cost": "AI {cost}",
+    "margin": "margin {margin}",
+    "requestBadge": "asks for {plan}",
+    "change": "Change package",
+    "plan": "Package",
+    "months": "Duration",
+    "monthsN": "{n, plural, one {# month} other {# months}}",
+    "extraVideo": "Extra video credits",
+    "assign": "Assign",
+    "assignConfirm": "Assign {plan} to {name}? A new monthly period starts now.",
+    "assignNote": "Starts now (a new monthly window). Assign after the payment is received."
   },
   "connections": {
     "title": "Connections",
@@ -669,12 +694,76 @@
     "evals": {
       "title": "Agent tests",
       "hint": "Quality tests of the writing agents."
+    },
+    "plan": {
+      "title": "Package",
+      "hint": "Posts and credits left this month, validity and upgrades."
     }
   },
   "reports": {
     "title": "Reports",
-    "soon": "Detailed reports (reach, engagement, best content, competitors) with PDF export arrive with the Analyst agent. For now: what was published and what the AI cost.",
+    "soon": "Detailed reports (reach, engagement, best content, competitors) with PDF export arrive with the Analyst agent. For now: what was published.",
     "published": "Published posts ({count})",
     "nonePublished": "Nothing published yet."
+  },
+  "plan": {
+    "title": "Package",
+    "loadError": "The package could not be loaded.",
+    "badge": "Package: {plan}",
+    "noPlan": "No package",
+    "postsOf": "{used} / {limit} posts this month",
+    "postsUnlimited": "{used} posts this month",
+    "videoOf": "{left} of {limit} video credits",
+    "until": "valid until {date} ({days} days)",
+    "noEnd": "no end date",
+    "details": "Details",
+    "upgrade": "Upgrade",
+    "banner": {
+      "none": "No active package: new work is paused. Choose a package.",
+      "expired": "The package ended on {date}. New work is paused; already approved posts still go out.",
+      "limit": "This month's {limit} posts are used. New posts are paused until {date}, or upgrade.",
+      "fewLeft": "{left} posts left this month.",
+      "endsSoon": "The package ends on {date} ({days} days)."
+    },
+    "current": "Your package",
+    "price": "{price} ₼ / month",
+    "priceFrom": "from {price} ₼ / month",
+    "period": "This month: {start} – {end}",
+    "expiredLong": "The package has ended. The team won't start new work until it is renewed. Posts you already approved are still published on time.",
+    "usedOf": "{used} / {limit}",
+    "usedUnlimited": "{used} · unlimited",
+    "meter": {
+      "posts": "Posts this month",
+      "postsHint": "{published} published · {scheduled} approved and waiting for their time",
+      "drafts": "Drafts",
+      "draftsHint": "Up to 3 drafts per post; rejected drafts don't use posts.",
+      "video": "Video credits",
+      "videoHint": "Photo → video: 1 · editing your footage: 1 · full scenario video: 10 (video studio is coming)",
+      "channels": "Connected channels",
+      "users": "Users"
+    },
+    "catalog": "Packages",
+    "yours": "Current",
+    "postsN": "{n} posts / month",
+    "postsNUnlimited": "Unlimited posts",
+    "channelsN": "{n} channels",
+    "channelsNUnlimited": "Unlimited channels",
+    "usersN": "{n, plural, one {# user} other {# users}}",
+    "usersNUnlimited": "Unlimited users",
+    "videoN": "{n} video credits / month",
+    "videoNUnlimited": "Unlimited video credits",
+    "feature": {
+      "auto_support": "Automatic replies to comments and messages",
+      "sales_agent": "Sales consultant agent",
+      "weekly_report": "Weekly report",
+      "erp": "ERP integration and custom pricing"
+    },
+    "draftReplies": "Replies to comments are prepared as drafts for your approval.",
+    "request": "Request this package",
+    "renew": "Request renewal",
+    "requestedShort": "Requested",
+    "requested": "You asked for {plan} on {date}. We will contact you to complete it.",
+    "paymentNote": "Payment by invoice or bank transfer; the package is activated once it is paid. Online payment is coming.",
+    "ownerOnly": "Only the company owner can change the package."
   }
 }

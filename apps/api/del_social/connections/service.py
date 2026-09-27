@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from del_social.billing import quota
 from del_social.connections.base import Credentials, Identity
 from del_social.core.vault import TokenVault, connection_aad
 from del_social.models import Channel, Connection, ConnectionStatus
@@ -32,6 +33,7 @@ async def save_connection(
         )
     )
     if conn is None:
+        await quota.check_new_channel(db)  # the package limits how many channels a company connects
         conn = Connection(
             connection_id=uuid.uuid4(),
             tenant_id=tenant_id,

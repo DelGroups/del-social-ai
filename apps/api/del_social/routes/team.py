@@ -1,19 +1,18 @@
 """The Team Room: chat with the Team Lead and the live view of the team (ADR-less, plan §13 A)."""
 import uuid
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import Numeric, cast, func, or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from del_social.core.db import set_tenant
 from del_social.core.deps import TenantContext, get_db, get_engine, require_permission
 from del_social.llm import LLM
 from del_social.media.storage import MediaStore
-from del_social.models import AgentEvent, ChatMessage, Connection, LlmCall, MediaAsset, Post, Task
+from del_social.models import AgentEvent, ChatMessage, Connection, MediaAsset, Post, Task
 from del_social.routes.media import _current_logo, get_analyst, get_store
 from del_social.routes.posts import PostOut, _out as post_out
 from del_social.team import activity, lead, timing
@@ -130,8 +129,6 @@ class Live(BaseModel):
     scheduled: list[PostOut]
     published: list[PostOut]  # latest published
     events: list[dict[str, Any]]
-    cost_today_usd: Decimal
-    cost_month_usd: Decimal
     photos_total: int
     photos_unanalysed: int
     connections: list[dict[str, Any]]
@@ -143,7 +140,6 @@ async def live(ctx: TenantContext = Depends(can_view), db: AsyncSession = Depend
     now = datetime.now(UTC)
     has_logo = await _current_logo(db) is not None
     today = now.astimezone(timing.BAKU).replace(hour=0, minute=0, second=0, microsecond=0)
-    month = today.replace(day=1)
 
     agents = []
     for key in activity.AGENTS:
@@ -184,13 +180,6 @@ async def live(ctx: TenantContext = Depends(can_view), db: AsyncSession = Depend
 
     events = (await db.scalars(select(AgentEvent).order_by(AgentEvent.created_at.desc()).limit(30))).all()
 
-    async def cost(since: datetime) -> Decimal:
-        llm_cost = await db.scalar(select(func.coalesce(func.sum(LlmCall.cost_usd), 0)).where(LlmCall.created_at >= since))
-        img_cost = await db.scalar(select(func.coalesce(func.sum(cast(MediaAsset.edit["cost_usd"].astext, Numeric)), 0)).where(
-            MediaAsset.parent_asset_id.is_not(None), MediaAsset.created_at >= since
-        ))
-        return Decimal(llm_cost or 0) + Decimal(img_cost or 0)
-
     photos_total = await db.scalar(select(func.count()).where(MediaAsset.kind == "photo", MediaAsset.deleted_at.is_(None)))
     unanalysed = await db.scalar(select(func.count()).where(
         MediaAsset.kind == "photo", MediaAsset.deleted_at.is_(None), MediaAsset.analyzed_at.is_(None),
@@ -205,7 +194,6 @@ async def live(ctx: TenantContext = Depends(can_view), db: AsyncSession = Depend
         scheduled=[post_out(p, has_logo) for p in scheduled],
         published=[post_out(p, has_logo) for p in published],
         events=[{"agent": e.agent, "kind": e.kind, "title": e.title, "at": e.created_at} for e in events],
-        cost_today_usd=await cost(today), cost_month_usd=await cost(month),
         photos_total=photos_total or 0, photos_unanalysed=unanalysed or 0,
         connections=[{"channel": c.channel, "name": c.display_name, "status": c.status} for c in conns],
         now=now,

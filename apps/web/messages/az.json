@@ -108,7 +108,7 @@
   },
   "platform": {
     "title": "Platforma administratoru",
-    "note": "Platforma administratorları şirkətin üzvü olmadıqca onun məlumatlarını görə bilməz.",
+    "note": "Platforma adminləri üzv olmadıqları şirkətin məzmununu görmür. Aşağıdakı siyahı yalnız paket və hesab rəqəmlərini göstərir; AI xərci və marja yalnız burada görünür.",
     "createTenant": "Şirkət yarat",
     "tenantName": "Şirkətin adı",
     "ownerEmail": "Sahibin e-poçtu",
@@ -118,7 +118,32 @@
     "resetEmail": "Hesabın e-poçtu",
     "issue": "Link yarat",
     "resetCreated": "Bərpa linki (1 saat etibarlıdır, birdəfəlik). Yalnız hesabın sahibinə göndərin:",
-    "noAccount": "Bu e-poçt ilə hesab yoxdur"
+    "noAccount": "Bu e-poçt ilə hesab yoxdur",
+    "tenantsTitle": "Şirkətlər və paketlər",
+    "loadError": "Şirkətlər yüklənmədi.",
+    "noTenants": "Hələ şirkət yoxdur.",
+    "plans": {
+      "basic": "Basic",
+      "pro": "Pro",
+      "enterprise": "Enterprise",
+      "tiny": "Tiny"
+    },
+    "noPlan": "Paket yoxdur",
+    "until": "{date} tarixinədək",
+    "noEnd": "Müddətsiz",
+    "posts": "post {used}+{scheduled} / {limit}",
+    "counts": "{members} istifadəçi · {channels} kanal",
+    "cost": "AI {cost}",
+    "margin": "marja {margin}",
+    "requestBadge": "{plan} istəyir",
+    "change": "Paketi dəyiş",
+    "plan": "Paket",
+    "months": "Müddət",
+    "monthsN": "{n} ay",
+    "extraVideo": "Əlavə video krediti",
+    "assign": "Təyin et",
+    "assignConfirm": "{name} üçün {plan} təyin edilsin? Yeni aylıq dövr indi başlayır.",
+    "assignNote": "İndi başlayır (yeni aylıq dövr). Ödəniş alındıqdan sonra təyin edin."
   },
   "connections": {
     "title": "Bağlantılar",
@@ -669,12 +694,76 @@
     "evals": {
       "title": "Agent sınaqları",
       "hint": "Yazı agentlərinin keyfiyyət sınaqları."
+    },
+    "plan": {
+      "title": "Paket",
+      "hint": "Bu ay qalan postlar və kreditlər, etibarlılıq və paketi artırmaq."
     }
   },
   "reports": {
     "title": "Hesabatlar",
-    "soon": "Ətraflı hesabatlar (əhatə, qarşılıqlı əlaqə, ən yaxşı məzmun, rəqiblər) PDF ilə Analitik agentlə gələcək. Hələlik: nə paylaşılıb və AI nə qədər xərc edib.",
+    "soon": "Ətraflı hesabatlar (əhatə, qarşılıqlı əlaqə, ən yaxşı məzmun, rəqiblər) PDF ilə Analitik agentlə gələcək. Hələlik: nə paylaşılıb.",
     "published": "Paylaşılan postlar ({count})",
     "nonePublished": "Hələ heç nə paylaşılmayıb."
+  },
+  "plan": {
+    "title": "Paket",
+    "loadError": "Paket yüklənmədi.",
+    "badge": "Paket: {plan}",
+    "noPlan": "Paket yoxdur",
+    "postsOf": "bu ay {used} / {limit} post",
+    "postsUnlimited": "bu ay {used} post",
+    "videoOf": "{limit} video kreditindən {left} qalıb",
+    "until": "{date} tarixinədək ({days} gün)",
+    "noEnd": "müddətsiz",
+    "details": "Ətraflı",
+    "upgrade": "Paketi artır",
+    "banner": {
+      "none": "Aktiv paket yoxdur: yeni işlər dayandırılıb. Paket seçin.",
+      "expired": "Paket {date} tarixində bitib. Yeni işlər dayandırılıb; artıq təsdiqlənmiş postlar paylaşılır.",
+      "limit": "Bu ayın {limit} postu istifadə olunub. Yeni postlar {date} tarixinədək dayandırılıb və ya paketi artırın.",
+      "fewLeft": "Bu ay {left} post qalıb.",
+      "endsSoon": "Paket {date} tarixində bitir ({days} gün)."
+    },
+    "current": "Sizin paketiniz",
+    "price": "ayda {price} ₼",
+    "priceFrom": "ayda {price} ₼-dan",
+    "period": "Bu ay: {start} – {end}",
+    "expiredLong": "Paket bitib. Yenilənənədək komanda yeni işə başlamayacaq. Artıq təsdiqlədiyiniz postlar vaxtında paylaşılır.",
+    "usedOf": "{used} / {limit}",
+    "usedUnlimited": "{used} · limitsiz",
+    "meter": {
+      "posts": "Bu ayın postları",
+      "postsHint": "{published} paylaşılıb · {scheduled} təsdiqlənib, vaxtını gözləyir",
+      "drafts": "Qaralamalar",
+      "draftsHint": "Hər post üçün 3 qaralamaya qədər; rədd edilən qaralamalar postdan sayılmır.",
+      "video": "Video kreditləri",
+      "videoHint": "Şəkil → video: 1 · öz videonuzun montajı: 1 · tam ssenari videosu: 10 (video studiya tezliklə)",
+      "channels": "Qoşulmuş kanallar",
+      "users": "İstifadəçilər"
+    },
+    "catalog": "Paketlər",
+    "yours": "Hazırkı",
+    "postsN": "ayda {n} post",
+    "postsNUnlimited": "Limitsiz post",
+    "channelsN": "{n} kanal",
+    "channelsNUnlimited": "Limitsiz kanal",
+    "usersN": "{n} istifadəçi",
+    "usersNUnlimited": "Limitsiz istifadəçi",
+    "videoN": "ayda {n} video krediti",
+    "videoNUnlimited": "Limitsiz video krediti",
+    "feature": {
+      "auto_support": "Şərh və mesajlara avtomatik cavab",
+      "sales_agent": "Satış məsləhətçisi agenti",
+      "weekly_report": "Həftəlik hesabat",
+      "erp": "ERP inteqrasiyası və fərdi qiymətləndirmə"
+    },
+    "draftReplies": "Şərhlərə cavablar təsdiqiniz üçün qaralama kimi hazırlanır.",
+    "request": "Bu paketi istə",
+    "renew": "Yeniləməni istə",
+    "requestedShort": "İstənilib",
+    "requested": "{date} tarixində {plan} paketini istədiniz. Tamamlamaq üçün sizinlə əlaqə saxlayacağıq.",
+    "paymentNote": "Ödəniş hesab-faktura və ya bank köçürməsi ilə; paket ödənişdən sonra aktivləşir. Onlayn ödəniş tezliklə.",
+    "ownerOnly": "Paketi yalnız şirkət sahibi dəyişə bilər."
   }
 }

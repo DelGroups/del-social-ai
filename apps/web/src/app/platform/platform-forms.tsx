@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { CopyField } from "@/components/client";
-import { Alert, Button, Card, Field, Input } from "@/components/ui";
+import { Alert, Button, Card, Field, Input, Select } from "@/components/ui";
 import { ApiError, api } from "@/lib/client-api";
 
 type Result = { text: string; url: string } | { error: string } | null;
@@ -48,7 +48,12 @@ export function PlatformForms() {
     const email = String(form.get("owner_email"));
     const res = await api<{ owner_invitation_url: string }>("/platform/tenants", {
       method: "POST",
-      body: { name: form.get("name"), owner_email: email },
+      body: {
+        name: form.get("name"),
+        owner_email: email,
+        plan_id: form.get("plan_id"),
+        months: form.get("months") === "none" ? null : Number(form.get("months")),
+      },
     });
     return { text: t("tenantCreated", { email }), url: res.owner_invitation_url };
   });
@@ -76,6 +81,22 @@ export function PlatformForms() {
           <Field label={t("ownerEmail")}>
             <Input name="owner_email" type="email" required />
           </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t("plan")}>
+              <Select name="plan_id" defaultValue="basic">
+                {["basic", "pro", "enterprise"].map((p) => (
+                  <option key={p} value={p}>{t(`plans.${p}`)}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label={t("months")}>
+              <Select name="months" defaultValue="1">
+                {["1", "3", "6", "12", "none"].map((m) => (
+                  <option key={m} value={m}>{m === "none" ? t("noEnd") : t("monthsN", { n: Number(m) })}</option>
+                ))}
+              </Select>
+            </Field>
+          </div>
           <Button type="submit" disabled={tenant.busy}>
             {t("create")}
           </Button>

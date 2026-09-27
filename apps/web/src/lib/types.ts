@@ -295,10 +295,64 @@ export type LiveInfo = {
   scheduled: PostInfo[];
   published: PostInfo[];
   events: { agent: string; kind: string; title: string; at: string }[];
-  cost_today_usd: string;
-  cost_month_usd: string;
   photos_total: number;
   photos_unanalysed: number;
   connections: { channel: string; name: string; status: string }[];
   now: string;
+};
+
+// Packages (ADR 007): allowances and credits, never the AI cost in dollars
+export type PlanInfo = {
+  plan_id: string;
+  name: string;
+  price_azn: string;
+  posts_per_month: number | null; // null = unlimited
+  channels: number | null;
+  users: number | null;
+  video_credits: number | null;
+  features: Record<string, boolean>;
+};
+
+export type Meter = { used: number; limit: number | null };
+
+export type PlanStatus = {
+  state: "none" | "expired" | "limit" | "warning" | "ok";
+  plan: PlanInfo | null;
+  starts_at: string | null;
+  expires_at: string | null;
+  period_start: string | null;
+  period_end: string | null;
+  posts: Meter;
+  posts_published: number;
+  posts_scheduled: number;
+  drafts: Meter;
+  channels: Meter;
+  users: Meter;
+  video: Meter;
+  catalog: PlanInfo[];
+  open_request: { plan_id: string; created_at: string } | null;
+};
+
+export const canBuyPlan = (role: Role) => role === "owner";
+
+export type TenantOverview = {
+  tenant_id: string;
+  name: string;
+  created_at: string;
+  plan_id: string | null;
+  price_azn: string | null;
+  starts_at: string | null;
+  expires_at: string | null;
+  extra_video_credits: number | null;
+  period_start: string | null;
+  period_end: string | null;
+  posts_published: number;
+  posts_scheduled: number;
+  posts_limit: number | null;
+  members: number;
+  channels: number;
+  ai_cost_month_usd: string;
+  margin_month_usd: string | null;
+  open_request_plan: string | null;
+  open_request_at: string | null;
 };
