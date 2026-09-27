@@ -112,14 +112,15 @@ async def add_unverified(
 def _core(name: str) -> str:
     """The distinctive part of a username or company name, e.g. 'embawood.az' → 'embawood'."""
     s = re.sub(r"[^a-z0-9]", "", (name or "").lower())
-    for w in ("azerbaijan", "azerbaycan", "official", "mebel", "baku", "baki", "store", "shop", "az"):
+    for w in ("azerbaijan", "azerbaycan", "official", "mebeli", "mebel", "mobilya", "furniture", "baku", "baki", "store", "shop",
+              "sifarisi", "sifarishi", "sifaris", "sifarish", "online", "ofis", "office", "dizayn", "design", "home", "ev", "az"):
         s = s.replace(w, "")
     return s
 
 
 def same_company(a: str, b: str) -> bool:
     ca, cb = _core(a), _core(b)
-    return len(ca) >= 4 and len(cb) >= 4 and (ca in cb or cb in ca)
+    return len(ca) >= 5 and len(cb) >= 5 and (ca in cb or cb in ca)
 
 
 def _last_post(account: dict[str, Any]) -> datetime | None:

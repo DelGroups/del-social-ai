@@ -22,7 +22,19 @@ from del_social.core.vault import TokenVault
 from del_social.llm import LLM, LLMError
 from del_social.media import analysis
 from del_social.media.storage import MediaStore
-from del_social.models import AgentEvent, BrandProfileVersion, ChatMessage, DailyReport, Goal, MediaAsset, Post, Product, Task
+from del_social.models import (
+    AgentEvent,
+    BrandProfileVersion,
+    ChatMessage,
+    Competitor,
+    Connection,
+    DailyReport,
+    Goal,
+    MediaAsset,
+    Post,
+    Product,
+    Task,
+)
 from del_social.posts import service
 from del_social.team import activity, competitor_hunt, daily, meeting, metrics, texts, timing, work
 from del_social.team.texts import m
@@ -84,6 +96,14 @@ async def _context(db: AsyncSession, now: datetime) -> str:
         "competitors_instagram": setup.get("competitors_instagram", []), "watch_sites": setup.get("watch_sites", []),
         "keywords": setup.get("keywords", []), "profile_saved_at": timing.baku_label(brand.created_at) if brand else None,
         "latest_report_made_at": timing.baku_label(market.finished_at) if market and market.finished_at else None,
+    }
+    ig = await db.scalar(select(Connection).where(Connection.channel == "instagram").limit(1))
+    watched: dict[str, int] = {}
+    for status in (await db.scalars(select(Competitor.status))).all():
+        watched[status] = watched.get(status, 0) + 1
+    research_setup |= {
+        "instagram_access": "none" if ig is None else ("ok" if ig.status == "active" else f"blocked by Meta: {(ig.last_error or '')[:120]}"),
+        "competitors_by_status": watched,
     }
     history = (await db.scalars(select(ChatMessage).order_by(ChatMessage.created_at.desc()).limit(HISTORY))).all()
     convo = [

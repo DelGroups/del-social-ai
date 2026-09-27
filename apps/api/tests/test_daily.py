@@ -347,3 +347,12 @@ async def test_web_mode_when_meta_blocks_the_app(client, setup, admin, app_engin
     assert rivals["new_mebel_shop"]["status"] == "active" and rivals["new_mebel_shop"]["followers"] == 900
     channels = {c["channel"]: c for c in (await client.get(f"/tenants/{tenants['a']}/connections", headers=owner)).json()}
     assert channels["instagram"]["connections"][0]["status"] == "active"
+
+
+def test_generic_words_never_identify_a_company():
+    from del_social.research.competitors import same_company
+
+    assert same_company("embawood.az", "embawood_mebel")
+    assert same_company("saloglu_mebel", "saloglu.az")
+    assert not same_company("mebel_baku_sifaris", "mebel.sifarisi.az")  # "order" is not a name
+    assert not same_company("ofis_mebeli_baku", "mira_ofis_mebeli")
