@@ -27,7 +27,8 @@ MAX_NEW_PER_DAY = 5
 QUIET = timedelta(days=90)
 MIN_FOLLOWERS = 200
 HANDLE = re.compile(r"(?<![\w.@])@([A-Za-z0-9_](?:[A-Za-z0-9_.]{0,28}[A-Za-z0-9_])?)")
-NOT_COMPANIES = {"instagram", "facebook", "meta", "gmail", "mail", "yahoo", "outlook"}
+PROFILE_LINK = re.compile(r"instagram\.com/([A-Za-z0-9_](?:[A-Za-z0-9_.]{0,28}[A-Za-z0-9_])?)", re.I)
+NOT_COMPANIES = {"instagram", "facebook", "meta", "gmail", "mail", "yahoo", "outlook", "p", "reel", "reels", "explore", "stories", "accounts", "tv"}
 # Always counted as the furniture market, whatever the brand profile says
 BASE_WORDS = {"mebel", "мебел", "furniture", "qarderob", "шкаф", "divan", "диван", "mətbəx", "kuxnya", "кухн", "interior", "интерьер"}
 
@@ -47,8 +48,22 @@ def relevant(account: dict[str, Any], words: set[str]) -> bool:
 
 
 def handles_in(text: str) -> list[str]:
-    """@usernames mentioned in free text (the web notes), in order, without duplicates."""
-    return list(dict.fromkeys(h.lower() for h in HANDLE.findall(text or "") if h.lower() not in NOT_COMPANIES))
+    """Usernames mentioned in free text (@name or instagram.com/name), in order, without duplicates."""
+    found = [*HANDLE.findall(text or ""), *PROFILE_LINK.findall(text or "")]
+    return list(dict.fromkeys(h.lower() for h in found if h.lower() not in NOT_COMPANIES))
+
+
+def _core(name: str) -> str:
+    """The distinctive part of a username or company name, e.g. 'embawood.az' → 'embawood'."""
+    s = re.sub(r"[^a-z0-9]", "", (name or "").lower())
+    for w in ("azerbaijan", "azerbaycan", "official", "mebel", "baku", "baki", "store", "shop", "az"):
+        s = s.replace(w, "")
+    return s
+
+
+def same_company(a: str, b: str) -> bool:
+    ca, cb = _core(a), _core(b)
+    return len(ca) >= 4 and len(cb) >= 4 and (ca in cb or cb in ca)
 
 
 def _last_post(account: dict[str, Any]) -> datetime | None:
@@ -102,7 +117,7 @@ async def record(engine: AsyncEngine, tenant_id: uuid.UUID, accounts: list[dict[
 
 async def discover(
     engine: AsyncEngine, meta: MetaClient, ig_user_id: str, token: str, tenant_id: uuid.UUID,
-    candidates: list[str], own_username: str | None, now: datetime, words: set[str],
+    candidates: list[str], own_username: str | None, now: datetime, words: set[str], limit: int = MAX_NEW_PER_DAY,
 ) -> list[dict[str, Any]]:
     """Verify usernames found on the web; add real, active business accounts. Returns the new ones."""
     async with AsyncSession(engine) as db, db.begin():
@@ -110,7 +125,7 @@ async def discover(
         known = {c.username for c in (await db.scalars(select(Competitor))).all()}
     added: list[dict[str, Any]] = []
     for name in candidates:
-        if len(added) >= MAX_NEW_PER_DAY:
+        if len(added) >= limit:
             break
         if name in known or name == (own_username or "").lower() or not collect.USERNAME.match(name):
             continue
@@ -129,3 +144,47 @@ async def discover(
             db.add(c)
         added.append(account)
     return added
+
+
+async def replace_invalid(engine: AsyncEngine, tenant_id: uuid.UUID, found: list[dict[str, Any]]) -> list[tuple[str, str]]:
+    """A wrong username the owner gave, whose company the team found under its real username:
+    stop watching the wrong one and say which account replaced it. Returns (old, new) pairs."""
+    pairs: list[tuple[str, str]] = []
+    async with AsyncSession(engine) as db, db.begin():
+        await set_tenant(db, tenant_id)
+        for c in (await db.scalars(select(Competitor).where(Competitor.status == "invalid"))).all():
+            match = next((a for a in found if same_company(c.username, a.get("username") or "")
+                          or same_company(c.username, a.get("name") or "")), None)
+            if match:
+                c.status = "ignored"
+                c.note = f"Replaced by @{match['username']}, the company's real account"
+                pairs.append((c.username, match["username"]))
+    return pairs
+
+
+async def add_given(
+    engine: AsyncEngine, meta: MetaClient, ig_user_id: str, token: str, tenant_id: uuid.UUID, entries: list[str], now: datetime,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Usernames the owner gives in the chat: checked on Instagram, then watched. Returns (added, not found)."""
+    added, missing = [], []
+    for entry in entries[:10]:
+        name = collect.username_of(entry)
+        if not name:
+            missing.append(entry[:40])
+            continue
+        account = await collect.competitor(meta, ig_user_id, token, name, now)
+        if "error" in account:
+            missing.append(name)
+            continue
+        async with AsyncSession(engine) as db, db.begin():
+            await set_tenant(db, tenant_id)
+            c = await db.scalar(select(Competitor).where(Competitor.username == name))
+            if c is None:
+                c = Competitor(tenant_id=tenant_id, username=name, source="owner", status="active")
+                db.add(c)
+            elif c.status == "ignored":
+                c.status = "active"
+            c.note = ""
+            _apply(c, account, now)
+        added.append(account)
+    return added, missing

@@ -726,7 +726,10 @@
         "ask_market": "Market view",
         "ask_content": "Content view",
         "ask_quality": "Quality view",
-        "decide": "Decision"
+        "decide": "Decision",
+        "trigger_competitors": "Competitor search",
+        "search": "Searches the web",
+        "verify": "Checks on Instagram"
       },
       "status": {
         "pending": "waiting",
@@ -739,13 +742,15 @@
         "post": "started",
         "market": "started",
         "briefing": "started",
-        "meeting": "called"
+        "meeting": "called",
+        "competitors": "started"
       },
       "kind": {
         "post": "Post",
         "market": "Market research",
         "briefing": "Morning report",
-        "meeting": "Team meeting"
+        "meeting": "Team meeting",
+        "competitors": "Competitor search"
       },
       "task": {
         "running": "in progress",

@@ -29,3 +29,14 @@
 - The meeting costs about $0.30 (three Sonnet answers and one Opus decision). Weekly, that is about $1.20 a month per company.
 - `activity.step` now locks the task row, because members finish at the same moment. Without the lock, updates were lost; a test found this.
 - Tables `competitors` and `goals` are tenant-scoped with forced RLS and covered by the isolation tests. Migration 0017.
+
+## Revision (2026-09-27): the Team Lead can manage competitors
+
+Alireza asked the Team Lead in the chat to "search for all our competitors in the Azerbaijani market and add them to your list". It answered that this was not possible and that he had to do it in the settings. The team had no tool for it.
+
+- **New tool `find_competitors`.** A web search dedicated to competitors' Instagram accounts (prompt `competitor_finder`, up to 8 searches, about $0.10–0.15). Profile links (instagram.com/name) count as well as @names.
+  - Code verifies every account the same way as in the daily research, adding up to 15 per search.
+  - A wrong username the owner gave is replaced when the team finds the same company under its real username, for example `embawood.az` → `@embawood_mebel`.
+  - Shown live as a three-step workflow.
+- **New tool `add_competitors`.** Usernames the owner gives in the chat are checked on Instagram and watched.
+- **Team Lead prompt v4.** It gets the list of what the team can and cannot do, so it doesn't refuse things the team can do. It also gets `<reply_language>`: the language of the owner's last message, detected by code. This language is binding, because in practice the model answered a Persian message in Azerbaijani.

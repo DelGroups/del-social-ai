@@ -58,7 +58,8 @@ class FakeMeta:
                      "media_type": "CAROUSEL_ALBUM", "permalink": "https://instagram.com/p/b", "media_url": "https://cdn.test/b.jpg"},
                 ]},
             }, "id": IG_ID})
-        for name, caption in (("new_mebel_shop", "Yeni mebel kolleksiyası, qarderob"), ("random_cafe", "Best coffee in town")):
+        for name, caption in (("new_mebel_shop", "Yeni mebel kolleksiyası, qarderob"), ("random_cafe", "Best coffee in town"),
+                              ("embawood_mebel", "Embawood: yeni qarderob və mətbəx mebeli")):
             if path == IG_ID and f"business_discovery.username({name})" in fields:
                 return httpx.Response(200, json={"business_discovery": {
                     "username": name, "name": name.title(), "followers_count": 900, "media_count": 40,
@@ -92,6 +93,13 @@ class FakeTeam(FakeLLM):
         self.web_requests: list[str] = []
 
     async def research(self, *, tenant_id, prompt, user, tier=None, max_tokens=None, max_searches=5, **kw):
+        if prompt.agent == "competitor_finder":
+            self.contexts["hunt"] = user
+            return ResearchResult(
+                "Searched directories.\nInstagram accounts:\ninstagram.com/new_mebel_shop — New Mebel [1]\n@random_cafe — a café [2]\n"
+                "Corrected usernames:\nEmbawood → @embawood_mebel [3]",
+                [Source("Baku furniture stores", "https://example.az/list")], "fake", Usage(web_searches=4), Decimal("0.05"), "h",
+            )
         self.contexts["web"] = user
         self.web_requests.append(user)  # both test companies research; keep every request
         if self.web_fails:
@@ -259,3 +267,37 @@ async def test_run_now_switches_and_packages(client, setup, admin, app_engine, t
     assert all(t != tenants["a"] for t, _ in await daily.tick(**kw, now=at(11)))  # no active package, no work
     r = await client.post(f"/tenants/{tenants['a']}/daily/briefing/run", headers={**owner, **O})
     assert r.status_code == 402 and json.loads(r.text)["code"] == "expired"
+
+
+async def test_team_finds_and_adds_competitors(client, setup, admin, app_engine, tenants, session_for):
+    from del_social.team import competitor_hunt
+
+    owner = await session_for(tenants["a_owner"])
+    await connect(admin, setup.vault, tenants["a"], "instagram", IG_ID)
+    # The owner named Embawood with a wrong username: Instagram did not know it
+    await admin.execute(
+        "INSERT INTO competitors (tenant_id, username, source, status) VALUES ($1, 'embawood.az', 'owner', 'invalid')", tenants["a"]
+    )
+    await competitor_hunt.run_search(engine=app_engine, llm=setup.llm, meta=setup.meta, vault=setup.vault, tenant_id=tenants["a"])
+    assert "not found on Instagram (find their real usernames): embawood.az" in setup.llm.contexts["hunt"]
+
+    rivals = {c["username"]: c for c in (await client.get(f"/tenants/{tenants['a']}/competitors", headers=owner)).json()}
+    assert rivals["new_mebel_shop"]["source"] == "discovered" and rivals["new_mebel_shop"]["status"] == "active"
+    assert rivals["embawood_mebel"]["status"] == "active"
+    assert rivals["embawood.az"]["status"] == "ignored" and "@embawood_mebel" in rivals["embawood.az"]["note"]
+    assert "random_cafe" not in rivals  # a real business, but not in the furniture market
+    last = (await client.get(f"/tenants/{tenants['a']}/team/chat", headers=owner)).json()[-1]
+    assert last["agent"] == "market_researcher" and "@new_mebel_shop (900)" in last["text"]
+    assert "@embawood.az → @embawood_mebel" in last["text"]
+    live = (await client.get(f"/tenants/{tenants['a']}/team/live", headers=owner)).json()
+    flow = next(j for j in live["jobs"] if j["kind"] == "competitors")
+    assert [s["status"] for s in flow["steps"]] == ["done", "done", "done"]
+
+    # Usernames the owner gives in the chat are checked on Instagram, then watched
+    await competitor_hunt.run_add(engine=app_engine, meta=setup.meta, vault=setup.vault, tenant_id=tenants["a"],
+                                  usernames=["@rival_mebel", "instagram.com/ghost_shop"])
+    rivals = {c["username"]: c for c in (await client.get(f"/tenants/{tenants['a']}/competitors", headers=owner)).json()}
+    assert rivals["rival_mebel"]["source"] == "owner" and rivals["rival_mebel"]["followers"] == 2000
+    assert "ghost_shop" not in rivals
+    last = (await client.get(f"/tenants/{tenants['a']}/team/chat", headers=owner)).json()[-1]
+    assert "@rival_mebel (2 000)" in last["text"] and "@ghost_shop" in last["text"]
