@@ -23,6 +23,33 @@ POST_STEPS = [
 ]
 
 
+# The Market Researcher's morning work, step by step (shown live as a workflow)
+MARKET_STEPS = [
+    {"key": "competitors", "agent": "market_researcher"},
+    {"key": "own_page", "agent": "market_researcher"},
+    {"key": "web", "agent": "market_researcher"},
+    {"key": "analyse", "agent": "market_researcher"},
+    {"key": "deliver", "agent": "market_researcher"},
+]
+# The Team Lead's morning report
+BRIEFING_STEPS = [
+    {"key": "facts", "agent": "team_lead"},
+    {"key": "read_market", "agent": "team_lead"},
+    {"key": "plan", "agent": "team_lead"},
+    {"key": "deliver", "agent": "team_lead"},
+]
+
+
+async def new_task(engine: AsyncEngine, tenant_id: uuid.UUID, kind: str, title: str, steps: list[dict[str, Any]]) -> uuid.UUID:
+    """A task whose steps the panel draws as a live workflow."""
+    task_id = uuid.uuid4()
+    async with AsyncSession(engine) as db, db.begin():
+        await set_tenant(db, tenant_id)
+        db.add(Task(task_id=task_id, tenant_id=tenant_id, title=title[:200], kind=kind, status="running",
+                    steps=[{"key": s["key"], "agent": s["agent"], "status": "pending"} for s in steps]))
+    return task_id
+
+
 async def event(
     engine: AsyncEngine, tenant_id: uuid.UUID, agent: str, kind: str, title: str,
     task_id: uuid.UUID | None = None, post_id: uuid.UUID | None = None,

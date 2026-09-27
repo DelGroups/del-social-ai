@@ -176,6 +176,13 @@ async def test_morning_research_and_report(client, setup, admin, app_engine, ten
     assert "image 1: @rival_mebel" in ctx and len(setup.llm.images) == 2
     assert "<report_language>az</report_language>" in ctx
 
+    # The research is shown live as a workflow: each step with its status and a short result
+    live = (await client.get(f"/tenants/{tenants['a']}/team/live", headers=owner)).json()
+    flow = next(j for j in live["jobs"] if j["kind"] == "market")
+    assert [s["key"] for s in flow["steps"]] == ["competitors", "own_page", "web", "analyse", "deliver"]
+    assert all(s["status"] == "done" for s in flow["steps"]) and flow["status"] == "done"
+    assert flow["steps"][0]["note"] == "1/3 rəqib görünür" and flow["steps"][2]["note"] == "2 axtarış · 1 mənbə"
+
     ran = await daily.tick(**kw, now=at(9, 5))
     assert (tenants["a"], "briefing") in ran and (tenants["a"], "market") not in ran
     msgs = (await client.get(f"/tenants/{tenants['a']}/team/chat", headers=owner)).json()

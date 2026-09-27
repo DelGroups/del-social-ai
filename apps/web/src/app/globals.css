@@ -116,3 +116,41 @@ body {
   [class*="ls-"] { animation: none !important; transition: none !important; }
   .ls-type { width: 100%; }
 }
+
+/* Workflow canvas (home): a dark neon stage whatever the theme, so the motion reads clearly */
+.wf-stage {
+  border-color: #16261f;
+  background:
+    radial-gradient(900px 320px at 50% -80px, rgba(62, 232, 154, 0.10), transparent 70%),
+    radial-gradient(600px 300px at 100% 100%, rgba(108, 92, 231, 0.10), transparent 70%),
+    #060c0a;
+}
+.wf-node {
+  border: 1px solid;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+  backdrop-filter: blur(6px);
+  transition: border-color .5s, opacity .5s, box-shadow .5s;
+}
+.wf-live { animation: wf-halo 1.8s ease-in-out infinite; }
+.wf-sweep {
+  background: linear-gradient(100deg, transparent 20%, color-mix(in srgb, var(--c) 22%, transparent) 50%, transparent 80%) 0 0 / 250% 100%;
+  animation: wf-sweep 1.6s linear infinite;
+}
+.wf-icon-live { animation: wf-bob 1.2s ease-in-out infinite; }
+.wf-dot { animation: wf-blink 1.2s ease-in-out infinite; }
+.wf-skeleton { background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.22), rgba(255,255,255,.06)) 0 0 / 200% 100%; animation: wf-sweep 1.2s linear infinite; }
+.wf-flow { animation: wf-dash 0.9s linear infinite; }
+.wf-breathe { animation: wf-breathe 3.2s ease-in-out infinite; }
+.wf-breathe-fast { animation: wf-breathe 1s ease-in-out infinite; stroke-width: 3; }
+@keyframes wf-halo {
+  0%, 100% { box-shadow: 0 0 0 1px var(--c), 0 0 18px color-mix(in srgb, var(--c) 35%, transparent); }
+  50% { box-shadow: 0 0 0 1px var(--c), 0 0 34px color-mix(in srgb, var(--c) 60%, transparent); }
+}
+@keyframes wf-sweep { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+@keyframes wf-bob { 50% { transform: translateY(-2px) scale(1.08); } }
+@keyframes wf-blink { 50% { opacity: .3; } }
+@keyframes wf-dash { to { stroke-dashoffset: -17; } }
+@keyframes wf-breathe { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) {
+  [class*="wf-"] { animation: none !important; }
+}

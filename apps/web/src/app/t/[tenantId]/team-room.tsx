@@ -12,7 +12,7 @@ import { ApiError, api } from "@/lib/client-api";
 import { formatDateTime } from "@/lib/prefs";
 import type { ChatMsg, LiveInfo, TaskInfo } from "@/lib/types";
 
-import { LiveStudio } from "./live-studio";
+import { WorkflowCanvas } from "./workflow-canvas";
 
 const LETTER: Record<string, string> = {
   team_lead: "R", market_researcher: "B", media_analyst: "Ş", copywriter: "K", brand_guardian: "N", visual_editor: "V", publisher: "P",
@@ -138,7 +138,7 @@ export function TeamRoom({ tenantId, canAct }: { tenantId: string; canAct: boole
         ))}
       </div>
 
-      <LiveStudio live={live} />
+      <WorkflowCanvas live={live} />
 
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <section className="flex min-h-[560px] flex-col rounded-lg border border-border bg-surface" aria-label={t("chatTitle")}>
