@@ -33,6 +33,7 @@ os.environ.setdefault("APP_BASE_URL", "https://app.test")
 os.environ.setdefault("APP_ENV", "test")
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
 os.environ.setdefault("SCHEDULER_ENABLED", "false")
+os.environ.setdefault("META_LOOKUP_PAUSE", "0")  # production spaces lookups out (Meta flagged bursts)
 os.environ.setdefault("MEDIA_PUBLIC_URL", "https://api.test")
 os.environ.setdefault("MEDIA_ROOT", os.path.join(os.environ.get("TMPDIR", "/tmp"), f"del-media-test-{os.getpid()}"))
 

@@ -7,10 +7,14 @@ Every number (averages, engagement rates, posts per week, top posts) is computed
 model only reads and interprets them (CLAUDE.md principle 2). Captions and comments are other
 people's words: they are passed on as untrusted data, and commenters' names are left out.
 """
+import asyncio
 import io
 import logging
+import os
 import re
-from datetime import UTC, datetime, timedelta
+import time
+from collections import defaultdict
+from datetime import UTC, date, datetime, timedelta
 from statistics import mean
 from typing import Any
 
@@ -26,6 +30,27 @@ RECENT = 20  # posts per account
 USERNAME = re.compile(r"^[A-Za-z0-9._]{1,30}$")
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 IMAGE_SIDE = 768  # enough to see models and colours, cheap in tokens
+# Meta flagged the developer account for "unusual activity" after bursts of lookups (2026-09-27):
+# competitor lookups are spaced out and capped per day, per Instagram account we look from.
+PAUSE_SECONDS = float(os.environ.get("META_LOOKUP_PAUSE", "4"))
+DAILY_LOOKUPS = int(os.environ.get("META_DAILY_LOOKUPS", "60"))
+_last_lookup: dict[str, float] = {}
+_lookups_today: dict[tuple[str, date], int] = defaultdict(int)
+_lookup_locks: dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+
+
+async def _polite(ig_user_id: str) -> bool:
+    """Wait our turn; False when today's lookups are used up."""
+    async with _lookup_locks[ig_user_id]:
+        key = (ig_user_id, datetime.now(UTC).date())
+        if _lookups_today[key] >= DAILY_LOOKUPS:
+            return False
+        wait = PAUSE_SECONDS - (time.monotonic() - _last_lookup.get(ig_user_id, 0.0))
+        if wait > 0:
+            await asyncio.sleep(wait)
+        _last_lookup[ig_user_id] = time.monotonic()
+        _lookups_today[key] += 1
+        return True
 
 
 def username_of(entry: str) -> str | None:
@@ -96,6 +121,8 @@ async def competitor(meta: MetaClient, ig_user_id: str, token: str, entry: str, 
     if name is None:
         return {"entry": entry[:60], "error": "Not an Instagram username"}
     fields = f"business_discovery.username({name}){{username,name,followers_count,media_count,media.limit({RECENT}){{{MEDIA_FIELDS}}}}}"
+    if not await _polite(ig_user_id):
+        return {"username": name, "error": "Today's Instagram lookups are used up; checked again tomorrow", "not_found": False}
     try:
         data = await meta.api(ig_user_id, token, fields=fields)
     except MetaError as e:

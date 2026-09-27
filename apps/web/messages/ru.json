@@ -1078,7 +1078,8 @@
       "active": "активен",
       "invalid": "не найден в Instagram",
       "inactive": "нет постов 90 дней",
-      "ignored": "не отслеживается"
+      "ignored": "не отслеживается",
+      "unverified": "из интернета, ещё не проверен"
     }
   },
   "themeHints": {

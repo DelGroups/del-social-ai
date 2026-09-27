@@ -53,6 +53,62 @@ def handles_in(text: str) -> list[str]:
     return list(dict.fromkeys(h.lower() for h in found if h.lower() not in NOT_COMPANIES))
 
 
+_FOLLOWERS = re.compile(
+    r"(\d[\d.,\s]*\d|\d)\s*([KkMm]|тыс\.?|min)?\s*(?:followers|izləyici|izleyici|подписчик)", re.I
+)
+
+
+def _followers(text: str) -> int | None:
+    m = _FOLLOWERS.search(text or "")
+    if not m:
+        return None
+    raw = m.group(1).replace(" ", "")
+    mult = {"k": 1_000, "m": 1_000_000, "тыс": 1_000, "тыс.": 1_000, "min": 1_000}.get((m.group(2) or "").lower(), 1)
+    if mult > 1:
+        raw = raw.replace(",", ".")
+    else:
+        raw = raw.replace(",", "").replace(".", "")
+    try:
+        return int(float(raw) * mult)
+    except ValueError:
+        return None
+
+
+def web_candidates(text: str) -> list[dict[str, Any]]:
+    """Accounts in the web researcher's notes: username, the line it was on, followers if shown."""
+    out: dict[str, dict[str, Any]] = {}
+    for line in (text or "").splitlines():
+        for name in handles_in(line):
+            out.setdefault(name, {"username": name, "line": line.strip()[:300], "followers": _followers(line)})
+    return list(out.values())
+
+
+async def add_unverified(
+    engine: AsyncEngine, tenant_id: uuid.UUID, candidates: list[dict[str, Any]], own_username: str | None,
+    words: set[str], limit: int, now: datetime,
+) -> list[dict[str, Any]]:
+    """While Meta can't verify: watch accounts from web results that look like this market, as unverified."""
+    added = []
+    async with AsyncSession(engine) as db, db.begin():
+        await set_tenant(db, tenant_id)
+        known = {c.username for c in (await db.scalars(select(Competitor))).all()}
+        for cand in candidates:
+            if len(added) >= limit:
+                break
+            name = cand["username"]
+            if name in known or name == (own_username or "").lower() or not collect.USERNAME.match(name):
+                continue
+            text = f"{name} {cand['line']}".lower()
+            if not any(w in text for w in words):
+                continue  # nothing on the web line says it is this market
+            db.add(Competitor(tenant_id=tenant_id, username=name, source="discovered", status="unverified",
+                              followers=cand.get("followers"), checked_at=None,
+                              note="Found on the web; not yet verified on Instagram"))
+            known.add(name)
+            added.append(cand)
+    return added
+
+
 def _core(name: str) -> str:
     """The distinctive part of a username or company name, e.g. 'embawood.az' → 'embawood'."""
     s = re.sub(r"[^a-z0-9]", "", (name or "").lower())

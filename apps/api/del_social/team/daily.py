@@ -58,6 +58,10 @@ CHECK_SECONDS = 300
 IMAGES = 6
 
 
+class _WebMode(Exception):
+    """Meta refuses the app: today's research works from the web only."""
+
+
 def baku_day(now: datetime) -> date:
     return now.astimezone(timing.BAKU).date()
 
@@ -179,34 +183,44 @@ async def run_market(
         data: dict[str, Any] = {"collected_at": now.isoformat(), "own": None, "competitors": []}
         await step("competitors", "running")
         await competitors.sync_owner_list(engine, tenant_id, market.competitors_instagram)
-        watching = await competitors.watched(engine, tenant_id)
-        new_found: list[dict[str, Any]] = []
-        creds = None
-        if meta is not None and vault is not None and ig is not None:
-            creds = credentials(vault, ig)
-            data["own"] = await collect.own_account(meta, creds.external_id, creds.token, now)
-            if problem := collect.access_problem(data["own"]):
-                await mark_connection_error(engine, tenant_id, ig.connection_id, problem)
-                raise collect.MetaAccessError(problem)
-            if ig.status != ConnectionStatus.ACTIVE.value:
-                await mark_connection_ok(engine, tenant_id, ig.connection_id)
-            for c in watching:
-                data["competitors"].append(await collect.competitor(meta, creds.external_id, creds.token, c.username, now))
-            await competitors.record(engine, tenant_id, data["competitors"], now)
-            seen = sum(1 for c in data["competitors"] if "error" not in c)
-            await step("competitors", "done", m("step.competitors", seen=seen, total=len(data["competitors"])))
-            current = "own_page"
-            await step("own_page", "running")
-            own = data["own"] or {}
-            if "error" in own:
-                await step("own_page", "failed", own["error"][:120])
+        web_mode = False
+        try:
+            watching = await competitors.watched(engine, tenant_id)
+            new_found: list[dict[str, Any]] = []
+            creds = None
+            if meta is not None and vault is not None and ig is not None:
+                creds = credentials(vault, ig)
+                data["own"] = await collect.own_account(meta, creds.external_id, creds.token, now)
+                if problem := collect.access_problem(data["own"]):
+                    # Web mode: no Instagram data today; say so once (when the problem starts), keep researching the web
+                    if ig.status == ConnectionStatus.ACTIVE.value:
+                        await activity.say(engine, tenant_id, "market_researcher", m("meta.blocked", error=problem[:160]))
+                    await mark_connection_error(engine, tenant_id, ig.connection_id, problem)
+                    raise _WebMode(problem)
+                if ig.status != ConnectionStatus.ACTIVE.value:
+                    await mark_connection_ok(engine, tenant_id, ig.connection_id)
+                for c in watching:
+                    data["competitors"].append(await collect.competitor(meta, creds.external_id, creds.token, c.username, now))
+                await competitors.record(engine, tenant_id, data["competitors"], now)
+                seen = sum(1 for c in data["competitors"] if "error" not in c)
+                await step("competitors", "done", m("step.competitors", seen=seen, total=len(data["competitors"])))
+                current = "own_page"
+                await step("own_page", "running")
+                own = data["own"] or {}
+                if "error" in own:
+                    await step("own_page", "failed", own["error"][:120])
+                else:
+                    await step("own_page", "done", m("step.own_page", posts=len(own.get("recent_posts", [])),
+                                                     comments=len(own.get("recent_customer_comments", []))))
             else:
-                await step("own_page", "done", m("step.own_page", posts=len(own.get("recent_posts", [])),
-                                                 comments=len(own.get("recent_customer_comments", []))))
-        else:
-            gaps.append("Instagram is not connected: no data from our page or competitors")
-            await step("competitors", "failed", m("step.no_instagram"))
-            await step("own_page", "failed", m("step.no_instagram"))
+                gaps.append("Instagram is not connected: no data from our page or competitors")
+                await step("competitors", "failed", m("step.no_instagram"))
+                await step("own_page", "failed", m("step.no_instagram"))
+        except _WebMode as blocked_by_meta:
+            data["own"], creds, web_mode = None, None, True
+            gaps.append(f"Meta refused our app today ({blocked_by_meta}); no Instagram data, only the web")
+            await step("competitors", "failed", m("step.web_mode"))
+            await step("own_page", "failed", m("step.web_mode"))
         if not watching:
             gaps.append("No competitors watched yet: the researcher looks for them on the web")
         current = "web"
@@ -219,13 +233,17 @@ async def run_market(
             notes = await market_researcher.web_notes(llm, tenant_id, request, max_searches)
             web_text, sources, cost = notes.text, [{"title": s.title, "url": s.url} for s in notes.sources], notes.cost_usd
             # New competitors: usernames seen on the web, verified on Instagram by code
+            words = competitors.relevance_words(profile.products.categories, market.keywords)
             if creds is not None:
-                words = competitors.relevance_words(profile.products.categories, market.keywords)
                 new_found = await competitors.discover(
                     engine, meta, creds.external_id, creds.token, tenant_id, competitors.handles_in(web_text),
                     ((data["own"] or {}).get("username")), now, words,
                 )
                 data["competitors"].extend(new_found)
+            elif web_mode:  # found on the web, checked on Instagram once Meta gives access back
+                new_found = await competitors.add_unverified(
+                    engine, tenant_id, competitors.web_candidates(web_text), None, words, competitors.MAX_NEW_PER_DAY, now,
+                )
             found = m("step.web_found", n=len(new_found)) if new_found else ""
             await step("web", "done", m("step.web", searches=notes.usage.web_searches, sources=len(sources), found=found))
         except LLMError as e:
@@ -293,10 +311,6 @@ async def run_market(
                         "new_competitors": [f"@{a.get('username')}" for a in new_found]})
         await step("deliver", "done", report.headline[:120], task_status="done")
         await activity.event(engine, tenant_id, "market_researcher", "finished", m("research.done", headline=report.headline[:200]), task_id)
-    except collect.MetaAccessError as e:
-        await _finish(engine, tenant_id, report_id, status="failed", error=f"Meta access: {e}"[:300], cost_usd=cost)
-        await step(current, "failed", str(e)[:120], task_status="failed")
-        await activity.say(engine, tenant_id, "market_researcher", m("meta.blocked", error=str(e)[:160]))
     except Exception as e:  # the morning loop must go on for other companies
         log.exception("market research failed for %s", tenant_id)
         await _finish(engine, tenant_id, report_id, status="failed", error=str(e)[:300], cost_usd=cost)

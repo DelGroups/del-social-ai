@@ -65,7 +65,7 @@ export function CompetitorsPanel({ tenantId, canManage }: { tenantId: string; ca
   }
 
   if (!rows) return null;
-  const tone = { active: "text-success", invalid: "text-danger", inactive: "text-muted", ignored: "text-muted" } as const;
+  const tone = { active: "text-success", invalid: "text-danger", inactive: "text-muted", ignored: "text-muted", unverified: "text-accent" } as const;
   return (
     <div className="space-y-2">
       <p className="text-xs text-muted">{t("hint")}</p>

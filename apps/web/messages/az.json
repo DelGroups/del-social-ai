@@ -1078,7 +1078,8 @@
       "active": "aktiv",
       "invalid": "Instagramda tapılmadı",
       "inactive": "90 gündür post yoxdur",
-      "ignored": "izlənmir"
+      "ignored": "izlənmir",
+      "unverified": "internetdən, hələ yoxlanılmayıb"
     }
   },
   "themeHints": {

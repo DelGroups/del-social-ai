@@ -33,7 +33,11 @@ SEARCHES = 8
 
 
 def _names(accounts: list[dict[str, Any]]) -> str:
-    return ", ".join(f"@{a.get('username')} ({a.get('followers') or 0:,})".replace(",", " ") for a in accounts)
+    def one(a: dict[str, Any]) -> str:
+        f = a.get("followers")
+        return f"@{a.get('username')}" + (f" ({f:,})".replace(",", " ") if f else "")
+
+    return ", ".join(one(a) for a in accounts)
 
 
 async def _instagram(engine: AsyncEngine, vault: TokenVault | None, tenant_id: uuid.UUID):
@@ -55,20 +59,22 @@ async def run_search(
     await activity.event(engine, tenant_id, "market_researcher", "started", m("hunt.start"), task_id)
     current = "search"
     try:
+        # Meta access decides how accounts are checked: on Instagram, or (web mode) only from web results
         creds, conn_id = await _instagram(engine, vault, tenant_id)
-        if meta is None or creds is None:
-            raise RuntimeError("Instagram is not connected")
-        own = await collect.own_account(meta, creds.external_id, creds.token, now)
-        if problem := collect.access_problem(own):
-            await daily.mark_connection_error(engine, tenant_id, conn_id, problem)
-            raise collect.MetaAccessError(problem)
-        await daily.mark_connection_ok(engine, tenant_id, conn_id)
+        own: dict = {}
+        blocked = "Instagram is not connected" if meta is None or creds is None else None
+        if not blocked:
+            own = await collect.own_account(meta, creds.external_id, creds.token, now)
+            if blocked := collect.access_problem(own):
+                await daily.mark_connection_error(engine, tenant_id, conn_id, blocked)
+            else:
+                await daily.mark_connection_ok(engine, tenant_id, conn_id)
         async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
             await set_tenant(db, tenant_id)
             profile = await daily.profile_of(db)
             known = (await db.scalars(select(Competitor))).all()
         invalid = [c.username for c in known if c.status == "invalid"]
-        watched = [c.username for c in known if c.status in ("active", "inactive")]
+        watched = [c.username for c in known if c.status in ("active", "inactive", "unverified")]
         b = profile.basics
         request = "\n".join([
             f"Company: {b.company_name}. What it sells: {b.description}",
@@ -86,24 +92,28 @@ async def run_search(
         current = "verify"
         await step("verify", "running")
         words = competitors.relevance_words(profile.products.categories, profile.market.keywords)
-        added = await competitors.discover(engine, meta, creds.external_id, creds.token, tenant_id, candidates,
-                                           own.get("username"), now, words, limit=MAX_ADDED)
-        replaced = await competitors.replace_invalid(engine, tenant_id, added)
-        await step("verify", "done", m("step.hunt_verified", added=len(added), checked=len(candidates)))
+        if blocked:
+            added = await competitors.add_unverified(engine, tenant_id, competitors.web_candidates(notes.text),
+                                                     own.get("username"), words, MAX_ADDED, now)
+            replaced = await competitors.replace_invalid(engine, tenant_id, added)
+            await step("verify", "done", m("step.hunt_web", added=len(added)))
+        else:
+            added = await competitors.discover(engine, meta, creds.external_id, creds.token, tenant_id, candidates,
+                                               own.get("username"), now, words, limit=MAX_ADDED)
+            replaced = await competitors.replace_invalid(engine, tenant_id, added)
+            await step("verify", "done", m("step.hunt_verified", added=len(added), checked=len(candidates)))
 
         current = "deliver"
         still_missing = [n for n in invalid if n not in {old for old, _ in replaced}]
         await activity.say(engine, tenant_id, "market_researcher", m(
             "hunt.result",
-            added=m("hunt.added", list=_names(added)) if added else m("hunt.none"),
+            added=(m("hunt.added_web", list=_names(added), error=blocked[:120]) if blocked else m("hunt.added", list=_names(added)))
+            if added else m("hunt.none"),
             replaced=m("hunt.replaced", list=", ".join(f"@{o} → @{n}" for o, n in replaced)) if replaced else "",
             missing=m("hunt.missing", list=", ".join("@" + n for n in still_missing)) if still_missing else "",
         ))
         await step("deliver", "done", m("step.hunt_done", n=len(added)), task_status="done")
         await activity.event(engine, tenant_id, "market_researcher", "finished", m("step.hunt_done", n=len(added)), task_id)
-    except collect.MetaAccessError as e:
-        await step(current, "failed", str(e)[:120], task_status="failed")
-        await activity.say(engine, tenant_id, "market_researcher", m("meta.blocked", error=str(e)[:160]))
     except Exception as e:
         log.exception("competitor search failed for %s", tenant_id)
         await step(current, "failed", str(e)[:120], task_status="failed")
