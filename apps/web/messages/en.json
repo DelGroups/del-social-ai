@@ -23,8 +23,8 @@
   },
   "themes": {
     "midnight": "Midnight",
-    "daylight": "Paper",
-    "graphite": "Terminal",
+    "graphite": "Aurora",
+    "daylight": "Pearl",
     "sage": "Soft"
   },
   "login": {
@@ -1075,5 +1075,11 @@
       "inactive": "no posts for 90 days",
       "ignored": "not watched"
     }
+  },
+  "themeHints": {
+    "midnight": "Dark · navy and orange",
+    "graphite": "Dark · violet glow",
+    "daylight": "Light · white and blue",
+    "sage": "Light · soft sage"
   }
 }

@@ -39,3 +39,12 @@
 
 - Messages are stored already rendered. Changing the language later does not translate old messages; this is simpler and matches a chat history.
 - Error texts from quota and validation are still English. They are shown as they are for now.
+
+## Revision (2026-09-27)
+
+Alireza kept Midnight and Soft and rejected Paper and Terminal, as well as the "Aa" swatches.
+
+- **Aurora** replaces Terminal: a deep violet night, glass cards, violet glow, Manrope.
+- **Pearl** replaces Paper: clean white and cool grey, crisp blue, Manrope headings.
+- Lora and JetBrains Mono are no longer loaded; Manrope is added. The ids stay (`graphite` = Aurora, `daylight` = Pearl), so saved choices still work.
+- The picker is now one button showing the current theme. It opens a short list; each entry shows a tiny window of that theme, its name, and a one-line description.

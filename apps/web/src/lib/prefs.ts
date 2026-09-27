@@ -5,7 +5,8 @@ export const DEFAULT_LOCALE: Locale = "az";
 export const LOCALE_COOKIE = "NEXT_LOCALE";
 export const LOCALE_LABELS: Record<Locale, string> = { az: "Azərbaycan", ru: "Русский", en: "English" };
 
-export const THEMES = ["midnight", "daylight", "graphite", "sage"] as const;
+// Ids kept from the first themes so saved choices still work: graphite = Aurora, daylight = Pearl
+export const THEMES = ["midnight", "graphite", "daylight", "sage"] as const;
 export type Theme = (typeof THEMES)[number];
 export const DEFAULT_THEME: Theme = "midnight";
 export const THEME_COOKIE = "theme";
