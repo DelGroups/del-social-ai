@@ -99,8 +99,9 @@ async def competitor(meta: MetaClient, ig_user_id: str, token: str, entry: str, 
     try:
         data = await meta.api(ig_user_id, token, fields=fields)
     except MetaError as e:
-        # Personal accounts and wrong names are not visible through Business Discovery
-        return {"username": name, "error": str(e)[:200]}
+        # Personal accounts and wrong names are not visible through Business Discovery ("not found");
+        # anything else is a problem with our own access, not with the account
+        return {"username": name, "error": str(e)[:200], "not_found": e.not_found}
     return _account(data.get("business_discovery") or {}, now)
 
 
@@ -110,7 +111,7 @@ async def own_account(meta: MetaClient, ig_user_id: str, token: str, now: dateti
             ig_user_id, token, fields=f"username,name,followers_count,media_count,media.limit({RECENT}){{id,{MEDIA_FIELDS}}}"
         )
     except MetaError as e:
-        return {"error": str(e)[:200]}
+        return {"error": str(e)[:200], "not_found": e.not_found}
     account = _account(data, now)
     # What customers write under our posts in the last two weeks (text only, no names)
     comments: list[dict[str, str]] = []
@@ -150,6 +151,15 @@ async def images(http: httpx.AsyncClient, urls: list[str], limit: int = 6) -> li
         except (httpx.HTTPError, OSError, Image.DecompressionBombError):
             continue
     return out
+
+
+class MetaAccessError(RuntimeError):
+    """Meta refuses our app's requests (blocked, permissions removed, token expired): nothing can be read."""
+
+
+def access_problem(account: dict[str, Any]) -> str | None:
+    """Our own page failing for a reason other than 'not found' means the app has no access."""
+    return account["error"] if "error" in account and not account.get("not_found") else None
 
 
 def now_utc() -> datetime:

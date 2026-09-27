@@ -39,9 +39,12 @@ class FakeMeta:
 
     def __init__(self):
         self.calls: list[str] = []
+        self.blocked = False  # Meta refuses the app (as on 2026-09-27: "API access blocked.")
 
     def handle(self, request: httpx.Request) -> httpx.Response:
         self.calls.append(request.url.path)
+        if self.blocked and request.url.host != "cdn.test":
+            return httpx.Response(400, json={"error": {"message": "API access blocked.", "code": 200}})
         if request.url.host == "cdn.test":
             return httpx.Response(200, content=small_jpeg())
         path = request.url.path.removeprefix("/v23.0/")
@@ -152,7 +155,7 @@ def setup(client, admin, tenants):
     app.dependency_overrides[get_vault_optional] = lambda: vault
     app.dependency_overrides[get_analyst] = lambda: llm
     app.dependency_overrides[get_http] = lambda: http
-    return type("Setup", (), {"meta": meta, "vault": vault, "llm": llm, "http": http, "calls": fake_meta.calls})
+    return type("Setup", (), {"meta": meta, "vault": vault, "llm": llm, "http": http, "calls": fake_meta.calls, "graph": fake_meta})
 
 
 async def set_market(client, tenant_id, owner, **market):
@@ -301,3 +304,38 @@ async def test_team_finds_and_adds_competitors(client, setup, admin, app_engine,
     assert "ghost_shop" not in rivals
     last = (await client.get(f"/tenants/{tenants['a']}/team/chat", headers=owner)).json()[-1]
     assert "@rival_mebel (2 000)" in last["text"] and "@ghost_shop" in last["text"]
+
+
+async def test_blocked_meta_access_is_reported_and_harms_nothing(client, setup, admin, app_engine, tenants, session_for):
+    from del_social.team import competitor_hunt
+
+    owner = await session_for(tenants["a_owner"])
+    await connect(admin, setup.vault, tenants["a"], "instagram", IG_ID)
+    await product_with_photos(client, tenants["a"], owner, n=1)
+    await admin.execute(
+        "INSERT INTO competitors (tenant_id, username, source, status, followers) VALUES ($1, 'rival_mebel', 'owner', 'active', 2000)",
+        tenants["a"],
+    )
+    setup.graph.blocked = True
+    r = await client.post(f"/tenants/{tenants['a']}/daily/market/run", headers={**owner, **O})
+    await lead.settle()
+    report = (await client.get(f"/tenants/{tenants['a']}/daily/{r.json()['report_id']}", headers=owner)).json()
+    assert report["status"] == "failed" and "API access blocked" in report["error"]
+    last = (await client.get(f"/tenants/{tenants['a']}/team/chat", headers=owner)).json()[-1]
+    assert last["agent"] == "market_researcher" and "Meta" in last["text"] and "developers.facebook.com" in last["text"]
+    # Nothing is judged from a failed request: the competitor stays active, the connection shows the problem
+    rivals = {c["username"]: c for c in (await client.get(f"/tenants/{tenants['a']}/competitors", headers=owner)).json()}
+    assert rivals["rival_mebel"]["status"] == "active"
+    channels = {c["channel"]: c for c in (await client.get(f"/tenants/{tenants['a']}/connections", headers=owner)).json()}
+    ig = channels["instagram"]["connections"][0]
+    assert ig["status"] == "error" and "API access blocked" in ig["last_error"]
+
+    await competitor_hunt.run_search(engine=app_engine, llm=setup.llm, meta=setup.meta, vault=setup.vault, tenant_id=tenants["a"])
+    assert "hunt" not in setup.llm.contexts  # no paid web search while Meta can't verify anything
+    assert "developers.facebook.com" in (await client.get(f"/tenants/{tenants['a']}/team/chat", headers=owner)).json()[-1]["text"]
+
+    setup.graph.blocked = False
+    await competitor_hunt.run_search(engine=app_engine, llm=setup.llm, meta=setup.meta, vault=setup.vault, tenant_id=tenants["a"])
+    channels = {c["channel"]: c for c in (await client.get(f"/tenants/{tenants['a']}/connections", headers=owner)).json()}
+    assert channels["instagram"]["connections"][0]["status"] == "active"
+    assert "new_mebel_shop" in {c["username"] for c in (await client.get(f"/tenants/{tenants['a']}/competitors", headers=owner)).json()}

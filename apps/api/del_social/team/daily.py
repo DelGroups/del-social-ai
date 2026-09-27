@@ -116,6 +116,21 @@ async def _finish(engine: AsyncEngine, tenant_id: uuid.UUID, report_id: uuid.UUI
         row.finished_at = datetime.now(UTC)
 
 
+async def mark_connection_error(engine: AsyncEngine, tenant_id: uuid.UUID, connection_id: uuid.UUID, error: str) -> None:
+    """Shown on the Connections page, so the owner sees the problem where it can be fixed."""
+    async with AsyncSession(engine) as db, db.begin():
+        await set_tenant(db, tenant_id)
+        conn = await db.get(Connection, connection_id)
+        conn.status, conn.last_error, conn.last_checked_at = ConnectionStatus.ERROR.value, error[:300], datetime.now(UTC)
+
+
+async def mark_connection_ok(engine: AsyncEngine, tenant_id: uuid.UUID, connection_id: uuid.UUID) -> None:
+    async with AsyncSession(engine) as db, db.begin():
+        await set_tenant(db, tenant_id)
+        conn = await db.get(Connection, connection_id)
+        conn.status, conn.last_error, conn.last_checked_at = ConnectionStatus.ACTIVE.value, None, datetime.now(UTC)
+
+
 def _add(a: Decimal | None, b: Decimal | None) -> Decimal | None:
     return None if a is None and b is None else (a or Decimal(0)) + (b or Decimal(0))
 
@@ -157,9 +172,8 @@ async def run_market(
             await set_tenant(db, tenant_id)
             profile = await profile_of(db)
             products = await products_overview(db)
-            ig = await db.scalar(select(Connection).where(
-                Connection.channel == "instagram", Connection.status == ConnectionStatus.ACTIVE.value
-            ))
+            # Also after an error: when Meta gives access back, the team resumes by itself
+            ig = await db.scalar(select(Connection).where(Connection.channel == "instagram").order_by(Connection.status))
             lang = await texts.language_of(db)
         market, gaps = profile.market, []
         data: dict[str, Any] = {"collected_at": now.isoformat(), "own": None, "competitors": []}
@@ -170,6 +184,12 @@ async def run_market(
         creds = None
         if meta is not None and vault is not None and ig is not None:
             creds = credentials(vault, ig)
+            data["own"] = await collect.own_account(meta, creds.external_id, creds.token, now)
+            if problem := collect.access_problem(data["own"]):
+                await mark_connection_error(engine, tenant_id, ig.connection_id, problem)
+                raise collect.MetaAccessError(problem)
+            if ig.status != ConnectionStatus.ACTIVE.value:
+                await mark_connection_ok(engine, tenant_id, ig.connection_id)
             for c in watching:
                 data["competitors"].append(await collect.competitor(meta, creds.external_id, creds.token, c.username, now))
             await competitors.record(engine, tenant_id, data["competitors"], now)
@@ -177,7 +197,6 @@ async def run_market(
             await step("competitors", "done", m("step.competitors", seen=seen, total=len(data["competitors"])))
             current = "own_page"
             await step("own_page", "running")
-            data["own"] = await collect.own_account(meta, creds.external_id, creds.token, now)
             own = data["own"] or {}
             if "error" in own:
                 await step("own_page", "failed", own["error"][:120])
@@ -274,6 +293,10 @@ async def run_market(
                         "new_competitors": [f"@{a.get('username')}" for a in new_found]})
         await step("deliver", "done", report.headline[:120], task_status="done")
         await activity.event(engine, tenant_id, "market_researcher", "finished", m("research.done", headline=report.headline[:200]), task_id)
+    except collect.MetaAccessError as e:
+        await _finish(engine, tenant_id, report_id, status="failed", error=f"Meta access: {e}"[:300], cost_usd=cost)
+        await step(current, "failed", str(e)[:120], task_status="failed")
+        await activity.say(engine, tenant_id, "market_researcher", m("meta.blocked", error=str(e)[:160]))
     except Exception as e:  # the morning loop must go on for other companies
         log.exception("market research failed for %s", tenant_id)
         await _finish(engine, tenant_id, report_id, status="failed", error=str(e)[:300], cost_usd=cost)

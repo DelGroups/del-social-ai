@@ -36,7 +36,15 @@ PAGE_FIELDS = "id,name,access_token,instagram_business_account{id,username,name}
 
 
 class MetaError(ChannelError):
-    pass
+    def __init__(self, message: str, code: int | None = None):
+        super().__init__(message)
+        self.code = code
+
+    @property
+    def not_found(self) -> bool:
+        """The account or object doesn't exist (a wrong username), as opposed to a problem with our access."""
+        text = str(self)
+        return "Invalid user id" in text or "does not exist" in text or "Cannot find" in text
 
 
 class MetaClient:
@@ -78,8 +86,8 @@ class MetaClient:
         except (httpx.HTTPError, ValueError):
             raise MetaError("Meta could not be reached") from None
         if r.status_code >= 400 or "error" in data:
-            message = (data.get("error") or {}).get("message") or "Meta rejected the request"
-            raise MetaError(message[:300])
+            err = data.get("error") or {}
+            raise MetaError((err.get("message") or "Meta rejected the request")[:300], err.get("code"))
         return data
 
     async def api(self, path: str, token: str, **params: str) -> dict[str, Any]:
@@ -96,8 +104,8 @@ class MetaClient:
         except (httpx.HTTPError, ValueError):
             raise MetaError("Meta could not be reached") from None
         if r.status_code >= 400 or "error" in body:
-            message = (body.get("error") or {}).get("message") or "Meta rejected the request"
-            raise MetaError(message[:300])
+            err = body.get("error") or {}
+            raise MetaError((err.get("message") or "Meta rejected the request")[:300], err.get("code"))
         return body
 
     async def exchange_code(self, code: str, redirect_uri: str) -> str:

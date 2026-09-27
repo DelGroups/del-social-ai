@@ -163,4 +163,10 @@ CATALOG: dict[str, dict[str, str]] = {
     "step.hunt_found": {"az": "{n} hesab tapıldı · {sources} mənbə", "ru": "Найдено аккаунтов: {n} · источников: {sources}", "en": "{n} accounts found · {sources} sources", "fa": "{n} حساب پیدا شد · {sources} منبع"},
     "step.hunt_verified": {"az": "{checked} hesab yoxlanıldı · {added} əlavə edildi", "ru": "Проверено: {checked} · добавлено: {added}", "en": "{checked} checked · {added} added", "fa": "{checked} حساب بررسی شد · {added} اضافه شد"},
     "step.hunt_done": {"az": "{n} yeni rəqib izlənilir", "ru": "Новых конкурентов под наблюдением: {n}", "en": "{n} new competitors watched", "fa": "{n} رقیب جدید پیگیری می‌شود"},
+    "meta.blocked": {
+        "az": "Meta tətbiqimizin Instagram/Facebook məlumatlarına girişini bağlayıb, ona görə heç nə oxuya bilmirəm (Meta: {error}). developers.facebook.com → tətbiq → xəbərdarlıqlara baxın; giriş qayıdan kimi komanda özü davam edəcək.",
+        "ru": "Meta заблокировала доступ нашего приложения к данным Instagram/Facebook, поэтому я ничего не могу прочитать (Meta: {error}). Откройте developers.facebook.com → приложение → уведомления; как только доступ вернётся, команда продолжит сама.",
+        "en": "Meta has blocked our app's access to Instagram/Facebook data, so I can't read anything (Meta: {error}). Open developers.facebook.com → the app → alerts; the team continues by itself once access is back.",
+        "fa": "متا دسترسی اپلیکیشن ما به داده‌های اینستاگرام و فیسبوک را مسدود کرده، برای همین چیزی نمی‌توانم بخوانم (پیام متا: {error}). به developers.facebook.com ← اپلیکیشن ← هشدارها بروید؛ به محض برگشتن دسترسی، تیم خودش ادامه می‌دهد.",
+    },
 }
