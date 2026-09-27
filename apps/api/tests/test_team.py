@@ -170,6 +170,13 @@ async def test_lead_guards(client, team, tenants, session_for):
     await say(client, tenants["a"], owner, "status?")
     assert "cavab verə bilmirəm" in (await client.get(turl(tenants["a"], "/chat"), headers=owner)).json()[-1]["text"]
 
+    # Asked about the market, the lead has the Market Researcher start now
+    team.lead.append(LeadOutput(reply="Bazar analitiki indi araşdırır.", actions=[Action(type="run_market_research")]))
+    await say(client, tenants["a"], owner, "Bazarı indi təhlil et")
+    reports = (await client.get(f"/tenants/{tenants['a']}/daily?kind=market", headers=owner)).json()
+    assert len(reports) == 1 and reports[0]["status"] in ("done", "failed")  # started by the lead, finished in the background
+    assert "<latest_market_report>" in team.lead_inputs[-1]
+
     # Another company sees none of it
     assert (await client.get(turl(tenants["b"], "/chat"), headers=owner_b)).json() == []
     live_b = (await client.get(turl(tenants["b"], "/live"), headers=owner_b)).json()

@@ -73,6 +73,8 @@ class FakeAnthropic:
         self.status = 200
         self.text = json.dumps({"text": "Salam! Привет!", "hashtags": ["#DelFurniture"]})
         self.stop_reason = "end_turn"
+        self.content: list[dict] | None = None  # override the reply blocks (web search)
+        self.usage_extra: dict = {}
 
     def handle(self, request: httpx2.Request) -> httpx2.Response:
         body = json.loads(request.content)
@@ -81,10 +83,10 @@ class FakeAnthropic:
             return httpx2.Response(self.status, json={"type": "error", "error": {"type": "api_error", "message": "boom"}})
         return httpx2.Response(200, json={
             "id": "msg_test", "type": "message", "role": "assistant", "model": body["model"],
-            "content": [{"type": "text", "text": self.text}],
+            "content": self.content or [{"type": "text", "text": self.text}],
             "stop_reason": self.stop_reason, "stop_sequence": None,
             "usage": {"input_tokens": 1200, "output_tokens": 300,
-                      "cache_creation_input_tokens": 0, "cache_read_input_tokens": 800},
+                      "cache_creation_input_tokens": 0, "cache_read_input_tokens": 800, **self.usage_extra},
         })
 
 
@@ -292,3 +294,28 @@ async def test_images_are_sent_before_the_text(fakes, tenants):
     assert [c["type"] for c in content] == ["image", "image", "text"]
     assert content[0]["source"] == {"type": "base64", "media_type": "image/jpeg", "data": base64.b64encode(b"\xff\xd8fake-jpeg-1").decode()}
     assert content[2]["text"] == "What is this?"
+
+
+async def test_web_research_notes_sources_and_search_cost(fakes, admin, tenants):
+    llm, fa, _ = fakes
+    fa.content = [
+        {"type": "text", "text": "I'll search."},
+        {"type": "server_tool_use", "id": "srvtoolu_1", "name": "web_search", "input": {"query": "qarderob Bakı"}},
+        {"type": "web_search_tool_result", "tool_use_id": "srvtoolu_1", "content": [
+            {"type": "web_search_result", "url": "https://tap.az/q", "title": "Qarderoblar", "encrypted_content": "x", "page_age": None},
+            {"type": "web_search_result", "url": "https://tap.az/q", "title": "dup", "encrypted_content": "y", "page_age": None},
+        ]},
+        {"type": "text", "text": "White wardrobes are popular [1]."},
+    ]
+    fa.usage_extra = {"server_tool_use": {"web_search_requests": 2}}
+    r = await llm.research(tenant_id=tenants["a"], prompt=load_prompt("web_researcher"), user="Baku furniture", max_searches=3)
+    assert r.text == "I'll search.White wardrobes are popular [1]." and [s.url for s in r.sources] == ["https://tap.az/q"]
+    tool = fa.requests[-1]["body"]["tools"][0]
+    # Azerbaijan is not an accepted search location ("Country code AZ is not supported"): none is sent
+    assert tool == {"type": "web_search_20250305", "name": "web_search", "max_uses": 3}
+    cost = await admin.fetchval("SELECT cost_usd FROM llm_calls WHERE tenant_id = $1 AND agent = 'web_researcher'", tenants["a"])
+    assert cost == r.cost_usd and r.usage.web_searches == 2 and cost > Decimal("0.02")  # tokens + 2 × $0.01
+
+    fa.status = 400
+    with pytest.raises(LLMError, match="Anthropic API error 400: .*boom"):  # the API's reason, not a guess
+        await llm.research(tenant_id=tenants["a"], prompt=load_prompt("web_researcher"), user="x")

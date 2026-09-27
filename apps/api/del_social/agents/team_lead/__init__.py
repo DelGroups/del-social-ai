@@ -15,7 +15,7 @@ AGENT = "team_lead"
 
 
 class Action(BaseModel):
-    type: Literal["create_post", "revise_post", "analyze_photos"]
+    type: Literal["create_post", "revise_post", "analyze_photos", "run_market_research", "morning_report"]
     product_id: str | None = Field(default=None, description="create_post: id from <products>")
     when: Literal["after_approval", "today_evening", "tomorrow_morning", "tomorrow_evening", "specific"] | None = Field(
         default=None, description="create_post: when to publish once approved"
