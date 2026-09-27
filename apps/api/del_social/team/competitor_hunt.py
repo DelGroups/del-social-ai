@@ -16,7 +16,7 @@ from del_social.connections.service import credentials
 from del_social.core.db import set_tenant
 from del_social.core.vault import TokenVault
 from del_social.llm import LLM, load_prompt
-from del_social.models import Competitor, Connection, ConnectionStatus
+from del_social.models import Competitor, Connection
 from del_social.research import collect, competitors
 from del_social.team import activity, daily
 from del_social.team.texts import m
@@ -39,10 +39,8 @@ def _names(accounts: list[dict[str, Any]]) -> str:
 async def _instagram(engine: AsyncEngine, vault: TokenVault | None, tenant_id: uuid.UUID):
     async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
         await set_tenant(db, tenant_id)
-        ig = await db.scalar(select(Connection).where(
-            Connection.channel == "instagram", Connection.status == ConnectionStatus.ACTIVE.value
-        ))
-    return credentials(vault, ig) if ig is not None and vault is not None else None
+        ig = await db.scalar(select(Connection).where(Connection.channel == "instagram").order_by(Connection.status))
+    return (credentials(vault, ig), ig.connection_id) if ig is not None and vault is not None else (None, None)
 
 
 async def run_search(
@@ -57,9 +55,14 @@ async def run_search(
     await activity.event(engine, tenant_id, "market_researcher", "started", m("hunt.start"), task_id)
     current = "search"
     try:
-        creds = await _instagram(engine, vault, tenant_id)
+        creds, conn_id = await _instagram(engine, vault, tenant_id)
         if meta is None or creds is None:
             raise RuntimeError("Instagram is not connected")
+        own = await collect.own_account(meta, creds.external_id, creds.token, now)
+        if problem := collect.access_problem(own):
+            await daily.mark_connection_error(engine, tenant_id, conn_id, problem)
+            raise collect.MetaAccessError(problem)
+        await daily.mark_connection_ok(engine, tenant_id, conn_id)
         async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
             await set_tenant(db, tenant_id)
             profile = await daily.profile_of(db)
@@ -82,7 +85,6 @@ async def run_search(
 
         current = "verify"
         await step("verify", "running")
-        own = await collect.own_account(meta, creds.external_id, creds.token, now)
         words = competitors.relevance_words(profile.products.categories, profile.market.keywords)
         added = await competitors.discover(engine, meta, creds.external_id, creds.token, tenant_id, candidates,
                                            own.get("username"), now, words, limit=MAX_ADDED)
@@ -99,6 +101,9 @@ async def run_search(
         ))
         await step("deliver", "done", m("step.hunt_done", n=len(added)), task_status="done")
         await activity.event(engine, tenant_id, "market_researcher", "finished", m("step.hunt_done", n=len(added)), task_id)
+    except collect.MetaAccessError as e:
+        await step(current, "failed", str(e)[:120], task_status="failed")
+        await activity.say(engine, tenant_id, "market_researcher", m("meta.blocked", error=str(e)[:160]))
     except Exception as e:
         log.exception("competitor search failed for %s", tenant_id)
         await step(current, "failed", str(e)[:120], task_status="failed")
@@ -110,9 +115,13 @@ async def run_add(
     *, engine: AsyncEngine, meta: MetaClient | None, vault: TokenVault | None, tenant_id: uuid.UUID, usernames: list[str],
 ) -> None:
     """Accounts the owner named in the chat: checked on Instagram and watched from now on."""
-    creds = await _instagram(engine, vault, tenant_id)
+    creds, conn_id = await _instagram(engine, vault, tenant_id)
     if meta is None or creds is None:
         await activity.say(engine, tenant_id, "market_researcher", m("hunt.failed", error="Instagram is not connected"))
+        return
+    if problem := collect.access_problem(await collect.own_account(meta, creds.external_id, creds.token, datetime.now(UTC))):
+        await daily.mark_connection_error(engine, tenant_id, conn_id, problem)
+        await activity.say(engine, tenant_id, "market_researcher", m("meta.blocked", error=problem[:160]))
         return
     added, missing = await competitors.add_given(engine, meta, creds.external_id, creds.token, tenant_id, usernames, datetime.now(UTC))
     await activity.say(engine, tenant_id, "market_researcher", m(

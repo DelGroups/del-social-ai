@@ -73,6 +73,9 @@ def _last_post(account: dict[str, Any]) -> datetime | None:
 
 def _apply(c: Competitor, account: dict[str, Any], now: datetime) -> None:
     c.checked_at = now
+    if "error" in account and not account.get("not_found", True):
+        c.note = f"Could not be checked: {account['error'][:120]}"  # our access failed; the account may be fine
+        return
     if "error" in account:
         c.status = "invalid" if c.status != "ignored" else "ignored"
         c.note = "Not visible to Instagram Business Discovery: check the username or whether it is a business account"
