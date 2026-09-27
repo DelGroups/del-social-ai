@@ -22,9 +22,9 @@ from del_social.core.vault import TokenVault
 from del_social.llm import LLM, LLMError
 from del_social.media import analysis
 from del_social.media.storage import MediaStore
-from del_social.models import AgentEvent, BrandProfileVersion, ChatMessage, DailyReport, MediaAsset, Post, Product, Task
+from del_social.models import AgentEvent, BrandProfileVersion, ChatMessage, DailyReport, Goal, MediaAsset, Post, Product, Task
 from del_social.posts import service
-from del_social.team import activity, daily, timing, work
+from del_social.team import activity, daily, meeting, metrics, timing, work
 
 log = logging.getLogger(__name__)
 
@@ -74,6 +74,9 @@ async def _context(db: AsyncSession, now: datetime) -> str:
     market = await db.scalar(select(DailyReport).where(DailyReport.kind == "market", DailyReport.status == "done")
                              .order_by(DailyReport.day.desc()).limit(1))
     research = {k: (market.output or {}).get(k) for k in ("headline", "summary", "demand", "post_ideas", "data_gaps")} if market else None
+    goal_rows = [metrics.goal_row(g) for g in (await db.scalars(
+        select(Goal).where(Goal.status.in_(("proposed", "active", "achieved"))).order_by(Goal.created_at.desc()).limit(8)
+    )).all()]
     brand = await db.scalar(select(BrandProfileVersion).order_by(BrandProfileVersion.version.desc()).limit(1))
     setup = ((brand.data or {}).get("market") or {}) if brand else {}
     research_setup = {
@@ -90,6 +93,7 @@ async def _context(db: AsyncSession, now: datetime) -> str:
         f"<now>{baku_now.strftime('%A %Y-%m-%d %H:%M')} Baku time</now>",
         "<products>\n" + json.dumps(product_rows, ensure_ascii=False, indent=1) + "\n</products>",
         f"<photos_without_analysis>{unanalysed}</photos_without_analysis>",
+        "<goals>\nThe team's goals; progress measured by code.\n" + json.dumps(goal_rows, ensure_ascii=False, indent=1) + "\n</goals>",
         "<research_setup>\nWhat the owner has set up for market research now (the latest report may be older than this).\n"
         + json.dumps(research_setup, ensure_ascii=False, indent=1) + "\n</research_setup>",
         "<latest_market_report>\nFrom the Market Researcher"
@@ -163,8 +167,8 @@ async def run_lead(
                 for asset_id in ids:
                     spawn(analysis.run_analysis, engine=engine, llm=llm, store=store, tenant_id=tenant_id, asset_id=asset_id)
                 started += 1
-            elif action.type in ("run_market_research", "morning_report"):
-                kind = "market" if action.type == "run_market_research" else "briefing"
+            elif action.type in ("run_market_research", "morning_report", "team_meeting"):
+                kind = {"run_market_research": "market", "morning_report": "briefing", "team_meeting": "meeting"}[action.type]
                 async with AsyncSession(engine) as db, db.begin():
                     await set_tenant(db, tenant_id)
                     if (await quota.allowance(db)).state in ("none", "expired"):
@@ -175,8 +179,10 @@ async def run_lead(
                 if kind == "market":
                     spawn(daily.run_market, engine=engine, http=http or httpx.AsyncClient(timeout=20), llm=llm,
                           meta=meta, vault=vault, tenant_id=tenant_id, report_id=rid)
-                else:
+                elif kind == "briefing":
                     spawn(daily.run_briefing, engine=engine, llm=llm, tenant_id=tenant_id, report_id=rid)
+                else:
+                    spawn(meeting.run_meeting, engine=engine, llm=llm, tenant_id=tenant_id, report_id=rid)
                 started += 1
         except (work.WorkError, timing.TimingError, quota.QuotaError) as e:
             notes.append(f"Alınmadı: {e}.")

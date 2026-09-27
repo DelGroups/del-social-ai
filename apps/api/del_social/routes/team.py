@@ -23,9 +23,10 @@ from del_social.core.deps import (
 from del_social.core.vault import TokenVault
 from del_social.llm import LLM
 from del_social.media.storage import MediaStore
-from del_social.models import AgentEvent, ChatMessage, Connection, MediaAsset, Post, Task
+from del_social.models import AgentEvent, ChatMessage, Connection, Goal, MediaAsset, Post, Task
 from del_social.routes.media import _current_logo, get_analyst, get_store
 from del_social.routes.posts import PostOut, _out as post_out
+from del_social.routes.strategy import with_goals
 from del_social.team import activity, lead, timing
 from del_social.tenants.permissions import Permission, has_permission
 
@@ -82,6 +83,8 @@ async def chat(
     posts = {p.post_id: p for p in (await db.scalars(
         select(Post).where(Post.post_id.in_([m.post_id for m in msgs if m.post_id]))
     )).all()}
+    goal_ids = [uuid.UUID(g) for m in msgs if (m.payload or {}).get("type") == "meeting" for g in m.payload.get("goal_ids", [])]
+    goals = {str(g.goal_id): g for g in (await db.scalars(select(Goal).where(Goal.goal_id.in_(goal_ids)))).all()} if goal_ids else {}
     # Show a task card once, on its latest message; show a post card on every message that carries one
     last_for_task = {m.task_id: m.message_id for m in msgs if m.task_id}
     return [
@@ -89,7 +92,7 @@ async def chat(
             message_id=m.message_id, role=m.role, agent=m.agent, text=m.text, created_at=m.created_at,
             task=_task(tasks.get(m.task_id)) if m.task_id and last_for_task[m.task_id] == m.message_id else None,
             post=post_out(posts[m.post_id], has_logo) if m.post_id in posts else None,
-            payload=m.payload,
+            payload=with_goals(m.payload, goals),
         )
         for m in msgs
     ]

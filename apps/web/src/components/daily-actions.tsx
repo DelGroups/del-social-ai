@@ -14,7 +14,7 @@ export function DailyActions({ tenantId }: { tenantId: string }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
 
-  async function run(kind: "market" | "briefing") {
+  async function run(kind: "market" | "briefing" | "meeting") {
     if (!confirm(t(`confirm.${kind}`))) return;
     setBusy(kind);
     setNote(null);
@@ -31,7 +31,7 @@ export function DailyActions({ tenantId }: { tenantId: string }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {(["market", "briefing"] as const).map((k) => (
+      {(["meeting", "market", "briefing"] as const).map((k) => (
         <button
           key={k}
           type="button"

@@ -6,11 +6,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ApprovalCard } from "@/components/approval-card";
+import { GoalRow, MeetingCard } from "@/components/meeting-card";
 import { BriefingCard, MarketCard } from "@/components/report-cards";
 import { AGENT_COLOR } from "@/lib/agents";
 import { ApiError, api } from "@/lib/client-api";
 import { formatDateTime } from "@/lib/prefs";
-import type { ChatMsg, LiveInfo, TaskInfo } from "@/lib/types";
+import type { ChatMsg, GoalInfo, LiveInfo, TaskInfo } from "@/lib/types";
 
 import { WorkflowCanvas } from "./workflow-canvas";
 
@@ -68,6 +69,7 @@ export function TeamRoom({ tenantId, canAct }: { tenantId: string; canAct: boole
   const tc = useTranslations("common");
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [live, setLive] = useState<LiveInfo | null>(null);
+  const [goals, setGoals] = useState<GoalInfo[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,12 +78,14 @@ export function TeamRoom({ tenantId, canAct }: { tenantId: string; canAct: boole
 
   const refresh = useCallback(async () => {
     try {
-      const [m, l] = await Promise.all([
+      const [m, l, g] = await Promise.all([
         api<ChatMsg[]>(`/tenants/${tenantId}/team/chat`),
         api<LiveInfo>(`/tenants/${tenantId}/team/live`),
+        api<GoalInfo[]>(`/tenants/${tenantId}/goals`),
       ]);
       setMessages(m);
       setLive(l);
+      setGoals(g);
     } catch {
       /* keep the last view; the next poll retries */
     }
@@ -174,6 +178,8 @@ export function TeamRoom({ tenantId, canAct }: { tenantId: string; canAct: boole
                         canAct={canAct}
                         onChange={refresh}
                       />
+                    ) : m.payload?.type === "meeting" ? (
+                      <MeetingCard tenantId={tenantId} messageId={m.message_id} data={m.payload} reportId={m.payload.report_id} canAct={canAct} onChange={refresh} />
                     ) : m.payload?.type === "market" ? (
                       <MarketCard tenantId={tenantId} payload={m.payload} />
                     ) : (
@@ -220,6 +226,17 @@ export function TeamRoom({ tenantId, canAct }: { tenantId: string; canAct: boole
         </section>
 
         <aside className="space-y-4" aria-label={t("activity")}>
+          <div className="space-y-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t("goalsTitle")}</h2>
+            {goals.filter((g) => g.status === "active" || g.status === "proposed" || g.status === "achieved").length === 0 ? (
+              <p className="text-sm text-muted">{t("noGoals")}</p>
+            ) : (
+              goals
+                .filter((g) => g.status === "active" || g.status === "proposed" || g.status === "achieved")
+                .slice(0, 4)
+                .map((g) => <GoalRow key={g.goal_id} tenantId={tenantId} goal={g} canDecide={canAct} onChange={refresh} />)
+            )}
+          </div>
           <div className="space-y-2">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t("upcoming")}</h2>
             {(live?.scheduled ?? []).length === 0 ? (

@@ -37,19 +37,22 @@ from del_social.models import (
     Connection,
     ConnectionStatus,
     DailyReport,
+    Goal,
     MediaAsset,
     Post,
     Product,
 )
 from del_social.posts import service
-from del_social.research import collect
-from del_social.team import activity, timing
+from del_social.research import collect, competitors
+from del_social.team import activity, metrics, timing
 
 log = logging.getLogger(__name__)
 
 RESEARCH_AT = time(8, 0)
 BRIEFING_AT = time(9, 0)
 BRIEFING_WAIT_UNTIL = time(10, 0)  # after this the report goes out even if research is still running
+MEETING_WEEKDAY = 4  # Friday: the weekly team meeting and plan (the owner's choice)
+MEETING_AT = time(9, 30)
 CHECK_SECONDS = 300
 IMAGES = 6
 
@@ -116,14 +119,18 @@ def _add(a: Decimal | None, b: Decimal | None) -> Decimal | None:
     return None if a is None and b is None else (a or Decimal(0)) + (b or Decimal(0))
 
 
-def _web_request(profile: BrandProfile, products: list[dict[str, Any]], now: datetime, max_searches: int) -> str:
+def _web_request(
+    profile: BrandProfile, products: list[dict[str, Any]], now: datetime, max_searches: int,
+    watched: list[str] | None = None, not_found: list[str] | None = None,
+) -> str:
     m, b = profile.market, profile.basics
     return "\n".join([
         f"Today: {now.astimezone(timing.BAKU):%A %Y-%m-%d} (Baku). You may search at most {max_searches} times.",
         f"Company: {b.company_name}. What it sells: {b.description}",
         f"Cities: {', '.join(b.cities) or 'Baku'}. Product categories: {', '.join(profile.products.categories)}",
         f"Its products now: {', '.join(p['name'] for p in products[:20]) or 'not listed yet'}",
-        f"Competitors: {', '.join(m.competitors_instagram) or 'not named'}",
+        f"Competitors watched on Instagram: {', '.join('@' + w for w in (watched or [])) or ', '.join(m.competitors_instagram) or 'none yet'}",
+        f"Competitor usernames that Instagram did not find (look for their correct usernames): {', '.join('@' + n for n in (not_found or [])) or 'none'}",
         f"Websites to check: {', '.join(m.watch_sites) or 'choose local marketplaces yourself'}",
         f"Search words to use: {', '.join(m.keywords) or 'choose yourself (Azerbaijani, Russian)'}",
         f"Occasions in the company's calendar: {'; '.join(profile.occasions)}",
@@ -155,10 +162,15 @@ async def run_market(
         market, gaps = profile.market, []
         data: dict[str, Any] = {"collected_at": now.isoformat(), "own": None, "competitors": []}
         await step("competitors", "running")
+        await competitors.sync_owner_list(engine, tenant_id, market.competitors_instagram)
+        watching = await competitors.watched(engine, tenant_id)
+        new_found: list[dict[str, Any]] = []
+        creds = None
         if meta is not None and vault is not None and ig is not None:
             creds = credentials(vault, ig)
-            for entry in market.competitors_instagram[:15]:
-                data["competitors"].append(await collect.competitor(meta, creds.external_id, creds.token, entry, now))
+            for c in watching:
+                data["competitors"].append(await collect.competitor(meta, creds.external_id, creds.token, c.username, now))
+            await competitors.record(engine, tenant_id, data["competitors"], now)
             seen = sum(1 for c in data["competitors"] if "error" not in c)
             await step("competitors", "done", f"{seen}/{len(data['competitors'])} rəqib görünür")
             current = "own_page"
@@ -174,16 +186,27 @@ async def run_market(
             gaps.append("Instagram is not connected: no data from our page or competitors")
             await step("competitors", "failed", "Instagram qoşulmayıb")
             await step("own_page", "failed", "Instagram qoşulmayıb")
-        if not market.competitors_instagram:
-            gaps.append("No competitors are named in the brand profile (Market section)")
+        if not watching:
+            gaps.append("No competitors watched yet: the researcher looks for them on the web")
         current = "web"
         await step("web", "running")
 
         web_text, sources = "", []
+        not_found = [c.get("username") for c in data["competitors"] if "error" in c and c.get("username")]
         try:
-            notes = await market_researcher.web_notes(llm, tenant_id, _web_request(profile, products, now, max_searches), max_searches)
+            request = _web_request(profile, products, now, max_searches, [c.username for c in watching], not_found)
+            notes = await market_researcher.web_notes(llm, tenant_id, request, max_searches)
             web_text, sources, cost = notes.text, [{"title": s.title, "url": s.url} for s in notes.sources], notes.cost_usd
-            await step("web", "done", f"{notes.usage.web_searches} axtarış · {len(sources)} mənbə")
+            # New competitors: usernames seen on the web, verified on Instagram by code
+            if creds is not None:
+                words = competitors.relevance_words(profile.products.categories, market.keywords)
+                new_found = await competitors.discover(
+                    engine, meta, creds.external_id, creds.token, tenant_id, competitors.handles_in(web_text),
+                    ((data["own"] or {}).get("username")), now, words,
+                )
+                data["competitors"].extend(new_found)
+            found_note = f" · {len(new_found)} yeni rəqib" if new_found else ""
+            await step("web", "done", f"{notes.usage.web_searches} axtarış · {len(sources)} mənbə{found_note}")
         except LLMError as e:
             gaps.append(f"Web search failed: {e}")
             await step("web", "failed", str(e)[:120])
@@ -239,11 +262,14 @@ async def run_market(
                 idea.product_id = None  # the model may only point at real products
         output = report.model_dump(mode="json")
         output["data_gaps"] = list(dict.fromkeys([*gaps, *output["data_gaps"]]))
+        output["new_competitors"] = [{"username": a.get("username"), "name": a.get("name"), "followers": a.get("followers")} for a in new_found]
+        output["goal_changes"] = await metrics.update_goals(engine, tenant_id, baku_day(now))
         await _finish(engine, tenant_id, report_id, status="done", input=data | {"facts": facts}, output=output,
                       sources=sources, cost_usd=cost)
         await say_card(engine, tenant_id, "market_researcher", f"{report.headline}\n\n{report.summary}",
                        {"type": "market", "report_id": str(report_id), "headline": report.headline,
-                        "ideas": len(report.post_ideas), "questions": report.questions})
+                        "ideas": len(report.post_ideas), "questions": report.questions,
+                        "new_competitors": [f"@{a.get('username')}" for a in new_found]})
         await step("deliver", "done", report.headline[:120], task_status="done")
         await activity.event(engine, tenant_id, "market_researcher", "finished", f"Bazar hesabatı hazırdır: {report.headline}"[:300], task_id)
     except Exception as e:  # the morning loop must go on for other companies
@@ -280,6 +306,9 @@ async def _facts(db: AsyncSession, now: datetime) -> dict[str, Any]:
     )) or 0
     a = await quota.allowance(db, now)
     left = None if a.posts_limit is None else max(0, a.posts_limit - a.posts_used)
+    goals = [metrics.goal_row(g) for g in (await db.scalars(
+        select(Goal).where(Goal.status.in_(("proposed", "active"))).order_by(Goal.created_at)
+    )).all()]
     return {
         "period": f"since {since:%Y-%m-%d %H:%M} Baku",
         "posts_written": await count(Post.created_at >= since),
@@ -289,6 +318,7 @@ async def _facts(db: AsyncSession, now: datetime) -> dict[str, Any]:
         "days_since_last_published_post": (now - last).days if last else None,
         "photos_waiting_for_analysis": unanalysed,
         "package": {"plan": a.plan.name if a.plan else None, "posts_left_this_month": left, "state": a.state},
+        "goals": goals,  # proposed ones wait for the owner's decision
     }
 
 
@@ -385,6 +415,12 @@ async def tick(
             if not waiting and (rid := await claim(engine, tenant_id, "briefing", day)):
                 await run_briefing(engine=engine, llm=llm, tenant_id=tenant_id, report_id=rid)
                 ran.append((tenant_id, "briefing"))
+        if market.daily_briefing and local.weekday() == MEETING_WEEKDAY and local.time() >= MEETING_AT \
+                and (rid := await claim(engine, tenant_id, "meeting", day)):
+            from del_social.team import meeting  # the meeting builds on this module
+
+            await meeting.run_meeting(engine=engine, llm=llm, tenant_id=tenant_id, report_id=rid)
+            ran.append((tenant_id, "meeting"))
     return ran
 
 

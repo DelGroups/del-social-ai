@@ -19,6 +19,12 @@ const ICON: Record<string, string> = {
   trigger_post: "M4 5h16v14H4zm4 4.5a1.5 1.5 0 1 0 0-.01M20 15l-5-5L6 19",
   trigger_market: "M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0",
   trigger_briefing: "M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0",
+  trigger_meeting: "M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6m13 9v-1a4 4 0 0 0-3-3.87M16 4.13a3 3 0 0 1 0 5.74",
+  agenda: "M9 11l2 2 4-4M5 4h14v16H5z",
+  ask_market: "M4 19V9m5 10V5m5 14v-7m5 7V9",
+  ask_content: "M4 20h4L19 9l-4-4L4 16zM13 7l4 4",
+  ask_quality: "M12 3 5 6v5c0 4.4 3 8.3 7 9.5 4-1.2 7-5.1 7-9.5V6zM9 12l2 2 4-4",
+  decide: "M12 3v4m0 10v4M3 12h4m10 0h4M6 6l2.5 2.5m7 7L18 18M6 18l2.5-2.5m7-7L18 6",
   photos: "M4 5h16v14H4zm4 4.5a1.5 1.5 0 1 0 0-.01M20 15l-5-5L6 19",
   copy: "M4 20h4L19 9l-4-4L4 16zM13 7l4 4",
   guard: "M12 3 5 6v5c0 4.4 3 8.3 7 9.5 4-1.2 7-5.1 7-9.5V6zM9 12l2 2 4-4",
@@ -64,16 +70,35 @@ function layout(n: number, cols: number, width: number) {
   return { pos, height };
 }
 
-function edgePath(a: { x: number; y: number; row: number }, b: { x: number; y: number; row: number }) {
-  if (a.row !== b.row) {
-    const x1 = a.x + W / 2, y1 = a.y + H, x2 = b.x + W / 2, y2 = b.y;
+type Pos = { x: number; y: number; row: number };
+
+function edgePath(a: Pos, b: Pos) {
+  if (Math.abs(a.x - b.x) < 5) {
+    const down = b.y > a.y;
+    const x = a.x + W / 2, y1 = down ? a.y + H : a.y, y2 = down ? b.y : b.y + H;
     const my = (y1 + y2) / 2;
-    return `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+    return `M${x},${y1} C${x},${my} ${x},${my} ${x},${y2}`;
   }
   const leftToRight = b.x > a.x;
-  const x1 = leftToRight ? a.x + W : a.x, x2 = leftToRight ? b.x : b.x + W, y = a.y + H / 2;
+  const x1 = leftToRight ? a.x + W : a.x, x2 = leftToRight ? b.x : b.x + W;
+  const y1 = a.y + H / 2, y2 = b.y + H / 2;
   const d = (x2 - x1) / 2;
-  return `M${x1},${y} C${x1 + d},${y} ${x2 - d},${y} ${x2},${y}`;
+  return `M${x1},${y1} C${x1 + d},${y1} ${x2 - d},${y2} ${x2},${y2}`;
+}
+
+/** A meeting fans out from the Team Lead to the three members and back in to the decision. */
+function meetingLayout(width: number) {
+  const gap = (width - 40 - 3 * W) / 2;
+  const col = (c: number) => 20 + c * (W + gap);
+  const row = (r: number) => 24 + r * (H + 40);
+  // nodes: 0 trigger, 1 agenda, 2 market, 3 content, 4 quality, 5 decide, 6 deliver
+  const pos: Pos[] = [
+    { x: col(0), y: row(0), row: 0 }, { x: col(0), y: row(1), row: 1 },
+    { x: col(1), y: row(0), row: 0 }, { x: col(1), y: row(1), row: 1 }, { x: col(1), y: row(2), row: 2 },
+    { x: col(2), y: row(1), row: 1 }, { x: col(2), y: row(2), row: 2 },
+  ];
+  const edges: [number, number][] = [[0, 1], [1, 2], [1, 3], [1, 4], [2, 5], [3, 5], [4, 5], [5, 6]];
+  return { pos, edges, height: row(2) + H + 24 };
 }
 
 function NodeCard({ node, thumb, label, agentName, statusLabel }: { node: FlowNode; thumb?: string | null; label: string; agentName: string; statusLabel: string }) {
@@ -116,7 +141,10 @@ function Flow({ job, width }: { job: LiveJob; width: number }) {
   const nodes = nodesOf(job);
   const cols = width < 560 ? 1 : width < 900 ? 2 : 3;
   const vw = cols === 1 ? 300 : cols === 2 ? 640 : 960;
-  const { pos, height } = layout(nodes.length, cols, vw);
+  const fan = job.kind === "meeting" && cols === 3 && nodes.length === 7;
+  const { pos, height, edges } = fan
+    ? meetingLayout(vw)
+    : { ...layout(nodes.length, cols, vw), edges: nodes.slice(1).map((_, i) => [i, i + 1] as [number, number]) };
   return (
     <svg viewBox={`0 0 ${vw} ${height}`} className="block w-full" role="img" aria-label={job.title}>
       <defs>
@@ -125,9 +153,10 @@ function Flow({ job, width }: { job: LiveJob; width: number }) {
           <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
         </filter>
       </defs>
-      {nodes.slice(1).map((n, i) => {
-        const from = nodes[i];
-        const d = edgePath(pos[i], pos[i + 1]);
+      {edges.map(([fi, ti], i) => {
+        const from = nodes[fi];
+        const n = nodes[ti];
+        const d = edgePath(pos[fi], pos[ti]);
         const flowing = from.status === "done" && (n.status === "running" || n.status === "waiting");
         const lit = from.status === "done" && (n.status === "done" || flowing);
         const failed = n.status === "failed";

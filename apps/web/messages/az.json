@@ -584,7 +584,10 @@
       "image_editor": "Vizual redaktor",
       "market_researcher": "Bazar analitiki",
       "daily_briefing": "Rəhbər",
-      "web_researcher": "Bazar analitiki"
+      "web_researcher": "Bazar analitiki",
+      "meeting_agenda": "Rəhbər",
+      "meeting_decision": "Rəhbər",
+      "meeting_member": "Komanda (iclas)"
     },
     "steps": {
       "photos": "Şəkillər seçildi",
@@ -716,7 +719,13 @@
         "deliver": "Hesabat göndərildi",
         "facts": "Görülən işlər",
         "read_market": "Bazar hesabatını oxuyur",
-        "plan": "Plan və təkliflər"
+        "plan": "Plan və təkliflər",
+        "trigger_meeting": "Komanda iclası",
+        "agenda": "Gündəmi qurur",
+        "ask_market": "Bazar baxışı",
+        "ask_content": "Kontent baxışı",
+        "ask_quality": "Keyfiyyət baxışı",
+        "decide": "Qərar"
       },
       "status": {
         "pending": "gözləyir",
@@ -728,12 +737,14 @@
       "triggerStatus": {
         "post": "başladı",
         "market": "başladı",
-        "briefing": "başladı"
+        "briefing": "başladı",
+        "meeting": "çağırıldı"
       },
       "kind": {
         "post": "Post",
         "market": "Bazar araşdırması",
-        "briefing": "Səhər hesabatı"
+        "briefing": "Səhər hesabatı",
+        "meeting": "Komanda iclası"
       },
       "task": {
         "running": "icra olunur",
@@ -743,7 +754,9 @@
         "failed": "dayandı",
         "cancelled": "ləğv edildi"
       }
-    }
+    },
+    "goalsTitle": "Hədəflər",
+    "noGoals": "Hələ hədəf yoxdur: Rəhbər onları cümə iclasında təklif edir."
   },
   "settingsHub": {
     "title": "Tənzimləmələr",
@@ -850,22 +863,22 @@
     "comingTitle": "Komandaya növbəti qoşulanlar",
     "team_lead": {
       "role": "Marketinq meneceri və koordinator",
-      "schedule": "Hər gün 09:00 · və siz yazanda",
+      "schedule": "Hər gün 09:00 · iclas cümə 09:30",
       "duties": [
-        "Hər səhər sizə hesabat verir: nə edildi, bazar nə deyir, bu günün planı",
+        "Hər cümə komanda iclasını aparır: hər agentdən soruşur, qərar verir, sizə hədəflər və həftəlik plan gətirir",
+        "Hər səhər sizə hesabat verir: görülən iş, bazar, hədəflərin gedişi, bu günün planı",
         "Bir kliklə başlada biləcəyiniz post və kampaniyalar təklif edir",
-        "Tapşırıqlarınızı işə çevirir və komanda arasında bölür",
-        "Paketiniz daxilində həftəlik paylaşım planını bərabər saxlayır"
+        "Tapşırıqlarınızı işə çevirir və komanda arasında bölür"
       ]
     },
     "market_researcher": {
       "role": "Bazar araşdırması",
       "schedule": "Hər gün 08:00",
       "duties": [
-        "Rəqiblərin Instagramını izləyir: nə paylaşırlar və hansı postlar işləyir",
+        "Rəqiblərin Instagramını izləyir və internetdə yeni rəqibləri özü tapır",
         "Müştərilərinizin şərhlərdə nə soruşduğunu oxuyur",
         "İnternetdə tələbi, populyar modelləri, rəngləri və yerli tədbirləri axtarır",
-        "Sübutlarla hesabat və məhsullarınız üçün post ideyaları yazır"
+        "Sübutlarla hesabat və post ideyaları yazır; komanda iclaslarında cavab verir"
       ]
     },
     "media_analyst": {
@@ -915,16 +928,19 @@
   "daily": {
     "run": {
       "market": "Bazarı indi araşdır",
-      "briefing": "Səhər hesabatı indi"
+      "briefing": "Səhər hesabatı indi",
+      "meeting": "Komanda iclası çağır"
     },
     "confirm": {
       "market": "Bu günün bazar araşdırması indi aparılsın? AI krediti istifadə olunur (təxminən $0.15).",
-      "briefing": "Rəhbərin hesabatı indi hazırlansın? Az miqdarda AI krediti istifadə olunur."
+      "briefing": "Rəhbərin hesabatı indi hazırlansın? Az miqdarda AI krediti istifadə olunur.",
+      "meeting": "Komanda iclası indi çağırılsın? Rəhbər üç agentdən soruşur və sizə hədəflər və həftəlik plan gətirir (təxminən $0.30)."
     },
     "started": {
       "market": "Araşdırma başladı; hesabat Komanda otağında görünəcək.",
       "briefing": "Rəhbər hesabatı yazır.",
-      "post": "başladı"
+      "post": "başladı",
+      "meeting": "İclas başladı; əsas səhifədə izləyin."
     },
     "briefingTitle": "Rəhbərin səhər hesabatı",
     "marketTitle": "Bazar araşdırması",
@@ -983,6 +999,80 @@
     },
     "ideasHint": "Rəhbər ən yaxşı ideyaları bir kliklə başlada biləcəyiniz təkliflərə çevirir.",
     "sources": "İnternet mənbələri",
-    "madeAt": "Hazırlanıb: {at}"
+    "madeAt": "Hazırlanıb: {at}",
+    "newCompetitors": "Yeni rəqiblər tapılıb əlavə edildi: {list}"
+  },
+  "meeting": {
+    "title": "Komanda iclası",
+    "transcript": "Komanda nə dedi",
+    "decision": "Rəhbərin qərarı",
+    "goals": "Təklif olunan hədəflər",
+    "weekPlan": "Həftənin planı",
+    "idea": "İdeya (şəkil lazımdır)",
+    "prepared": "hazırlandı",
+    "slot": {
+      "open": "hazırlamağa hazır",
+      "idea": "yalnız ideya",
+      "started": "hazırlandı",
+      "skipped": "gün keçib"
+    },
+    "format": {
+      "photo": "şəkil",
+      "carousel": "karusel",
+      "reel": "reels",
+      "story": "stori"
+    },
+    "acceptPlan": "Planı təsdiqlə: {count} post hazırlansın",
+    "planConfirm": "{count} post öz günləri üçün hazırlansın? Hər post paylaşılmazdan əvvəl yenə təsdiqinizə gələcək.",
+    "planStarted": "{count, plural, =0 {Heç nə başlamadı.} other {# post hazırlanır.}}",
+    "improvements": "Nə yaxşılaşmalıdır",
+    "needsYou": "sizdən asılıdır",
+    "answerInChat": "Aşağıda söhbətdə cavab verin.",
+    "full": "İclasın tam hesabatı",
+    "list": "Komanda iclasları",
+    "listHint": "Hər cümə 09:30 və siz və ya Rəhbər çağıranda."
+  },
+  "goals": {
+    "title": "Hədəflər",
+    "none": "Hələ hədəf yoxdur. Rəhbər hədəfləri komanda iclasında təklif edir (cümə və ya indi iclas çağırın).",
+    "due": "{date} tarixinədək",
+    "accept": "Hədəfi qəbul et",
+    "decline": "İmtina",
+    "status": {
+      "proposed": "sizi gözləyir",
+      "active": "aktiv",
+      "achieved": "çatıldı",
+      "missed": "çatılmadı",
+      "dropped": "imtina edildi"
+    },
+    "metric": {
+      "followers": "İzləyicilər",
+      "engagement_rate": "Qarşılıqlı əlaqə",
+      "avg_likes": "Orta bəyənmə",
+      "avg_comments": "Orta şərh",
+      "posts_per_week": "Həftəlik post"
+    }
+  },
+  "competitors": {
+    "title": "Komandanın izlədiyi rəqiblər",
+    "hint": "Brend profilindəki siyahınız və Bazar analitikinin internetdə tapıb Instagramda yoxladığı hesablar.",
+    "none": "Hələ yoxdur. Araşdırmaçı hər səhər rəqib axtarır.",
+    "account": "Hesab",
+    "source": "Kim əlavə edib",
+    "state": "Vəziyyət",
+    "followers": "İzləyici",
+    "lastPost": "Son post",
+    "watch": "yenidən izlə",
+    "ignore": "izləmə",
+    "src": {
+      "owner": "siz",
+      "discovered": "komanda tapıb"
+    },
+    "st": {
+      "active": "aktiv",
+      "invalid": "Instagramda tapılmadı",
+      "inactive": "90 gündür post yoxdur",
+      "ignored": "izlənmir"
+    }
   }
 }
