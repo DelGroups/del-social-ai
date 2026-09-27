@@ -1078,7 +1078,8 @@
       "active": "active",
       "invalid": "not found on Instagram",
       "inactive": "no posts for 90 days",
-      "ignored": "not watched"
+      "ignored": "not watched",
+      "unverified": "from the web, not verified yet"
     }
   },
   "themeHints": {

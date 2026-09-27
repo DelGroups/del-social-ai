@@ -451,7 +451,7 @@ export type CompetitorInfo = {
   username: string;
   name: string | null;
   source: "owner" | "discovered";
-  status: "active" | "invalid" | "inactive" | "ignored";
+  status: "active" | "invalid" | "inactive" | "ignored" | "unverified";
   followers: number | null;
   last_post_at: string | null;
   checked_at: string | null;

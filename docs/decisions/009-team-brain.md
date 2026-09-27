@@ -40,3 +40,12 @@ Alireza asked the Team Lead in the chat to "search for all our competitors in th
   - Shown live as a three-step workflow.
 - **New tool `add_competitors`.** Usernames the owner gives in the chat are checked on Instagram and watched.
 - **Team Lead prompt v4.** It gets the list of what the team can and cannot do, so it doesn't refuse things the team can do. It also gets `<reply_language>`: the language of the owner's last message, detected by code. This language is binding, because in practice the model answered a Persian message in Azerbaijani.
+
+## Revision (2026-09-27): web mode and polite use of Meta
+
+Meta flagged the developer account for "unusual activity" and blocked the app ("API access blocked."). This came after bursts of dozens of Business Discovery lookups within minutes, from a server abroad.
+
+- **Polite use of Meta.** Competitor lookups are spaced out by at least 4 seconds and capped at 60 a day per Instagram account (`META_LOOKUP_PAUSE`, `META_DAILY_LOOKUPS`).
+- **Web mode.** When Meta refuses the app, the daily research still researches the web and writes its report, with Instagram marked as a data gap. It tells the owner once, when the problem starts, and shows it on the Connections page.
+  - The competitor search adds accounts it saw in web results as **unverified** (migration 0018). It keeps the follower count shown in the search result, parsed by code, and only accounts whose web line names the market are added.
+  - Once Meta gives access back, the next research checks every unverified or invalid account on Instagram. The connection is marked healthy again without reconnecting.
