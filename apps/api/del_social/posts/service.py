@@ -31,6 +31,7 @@ from del_social.llm import LLM, LLMError
 from del_social.media.storage import signed_url
 from del_social.models import BrandProfileVersion, Connection, ConnectionStatus, MediaAsset, Post, Product
 from del_social.team import activity
+from del_social.team.texts import Msg, m
 from del_social.team.timing import baku_label
 
 log = logging.getLogger(__name__)
@@ -104,12 +105,9 @@ async def _update(engine: AsyncEngine, tenant_id: uuid.UUID, post_id: uuid.UUID,
             setattr(row, k, v)
 
 
-def approval_text(post: Post) -> str:
-    when = (
-        f"Paylaşım vaxtı: {baku_label(post.scheduled_at)} (Bakı)."
-        if post.scheduled_at else "Təsdiqdən dərhal sonra paylaşılacaq."
-    )
-    return f"Post hazırdır və sizin təsdiqinizi gözləyir. {when} Təsdiqləyin və ya nəyi dəyişmək lazım olduğunu yazın."
+def approval_text(post: Post) -> Msg:
+    when = m("post.when_at", when=baku_label(post.scheduled_at)) if post.scheduled_at else m("post.when_now")
+    return m("post.ready", when=when)
 
 
 async def run_generation(*, engine: AsyncEngine, llm: LLM, tenant_id: uuid.UUID, post_id: uuid.UUID) -> None:
@@ -120,7 +118,7 @@ async def run_generation(*, engine: AsyncEngine, llm: LLM, tenant_id: uuid.UUID,
     brief = Brief.model_validate(post.brief)
     task_id = post.task_id
 
-    async def on_event(agent: str, kind: str, title: str) -> None:
+    async def on_event(agent: str, kind: str, title: Msg) -> None:
         await activity.event(engine, tenant_id, agent, kind, title, task_id, post_id)
         key = {"copywriter": "copy", "brand_guardian": "guard"}.get(agent)
         if key:
@@ -137,13 +135,13 @@ async def run_generation(*, engine: AsyncEngine, llm: LLM, tenant_id: uuid.UUID,
     except LLMError as e:
         await _update(engine, tenant_id, post_id, status="failed", error=str(e))
         await activity.step(engine, tenant_id, task_id, "copy", "failed", task_status="failed", note=str(e))
-        await activity.event(engine, tenant_id, "copywriter", "failed", f"Mətn yazıla bilmədi: {e}", task_id, post_id)
-        await activity.say(engine, tenant_id, "team_lead", f"Mətn yazıla bilmədi: {e}", task_id)
+        await activity.event(engine, tenant_id, "copywriter", "failed", m("copy.failed", error=e), task_id, post_id)
+        await activity.say(engine, tenant_id, "team_lead", m("copy.failed", error=e), task_id)
     except Exception:
         log.exception("post generation %s failed", post_id)
         await _update(engine, tenant_id, post_id, status="failed", error="Unexpected error while writing the captions")
         await activity.step(engine, tenant_id, task_id, "copy", "failed", task_status="failed")
-        await activity.say(engine, tenant_id, "team_lead", "Mətn yazılarkən gözlənilməz xəta baş verdi.", task_id)
+        await activity.say(engine, tenant_id, "team_lead", m("copy.crashed"), task_id)
 
 
 async def revise(*, engine: AsyncEngine, llm: LLM, tenant_id: uuid.UUID, post_id: uuid.UUID, instruction: str) -> None:
@@ -160,7 +158,7 @@ async def revise(*, engine: AsyncEngine, llm: LLM, tenant_id: uuid.UUID, post_id
     index = post.chosen_option or 0
     current = CopyOption.model_validate({k: options[index][k] for k in CopyOption.model_fields})
     task_id = post.task_id
-    await activity.event(engine, tenant_id, "copywriter", "started", f"Düzəliş edir: {instruction[:120]}", task_id, post_id)
+    await activity.event(engine, tenant_id, "copywriter", "started", m("revise.start", instruction=instruction[:120]), task_id, post_id)
     await activity.step(engine, tenant_id, task_id, "copy", "running")
     try:
         request = brand_guardian.revision_request([(current, OptionVerdict(
@@ -168,12 +166,12 @@ async def revise(*, engine: AsyncEngine, llm: LLM, tenant_id: uuid.UUID, post_id
         ))])
         revised = await copywriter.revise_options(llm, tenant_id, profile, brief, [], request, 1)
         option = revised.output.options[0]
-        await activity.event(engine, tenant_id, "copywriter", "finished", "Düzəliş hazırdır", task_id, post_id)
-        await activity.event(engine, tenant_id, "brand_guardian", "started", "Düzəliş yoxlanılır", task_id, post_id)
+        await activity.event(engine, tenant_id, "copywriter", "finished", m("copy.fixed"), task_id, post_id)
+        await activity.event(engine, tenant_id, "brand_guardian", "started", m("guard.rechecking"), task_id, post_id)
         verdicts, _ = await brand_guardian.review(llm, tenant_id, profile, brief, [option])
         verdict = verdicts[0]
         await activity.event(engine, tenant_id, "brand_guardian", "finished",
-                             "Qaydasındadır" if verdict.verdict == "pass" else "Qeydləri var", task_id, post_id)
+                             m("guard.pass") if verdict.verdict == "pass" else m("guard.notes"), task_id, post_id)
         caption = assemble_caption(profile, option.caption_az, option.caption_ru, option.hashtags)
         options[index] = {**option.model_dump(), "caption": caption, "verdict": verdict.verdict,
                           "findings": verdict.findings, "revised": True}
@@ -181,12 +179,12 @@ async def revise(*, engine: AsyncEngine, llm: LLM, tenant_id: uuid.UUID, post_id
         await _update(engine, tenant_id, post_id, generation=gen, caption=caption, status="ready")
         await activity.step(engine, tenant_id, task_id, "copy", "done")
         await activity.step(engine, tenant_id, task_id, "approval", "waiting", task_status="waiting_approval")
-        note = "" if verdict.verdict == "pass" else " Nəzarətçinin qeydləri var, baxın."
-        await activity.say(engine, tenant_id, "copywriter", f"Düzəltdim: “{instruction[:200]}”.{note} Təsdiqləyirsiniz?", task_id, post_id)
+        note = "" if verdict.verdict == "pass" else m("revise.note")
+        await activity.say(engine, tenant_id, "copywriter", m("revise.done", instruction=instruction[:200], note=note), task_id, post_id)
     except LLMError as e:
-        await activity.event(engine, tenant_id, "copywriter", "failed", f"Düzəliş alınmadı: {e}", task_id, post_id)
+        await activity.event(engine, tenant_id, "copywriter", "failed", m("revise.failed", error=e), task_id, post_id)
         await activity.step(engine, tenant_id, task_id, "copy", "done")
-        await activity.say(engine, tenant_id, "copywriter", f"Düzəliş alınmadı: {e}", task_id)
+        await activity.say(engine, tenant_id, "copywriter", m("revise.failed", error=e), task_id)
 
 
 def image_urls(settings: Settings, post: Post, has_logo: bool, ttl: int = PUBLISH_URL_TTL) -> list[str]:
@@ -210,7 +208,7 @@ async def run_publish(
         }
     task_id = post.task_id
     await activity.step(engine, tenant_id, task_id, "publish", "running")
-    await activity.event(engine, tenant_id, "publisher", "started", f"{' + '.join(post.channels)} paylaşılır", task_id, post_id)
+    await activity.event(engine, tenant_id, "publisher", "started", m("publish.start", channels=" + ".join(post.channels)), task_id, post_id)
     results: dict[str, Any] = dict(post.results or {})
     urls = image_urls(settings, post, has_logo)
     for channel in post.channels:
@@ -245,13 +243,13 @@ async def run_publish(
     links = " · ".join(f"{c}: {results[c].get('url') or results[c]['id']}" for c in ok)
     if status == "published":
         await activity.step(engine, tenant_id, task_id, "publish", "done", task_status="done")
-        await activity.event(engine, tenant_id, "publisher", "finished", "Paylaşıldı", task_id, post_id)
-        await activity.say(engine, tenant_id, "publisher", f"Paylaşıldı. {links}", task_id, post_id)
+        await activity.event(engine, tenant_id, "publisher", "finished", m("publish.done_event"), task_id, post_id)
+        await activity.say(engine, tenant_id, "publisher", m("publish.done", links=links), task_id, post_id)
     else:
         await activity.step(engine, tenant_id, task_id, "publish", "failed", task_status="failed", note=errors)
-        await activity.event(engine, tenant_id, "publisher", "failed", f"Paylaşım alınmadı: {errors}", task_id, post_id)
-        done = f" Paylaşılan: {links}." if ok else ""
+        await activity.event(engine, tenant_id, "publisher", "failed", m("publish.failed_event", errors=errors), task_id, post_id)
+        done = m("publish.partial_done", links=links) if ok else ""
         await activity.say(
-            engine, tenant_id, "publisher", f"Paylaşım tam alınmadı: {errors}.{done} Yenidən cəhd etmək üçün təsdiqləyin.",
+            engine, tenant_id, "publisher", m("publish.partial", errors=errors, done=done),
             task_id, post_id,
         )

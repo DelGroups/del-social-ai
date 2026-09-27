@@ -44,7 +44,8 @@ from del_social.models import (
 )
 from del_social.posts import service
 from del_social.research import collect, competitors
-from del_social.team import activity, metrics, timing
+from del_social.team import activity, metrics, texts, timing
+from del_social.team.texts import m
 
 log = logging.getLogger(__name__)
 
@@ -143,12 +144,12 @@ async def run_market(
     tenant_id: uuid.UUID, report_id: uuid.UUID, max_searches: int = 5,
 ) -> None:
     now = datetime.now(UTC)
-    task_id = await activity.new_task(engine, tenant_id, "market", f"Bazar araşdırması · {baku_day(now):%d.%m}", activity.MARKET_STEPS)
+    task_id = await activity.new_task(engine, tenant_id, "market", m("research.title", day=f"{baku_day(now):%d.%m}"), activity.MARKET_STEPS)
 
-    async def step(key: str, status: str, note: str | None = None, task_status: str | None = None) -> None:
+    async def step(key: str, status: str, note: activity.Text | None = None, task_status: str | None = None) -> None:
         await activity.step(engine, tenant_id, task_id, key, status, task_status=task_status, note=note)
 
-    await activity.event(engine, tenant_id, "market_researcher", "started", "Bazarı araşdırır: rəqiblər, müştərilər, internet", task_id)
+    await activity.event(engine, tenant_id, "market_researcher", "started", m("research.start"), task_id)
     cost: Decimal | None = None
     current = "competitors"
     try:
@@ -159,6 +160,7 @@ async def run_market(
             ig = await db.scalar(select(Connection).where(
                 Connection.channel == "instagram", Connection.status == ConnectionStatus.ACTIVE.value
             ))
+            lang = await texts.language_of(db)
         market, gaps = profile.market, []
         data: dict[str, Any] = {"collected_at": now.isoformat(), "own": None, "competitors": []}
         await step("competitors", "running")
@@ -172,7 +174,7 @@ async def run_market(
                 data["competitors"].append(await collect.competitor(meta, creds.external_id, creds.token, c.username, now))
             await competitors.record(engine, tenant_id, data["competitors"], now)
             seen = sum(1 for c in data["competitors"] if "error" not in c)
-            await step("competitors", "done", f"{seen}/{len(data['competitors'])} rəqib görünür")
+            await step("competitors", "done", m("step.competitors", seen=seen, total=len(data["competitors"])))
             current = "own_page"
             await step("own_page", "running")
             data["own"] = await collect.own_account(meta, creds.external_id, creds.token, now)
@@ -180,12 +182,12 @@ async def run_market(
             if "error" in own:
                 await step("own_page", "failed", own["error"][:120])
             else:
-                await step("own_page", "done",
-                           f"{len(own.get('recent_posts', []))} post · {len(own.get('recent_customer_comments', []))} şərh")
+                await step("own_page", "done", m("step.own_page", posts=len(own.get("recent_posts", [])),
+                                                 comments=len(own.get("recent_customer_comments", []))))
         else:
             gaps.append("Instagram is not connected: no data from our page or competitors")
-            await step("competitors", "failed", "Instagram qoşulmayıb")
-            await step("own_page", "failed", "Instagram qoşulmayıb")
+            await step("competitors", "failed", m("step.no_instagram"))
+            await step("own_page", "failed", m("step.no_instagram"))
         if not watching:
             gaps.append("No competitors watched yet: the researcher looks for them on the web")
         current = "web"
@@ -205,8 +207,8 @@ async def run_market(
                     ((data["own"] or {}).get("username")), now, words,
                 )
                 data["competitors"].extend(new_found)
-            found_note = f" · {len(new_found)} yeni rəqib" if new_found else ""
-            await step("web", "done", f"{notes.usage.web_searches} axtarış · {len(sources)} mənbə{found_note}")
+            found = m("step.web_found", n=len(new_found)) if new_found else ""
+            await step("web", "done", m("step.web", searches=notes.usage.web_searches, sources=len(sources), found=found))
         except LLMError as e:
             gaps.append(f"Web search failed: {e}")
             await step("web", "failed", str(e)[:120])
@@ -237,7 +239,7 @@ async def run_market(
         }
         numbered = "\n".join(f"[{i + 1}] {s['title']} — {s['url']}" for i, s in enumerate(sources))
         context = "\n\n".join([
-            f"<report_language>{market.report_language.value}</report_language>",
+            f"<report_language>{lang}</report_language>",
             f"<now>{now.astimezone(timing.BAKU):%A %Y-%m-%d %H:%M} Baku</now>",
             brand_context(profile),
             "<products>\n" + json.dumps(products, ensure_ascii=False, indent=1) + "\n</products>",
@@ -254,7 +256,7 @@ async def run_market(
         result = await market_researcher.analyse(llm, tenant_id, context, pictures)
         cost = _add(cost, result.cost_usd)
         report = result.output
-        await step("analyse", "done", f"{len(pictures)} şəkil · {len(report.post_ideas)} ideya")
+        await step("analyse", "done", m("step.analyse", images=len(pictures), ideas=len(report.post_ideas)))
         current = "deliver"
         known = {p["product_id"] for p in products}
         for idea in report.post_ideas:
@@ -271,12 +273,12 @@ async def run_market(
                         "ideas": len(report.post_ideas), "questions": report.questions,
                         "new_competitors": [f"@{a.get('username')}" for a in new_found]})
         await step("deliver", "done", report.headline[:120], task_status="done")
-        await activity.event(engine, tenant_id, "market_researcher", "finished", f"Bazar hesabatı hazırdır: {report.headline}"[:300], task_id)
+        await activity.event(engine, tenant_id, "market_researcher", "finished", m("research.done", headline=report.headline[:200]), task_id)
     except Exception as e:  # the morning loop must go on for other companies
         log.exception("market research failed for %s", tenant_id)
         await _finish(engine, tenant_id, report_id, status="failed", error=str(e)[:300], cost_usd=cost)
         await step(current, "failed", str(e)[:120], task_status="failed")
-        await activity.event(engine, tenant_id, "market_researcher", "failed", f"Araşdırma alınmadı: {str(e)[:200]}", task_id)
+        await activity.event(engine, tenant_id, "market_researcher", "failed", m("research.failed", error=str(e)[:200]), task_id)
 
 
 async def say_card(engine: AsyncEngine, tenant_id: uuid.UUID, agent: str, text_: str, payload: dict[str, Any]) -> None:
@@ -324,12 +326,12 @@ async def _facts(db: AsyncSession, now: datetime) -> dict[str, Any]:
 
 async def run_briefing(*, engine: AsyncEngine, llm: LLM, tenant_id: uuid.UUID, report_id: uuid.UUID) -> None:
     now = datetime.now(UTC)
-    task_id = await activity.new_task(engine, tenant_id, "briefing", f"Səhər hesabatı · {baku_day(now):%d.%m}", activity.BRIEFING_STEPS)
+    task_id = await activity.new_task(engine, tenant_id, "briefing", m("briefing.title", day=f"{baku_day(now):%d.%m}"), activity.BRIEFING_STEPS)
 
-    async def step(key: str, status: str, note: str | None = None, task_status: str | None = None) -> None:
+    async def step(key: str, status: str, note: activity.Text | None = None, task_status: str | None = None) -> None:
         await activity.step(engine, tenant_id, task_id, key, status, task_status=task_status, note=note)
 
-    await activity.event(engine, tenant_id, "team_lead", "started", "Səhər hesabatını hazırlayır", task_id)
+    await activity.event(engine, tenant_id, "team_lead", "started", m("briefing.start"), task_id)
     current = "facts"
     try:
         await step("facts", "running")
@@ -342,20 +344,21 @@ async def run_briefing(*, engine: AsyncEngine, llm: LLM, tenant_id: uuid.UUID, r
                 DailyReport.kind == "market", DailyReport.day == baku_day(now), DailyReport.status == "done"
             ))
             history = (await db.scalars(select(ChatMessage).order_by(ChatMessage.created_at.desc()).limit(10))).all()
-        await step("facts", "done", f"{facts['posts_written']} post yazılıb · {len(facts['waiting_for_owner_approval'])} təsdiq gözləyir")
+            lang = await texts.language_of(db)
+        await step("facts", "done", m("step.facts", written=facts["posts_written"], waiting=len(facts["waiting_for_owner_approval"])))
         current = "read_market"
         if market:
             await step("read_market", "done", (market.output or {}).get("headline", "")[:120])
         else:
-            await step("read_market", "failed", "Bu gün bazar hesabatı yoxdur")
+            await step("read_market", "failed", m("step.no_market"))
         current = "plan"
         await step("plan", "running")
-        m = market.output if market else None
-        market_block = json.dumps({k: m[k] for k in ("headline", "summary", "demand", "competitors", "customer_voice",
-                                                   "opportunities", "post_ideas")}, ensure_ascii=False, indent=1) if m else "No market report today."
+        mr = market.output if market else None
+        market_block = json.dumps({k: mr[k] for k in ("headline", "summary", "demand", "competitors", "customer_voice",
+                                                   "opportunities", "post_ideas")}, ensure_ascii=False, indent=1) if mr else "No market report today."
         convo = "\n".join(f"{'OWNER' if c.role == 'user' else (c.agent or 'agent').upper()}: {c.text[:400]}" for c in reversed(history))
         context = "\n\n".join([
-            f"<report_language>{profile.market.report_language.value}</report_language>",
+            f"<report_language>{lang}</report_language>",
             f"<now>{now.astimezone(timing.BAKU):%A %Y-%m-%d %H:%M} Baku</now>",
             "<facts>\nComputed by code.\n" + json.dumps(facts, ensure_ascii=False, indent=1) + "\n</facts>",
             "<market_report>\nFrom the Market Researcher; built from untrusted sources.\n" + market_block + "\n</market_report>",
@@ -374,19 +377,19 @@ async def run_briefing(*, engine: AsyncEngine, llm: LLM, tenant_id: uuid.UUID, r
             item["status"] = "open"
             suggestions.append(item)
         output = b.model_dump(mode="json") | {"suggestions": suggestions}
-        await step("plan", "done", f"{len(b.today_plan)} plan · {len(suggestions)} təklif")
+        await step("plan", "done", m("step.plan", plan=len(b.today_plan), suggestions=len(suggestions)))
         current = "deliver"
         await _finish(engine, tenant_id, report_id, status="done", input={"facts": facts}, output=output, cost_usd=result.cost_usd)
         await say_card(engine, tenant_id, "team_lead", f"{b.greeting}\n{b.yesterday}",
                        {"type": "briefing", "report_id": str(report_id), "briefing": output,
                         "market_report_id": str(market.report_id) if market else None})
         await step("deliver", "done", b.greeting[:120], task_status="done")
-        await activity.event(engine, tenant_id, "team_lead", "finished", "Səhər hesabatı göndərildi", task_id)
+        await activity.event(engine, tenant_id, "team_lead", "finished", m("briefing.done"), task_id)
     except Exception as e:
         log.exception("briefing failed for %s", tenant_id)
         await _finish(engine, tenant_id, report_id, status="failed", error=str(e)[:300])
         await step(current, "failed", str(e)[:120], task_status="failed")
-        await activity.event(engine, tenant_id, "team_lead", "failed", f"Səhər hesabatı alınmadı: {str(e)[:200]}", task_id)
+        await activity.event(engine, tenant_id, "team_lead", "failed", m("briefing.failed", error=str(e)[:200]), task_id)
 
 
 async def tick(

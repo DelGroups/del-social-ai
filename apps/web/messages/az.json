@@ -23,9 +23,9 @@
   },
   "themes": {
     "midnight": "Gecə",
-    "daylight": "Gündüz",
-    "graphite": "Qrafit",
-    "sage": "Adaçayı"
+    "daylight": "Kağız",
+    "graphite": "Terminal",
+    "sage": "Yumşaq"
   },
   "login": {
     "title": "Daxil ol",
@@ -252,7 +252,7 @@
         "watch_sites": "İzləniləcək saytlar və marketpleyslər",
         "keywords": "Axtarış sözləri (az / ru)",
         "notes": "Araşdırmaçı üçün qeydlər",
-        "report_language": "Gündəlik hesabatların dili",
+        "report_language": "Komandanın mesajlarının və hesabatlarının dili",
         "daily_research": "Hər səhər bazar araşdırması (08:00)",
         "daily_briefing": "Hər səhər Rəhbərin hesabatı (09:00)"
       }
@@ -273,7 +273,8 @@
       "lang_az": "Azərbaycan dili",
       "lang_ru": "Rus dili",
       "lang_en": "İngilis dili",
-      "lang_fa": "Fars dili"
+      "lang_fa": "Fars dili",
+      "lang_auto": "Yazdığım dil (avtomatik)"
     }
   },
   "usage": {

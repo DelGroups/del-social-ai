@@ -14,7 +14,7 @@ from del_social.billing import quota
 from del_social.core.db import set_tenant
 from del_social.models import MediaAsset, Post, Product, Task
 from del_social.posts import service
-from del_social.team import activity
+from del_social.team import activity, texts
 from del_social.team.timing import baku_label
 
 Schedule = Callable[..., Any]  # BackgroundTasks.add_task
@@ -74,7 +74,8 @@ async def start_post(
     fmt = fmt or ((assets[0].analysis or {}).get("best_format") or "feed")
     post_id, task_id = uuid.uuid4(), uuid.uuid4()
     name = product.name if product else ((assets[0].analysis or {}).get("title_az") or "Post")
-    kind = "karusel" if len(assets) > 1 else "post"
+    lang = await texts.language_of(db)
+    kind = texts.m("post.kind.carousel" if len(assets) > 1 else "post.kind.single").render(lang)
     title = f"{name} · {kind}" + (f" · {baku_label(scheduled_at)}" if scheduled_at else "")
     post = Post(
         post_id=post_id, tenant_id=tenant_id, status="generating", task_id=task_id,
@@ -98,6 +99,6 @@ async def start_post(
         await own.flush()
         task.post_id = post_id
         await own.refresh(post)
-    await activity.event(engine, tenant_id, "media_analyst", "info", f"{len(assets)} şəkil seçildi: {name}", task_id, post_id)
+    await activity.event(engine, tenant_id, "media_analyst", "info", texts.m("photos.picked", n=len(assets), name=name), task_id, post_id)
     schedule(service.run_generation, engine=engine, llm=llm, tenant_id=tenant_id, post_id=post_id)
     return post

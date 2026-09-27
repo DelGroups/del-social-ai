@@ -10,6 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from del_social.core.db import set_tenant
 from del_social.models import AgentEvent, ChatMessage, Task
+from del_social.team.texts import Msg, language_of, text_of
+
+Text = str | Msg  # plain text (e.g. what a model wrote) or a message rendered in the owner's language
 
 # Agents shown in the Team Room (display names are translated in the panel)
 AGENTS = ("team_lead", "market_researcher", "media_analyst", "copywriter", "brand_guardian", "visual_editor", "publisher")
@@ -40,38 +43,41 @@ BRIEFING_STEPS = [
 ]
 
 
-async def new_task(engine: AsyncEngine, tenant_id: uuid.UUID, kind: str, title: str, steps: list[dict[str, Any]]) -> uuid.UUID:
+async def new_task(engine: AsyncEngine, tenant_id: uuid.UUID, kind: str, title: Text, steps: list[dict[str, Any]]) -> uuid.UUID:
     """A task whose steps the panel draws as a live workflow."""
     task_id = uuid.uuid4()
     async with AsyncSession(engine) as db, db.begin():
         await set_tenant(db, tenant_id)
+        title = text_of(title, await language_of(db))
         db.add(Task(task_id=task_id, tenant_id=tenant_id, title=title[:200], kind=kind, status="running",
                     steps=[{"key": s["key"], "agent": s["agent"], "status": "pending"} for s in steps]))
     return task_id
 
 
 async def event(
-    engine: AsyncEngine, tenant_id: uuid.UUID, agent: str, kind: str, title: str,
+    engine: AsyncEngine, tenant_id: uuid.UUID, agent: str, kind: str, title: Text,
     task_id: uuid.UUID | None = None, post_id: uuid.UUID | None = None,
 ) -> None:
     async with AsyncSession(engine) as db, db.begin():
         await set_tenant(db, tenant_id)
+        title = text_of(title, await language_of(db))
         db.add(AgentEvent(tenant_id=tenant_id, agent=agent, kind=kind, title=title[:300], task_id=task_id, post_id=post_id))
 
 
 async def say(
-    engine: AsyncEngine, tenant_id: uuid.UUID, agent: str, text: str,
+    engine: AsyncEngine, tenant_id: uuid.UUID, agent: str, text: Text,
     task_id: uuid.UUID | None = None, post_id: uuid.UUID | None = None,
 ) -> None:
     """An agent writes in the Team Room (post_id makes the panel show an approval card)."""
     async with AsyncSession(engine) as db, db.begin():
         await set_tenant(db, tenant_id)
+        text = text_of(text, await language_of(db))
         db.add(ChatMessage(tenant_id=tenant_id, role="agent", agent=agent, text=text[:4000], task_id=task_id, post_id=post_id))
 
 
 async def step(
     engine: AsyncEngine, tenant_id: uuid.UUID, task_id: uuid.UUID | None, key: str, status: str,
-    task_status: str | None = None, note: str | None = None,
+    task_status: str | None = None, note: Text | None = None,
 ) -> None:
     """Move one wizard step (pending → running → done | waiting | failed)."""
     if task_id is None:
@@ -87,7 +93,7 @@ async def step(
             if s["key"] == key:
                 s["status"] = status
                 if note is not None:
-                    s["note"] = note[:200]
+                    s["note"] = text_of(note, await language_of(db))[:200]
         task.steps = steps
         if task_status:
             task.status = task_status

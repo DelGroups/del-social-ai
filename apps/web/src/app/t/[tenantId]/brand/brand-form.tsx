@@ -87,7 +87,7 @@ const SECTIONS: { key: string; fields: Spec[] }[] = [
       { path: "market.watch_sites", kind: "list" },
       { path: "market.keywords", kind: "list" },
       { path: "market.notes", kind: "textarea" },
-      { path: "market.report_language", kind: "select", options: ["az", "ru", "en", "fa"], optPrefix: "lang_" },
+      { path: "market.report_language", kind: "select", options: ["auto", "az", "ru", "en", "fa"], optPrefix: "lang_" },
       { path: "market.daily_research", kind: "bool" },
       { path: "market.daily_briefing", kind: "bool" },
     ],

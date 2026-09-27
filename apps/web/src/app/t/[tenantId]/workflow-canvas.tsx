@@ -8,7 +8,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AGENT_COLOR } from "@/lib/agents";
 import type { LiveInfo, LiveJob } from "@/lib/types";
 
-const NEON = "#3EE89A";
+// Colours come from the theme (globals.css: --flow, --node-line, --stage-*), so every theme has its own stage
+const NEON = "var(--flow)";
+const LINE = "var(--node-line)";
+const DANGER = "var(--danger)";
 const W = 220; // node size in canvas units
 const H = 104;
 
@@ -103,7 +106,7 @@ function meetingLayout(width: number) {
 
 function NodeCard({ node, thumb, label, agentName, statusLabel }: { node: FlowNode; thumb?: string | null; label: string; agentName: string; statusLabel: string }) {
   const color = node.agent ? AGENT_COLOR[node.agent] ?? NEON : AGENT_COLOR.approval;
-  const tone = node.status === "done" ? NEON : node.status === "failed" ? "#FF5C5C" : node.status === "pending" ? "#26362f" : color;
+  const tone = node.status === "done" ? NEON : node.status === "failed" ? DANGER : node.status === "pending" ? LINE : color;
   const live = node.status === "running" || node.status === "waiting";
   return (
     <div
@@ -122,14 +125,14 @@ function NodeCard({ node, thumb, label, agentName, statusLabel }: { node: FlowNo
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-semibold leading-4 text-white">{label}</p>
-          <p className="truncate text-[11px] leading-4 text-white/50">{agentName}</p>
+          <p className="truncate text-[13px] font-semibold leading-4 text-[var(--stage-text)]">{label}</p>
+          <p className="truncate text-[11px] leading-4 text-[var(--stage-muted)]">{agentName}</p>
         </div>
       </div>
       <div className="mt-auto flex items-center gap-1.5 text-[11px]">
         <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${live ? "wf-dot" : ""}`} style={{ background: tone }} />
-        <span className="shrink-0" style={{ color: node.status === "pending" ? "rgba(255,255,255,.45)" : tone }}>{statusLabel}</span>
-        {node.note && <span className="truncate text-white/60">· {node.note}</span>}
+        <span className="shrink-0" style={{ color: node.status === "pending" ? "var(--stage-muted)" : tone }}>{statusLabel}</span>
+        {node.note && <span className="truncate text-[var(--stage-muted)]">· {node.note}</span>}
         {live && !node.note && <span className="wf-skeleton h-1.5 flex-1 rounded-full" />}
       </div>
     </div>
@@ -162,20 +165,20 @@ function Flow({ job, width }: { job: LiveJob; width: number }) {
         const failed = n.status === "failed";
         return (
           <g key={`e${i}`}>
-            <path d={d} fill="none" stroke="#1f2e28" strokeWidth={3} />
-            {lit && <path d={d} fill="none" stroke={NEON} strokeWidth={2} filter="url(#wf-glow)" opacity={0.9} />}
-            {failed && <path d={d} fill="none" stroke="#FF5C5C" strokeWidth={2} strokeDasharray="4 6" opacity={0.8} />}
+            <path d={d} fill="none" style={{ stroke: LINE }} strokeWidth={3} opacity={0.6} />
+            {lit && <path d={d} fill="none" style={{ stroke: NEON }} strokeWidth={2} filter="url(#wf-glow)" opacity={0.9} />}
+            {failed && <path d={d} fill="none" style={{ stroke: DANGER }} strokeWidth={2} strokeDasharray="4 6" opacity={0.8} />}
             {flowing && (
               <>
-                <path d={d} fill="none" stroke="#fff" strokeWidth={2} strokeDasharray="3 14" className="wf-flow" opacity={0.8} />
+                <path d={d} fill="none" style={{ stroke: "var(--stage-text)" }} strokeWidth={2} strokeDasharray="3 14" className="wf-flow" opacity={0.6} />
                 {[0, 0.55].map((delay) => (
-                  <circle key={delay} r={4.5} fill={NEON} filter="url(#wf-glow)">
+                  <circle key={delay} r={4.5} style={{ fill: NEON }} filter="url(#wf-glow)">
                     <animateMotion dur="1.4s" begin={`${delay}s`} repeatCount="indefinite" path={d} />
                   </circle>
                 ))}
               </>
             )}
-            {!lit && !failed && <path d={d} fill="none" stroke="#2c4038" strokeWidth={1.5} strokeDasharray="2 7" />}
+            {!lit && !failed && <path d={d} fill="none" style={{ stroke: LINE }} strokeWidth={1.5} strokeDasharray="2 7" />}
           </g>
         );
       })}
@@ -217,7 +220,7 @@ function IdleTeam({ live, width }: { live: LiveInfo | null; width: number }) {
         const working = state[agents[i]]?.state === "working";
         return (
           <g key={agents[i]}>
-            <path d={d} fill="none" stroke={working ? NEON : "#22352d"} strokeWidth={working ? 2 : 1.5} filter={working ? "url(#wf-glow2)" : undefined} strokeDasharray={working ? undefined : "2 6"} />
+            <path d={d} fill="none" style={{ stroke: working ? NEON : LINE }} strokeWidth={working ? 2 : 1.5} filter={working ? "url(#wf-glow2)" : undefined} strokeDasharray={working ? undefined : "2 6"} />
             <circle r={3} fill={AGENT_COLOR[agents[i]]} opacity={0.9} filter="url(#wf-glow2)">
               <animateMotion dur={`${3.2 + i * 0.35}s`} repeatCount="indefinite" path={d} />
             </circle>
@@ -226,9 +229,9 @@ function IdleTeam({ live, width }: { live: LiveInfo | null; width: number }) {
       })}
       {[{ key: "team_lead", ...lead }, ...agents.map((a, i) => ({ key: a, ...spots[i] }))].map((n) => (
         <g key={n.key} transform={`translate(${n.x},${n.y})`}>
-          <circle r={26} fill="#0c1814" stroke={AGENT_COLOR[n.key]} strokeWidth={2} className={state[n.key]?.state === "working" ? "wf-breathe-fast" : "wf-breathe"} />
+          <circle r={26} style={{ fill: "var(--surface)" }} stroke={AGENT_COLOR[n.key]} strokeWidth={2} className={state[n.key]?.state === "working" ? "wf-breathe-fast" : "wf-breathe"} />
           <circle r={9} fill={AGENT_COLOR[n.key]} />
-          <text y={44} textAnchor="middle" className="fill-white/80 text-[12px] font-medium">{t(`agents.${n.key}`)}</text>
+          <text y={44} textAnchor="middle" style={{ fill: "var(--stage-text)" }} className="text-[12px] font-medium">{t(`agents.${n.key}`)}</text>
         </g>
       ))}
     </svg>
@@ -247,7 +250,7 @@ export function WorkflowCanvas({ live }: { live: LiveInfo | null }) {
   return (
     <section className="wf-stage overflow-hidden rounded-2xl border" aria-label={t("teamTitle")}>
       <div className="flex flex-wrap items-center gap-2 px-4 pt-3">
-        <h2 className="mr-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-white/70">
+        <h2 className="mr-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--stage-muted)]">
           <span className="wf-dot h-2 w-2 rounded-full" style={{ background: NEON }} /> {t("teamTitle")}
         </h2>
         {jobs.slice(0, 6).map((j) => {
@@ -258,12 +261,12 @@ export function WorkflowCanvas({ live }: { live: LiveInfo | null }) {
               type="button"
               onClick={() => setPicked(j.task_id)}
               className={`flex max-w-[220px] items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] transition ${
-                active ? "border-[#3EE89A] bg-[#3EE89A]/10 text-white" : "border-white/10 text-white/60 hover:text-white"
+                active ? "border-[var(--flow)] bg-[color-mix(in_srgb,var(--flow)_12%,transparent)] text-[var(--stage-text)]" : "border-[var(--stage-border)] text-[var(--stage-muted)] hover:text-[var(--stage-text)]"
               }`}
             >
               <span
                 className={`h-1.5 w-1.5 shrink-0 rounded-full ${j.status === "running" ? "wf-dot" : ""}`}
-                style={{ background: j.status === "failed" ? "#FF5C5C" : j.status === "running" || j.status === "waiting_approval" ? "#F2B01E" : NEON }}
+                style={{ background: j.status === "failed" ? DANGER : j.status === "running" || j.status === "waiting_approval" ? "#F2B01E" : NEON }}
               />
               <span className="truncate">{j.title}</span>
             </button>
@@ -275,30 +278,30 @@ export function WorkflowCanvas({ live }: { live: LiveInfo | null }) {
         {job ? (
           <>
             <Flow key={job.task_id} job={job} width={width} />
-            <p className="px-2 pb-1 text-[11px] text-white/45">
+            <p className="px-2 pb-1 text-[11px] text-[var(--stage-muted)]">
               {t(`flow.kind.${job.kind}`)} · {t(`flow.task.${job.status}`)}
             </p>
           </>
         ) : (
           <>
             <IdleTeam live={live} width={width} />
-            <p className="px-2 pb-2 text-center text-xs text-white/55">{t("flow.idle")}</p>
+            <p className="px-2 pb-2 text-center text-xs text-[var(--stage-muted)]">{t("flow.idle")}</p>
           </>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-white/10 px-4 py-2.5">
-        <span className="text-[11px] text-white/50">{t("studio.moreTeam")}</span>
+      <div className="flex flex-wrap items-center gap-2 border-t border-[var(--stage-border)] px-4 py-2.5">
+        <span className="text-[11px] text-[var(--stage-muted)]">{t("studio.moreTeam")}</span>
         {["market_researcher", "visual_editor"].map((k) => (
-          <span key={k} className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] text-white/80 ${agents[k]?.state === "working" ? "border-[#3EE89A]" : "border-white/15"}`}>
+          <span key={k} className={`flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] text-[var(--stage-text)] ${agents[k]?.state === "working" ? "border-[var(--flow)]" : "border-[var(--stage-border)]"}`}>
             <span className="h-2 w-2 rounded-full" style={{ background: AGENT_COLOR[k] }} />
             {t(`agents.${k}`)}
-            {k === "market_researcher" && <span className="text-white/45">· {t("studio.researchSchedule")}</span>}
+            {k === "market_researcher" && <span className="text-[var(--stage-muted)]">· {t("studio.researchSchedule")}</span>}
           </span>
         ))}
         {(["planner", "visual_designer", "community", "analyst", "cmo", "ads", "video"] as const).map((k) => (
-          <span key={k} className="flex items-center gap-1.5 rounded-full border border-dashed border-white/15 px-2 py-0.5 text-[11px] text-white/45" title={t(`studio.coming.${k}.hint`)}>
-            {t(`studio.coming.${k}.name`)} <span className="rounded bg-white/5 px-1 text-[10px]">{t("studio.soon")}</span>
+          <span key={k} className="flex items-center gap-1.5 rounded-full border border-dashed border-[var(--stage-border)] px-2 py-0.5 text-[11px] text-[var(--stage-muted)]" title={t(`studio.coming.${k}.hint`)}>
+            {t(`studio.coming.${k}.name`)} <span className="rounded bg-[var(--stage-border)] px-1 text-[10px]">{t("studio.soon")}</span>
           </span>
         ))}
       </div>

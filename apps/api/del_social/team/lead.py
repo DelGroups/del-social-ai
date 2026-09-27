@@ -24,7 +24,8 @@ from del_social.media import analysis
 from del_social.media.storage import MediaStore
 from del_social.models import AgentEvent, BrandProfileVersion, ChatMessage, DailyReport, Goal, MediaAsset, Post, Product, Task
 from del_social.posts import service
-from del_social.team import activity, daily, meeting, metrics, timing, work
+from del_social.team import activity, daily, meeting, metrics, texts, timing, work
+from del_social.team.texts import m
 
 log = logging.getLogger(__name__)
 
@@ -117,22 +118,22 @@ async def run_lead(
     *, engine: AsyncEngine, llm: LLM, store: MediaStore, tenant_id: uuid.UUID, account_id: uuid.UUID, can_act: bool,
     http: httpx.AsyncClient | None = None, meta: MetaClient | None = None, vault: TokenVault | None = None,
 ) -> None:
-    await activity.event(engine, tenant_id, "team_lead", "started", "Mesajı oxuyur")
+    await activity.event(engine, tenant_id, "team_lead", "started", m("lead.reading"))
     try:
         async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
             await set_tenant(db, tenant_id)
             context = await _context(db, datetime.now(UTC))
         decision = (await team_lead.decide(llm, tenant_id, context)).output
     except LLMError as e:
-        await activity.event(engine, tenant_id, "team_lead", "failed", f"Cavab verə bilmədi: {e}")
-        await activity.say(engine, tenant_id, "team_lead", f"Hazırda cavab verə bilmirəm ({e}). Bir az sonra yenidən yazın.")
+        await activity.event(engine, tenant_id, "team_lead", "failed", m("lead.failed_event", error=e))
+        await activity.say(engine, tenant_id, "team_lead", m("lead.unavailable", error=e))
         return
 
-    notes: list[str] = []
+    notes: list[texts.Msg] = []
     started = 0
     for action in decision.actions[:3]:
         if not can_act:
-            notes.append("Sizin rolunuz tapşırıq verməyə icazə vermir; yalnız sual verə bilərsiniz.")
+            notes.append(m("lead.not_allowed"))
             break
         try:
             if action.type == "create_post":
@@ -185,11 +186,13 @@ async def run_lead(
                     spawn(meeting.run_meeting, engine=engine, llm=llm, tenant_id=tenant_id, report_id=rid)
                 started += 1
         except (work.WorkError, timing.TimingError, quota.QuotaError) as e:
-            notes.append(f"Alınmadı: {e}.")
-    reply = decision.reply.strip() + ("\n\n" + " ".join(notes) if notes else "")
-    await activity.say(engine, tenant_id, "team_lead", reply)
-    await activity.event(engine, tenant_id, "team_lead", "finished",
-                         f"{started} tapşırıq başladıldı" if started else "Cavab verdi")
+            notes.append(m("lead.action_failed", error=e))
+    async with AsyncSession(engine) as db, db.begin():
+        await set_tenant(db, tenant_id)
+        lang = await texts.language_of(db)
+    extra = " ".join(texts.text_of(n, lang) for n in notes)
+    await activity.say(engine, tenant_id, "team_lead", decision.reply.strip() + ("\n\n" + extra if extra else ""))
+    await activity.event(engine, tenant_id, "team_lead", "finished", m("lead.started", n=started) if started else m("lead.answered"))
 
 
 def since(minutes: int) -> datetime:

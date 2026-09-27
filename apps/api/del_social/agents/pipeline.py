@@ -15,14 +15,15 @@ from del_social.agents.common import Brief, assemble_caption
 from del_social.agents.copywriter import CopyOption
 from del_social.knowledge.brand_profile import BrandProfile
 from del_social.llm import LLM
+from del_social.team.texts import Msg, m
 
 MAX_REVISIONS = 2
 
 # (agent, kind, title) → the Team Room's live panel; optional so evals run without it
-OnEvent = Callable[[str, str, str], Awaitable[None]]
+OnEvent = Callable[[str, str, Msg], Awaitable[None]]  # agent, kind, message (in the owner's language)
 
 
-async def _noop(agent: str, kind: str, title: str) -> None:
+async def _noop(agent: str, kind: str, title: Msg) -> None:
     return None
 
 
@@ -44,14 +45,14 @@ async def generate_for_brief(
     on_event: OnEvent = _noop,
 ) -> dict:
     cost = Decimal(0)
-    await on_event("copywriter", "started", "3 variant yazır (AZ + RU)")
+    await on_event("copywriter", "started", m("copy.writing"))
     written = await copywriter.write_options(llm, tenant_id, profile, brief)
     options = list(written.output.options)
     question = written.output.question
-    await on_event("copywriter", "finished", "3 variant hazırdır")
-    await on_event("brand_guardian", "started", "Dil, qadağan sözlər və iddialar yoxlanılır")
+    await on_event("copywriter", "finished", m("copy.ready"))
+    await on_event("brand_guardian", "started", m("guard.checking"))
     verdicts, reviewed = await brand_guardian.review(llm, tenant_id, profile, brief, options)
-    await on_event("brand_guardian", "finished", f"{sum(v.verdict == 'pass' for v in verdicts)}/3 variant qaydasındadır")
+    await on_event("brand_guardian", "finished", m("guard.result", ok=sum(v.verdict == "pass" for v in verdicts)))
     cost += (written.cost_usd or 0) + (reviewed.cost_usd or 0)
     attempts = [{"options": _snapshot(profile, options, verdicts, set()), "rewritten": [0, 1, 2]}]
 
@@ -61,14 +62,14 @@ async def generate_for_brief(
             break
         kept = [o for i, o in enumerate(options) if i not in flagged]
         request = brand_guardian.revision_request([(options[i], verdicts[i]) for i in flagged])
-        await on_event("copywriter", "started", f"Nəzarətçinin qeydlərinə görə {len(flagged)} variantı düzəldir")
+        await on_event("copywriter", "started", m("copy.fixing", n=len(flagged)))
         revised = await copywriter.revise_options(llm, tenant_id, profile, brief, kept, request, len(flagged))
-        await on_event("copywriter", "finished", "Düzəliş hazırdır")
-        await on_event("brand_guardian", "started", "Düzəlişlər yoxlanılır")
+        await on_event("copywriter", "finished", m("copy.fixed"))
+        await on_event("brand_guardian", "started", m("guard.rechecking"))
         new_verdicts, re_reviewed = await brand_guardian.review(
             llm, tenant_id, profile, brief, revised.output.options
         )
-        await on_event("brand_guardian", "finished", "Yoxlama bitdi")
+        await on_event("brand_guardian", "finished", m("guard.done"))
         cost += (revised.cost_usd or 0) + (re_reviewed.cost_usd or 0)
         for slot, option, verdict in zip(flagged, revised.output.options, new_verdicts):
             options[slot], verdicts[slot] = option, verdict

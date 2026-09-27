@@ -110,6 +110,7 @@ DEFAULT_OCCASIONS = [
 
 
 class ReportLanguage(StrEnum):
+    AUTO = "auto"  # the language the owner last wrote to the team in
     AZ = "az"
     RU = "ru"
     EN = "en"
@@ -124,7 +125,7 @@ class Market(_Section):
     watch_sites: list[Item] = items(15)  # websites or marketplaces to look at, e.g. "tap.az mebel"
     keywords: list[Item] = items(20)  # what to search for, e.g. "qarderob Bakı", "шкаф-купе Баку"
     notes: Long = ""  # anything the researcher should keep in mind
-    report_language: ReportLanguage = ReportLanguage.AZ  # daily reports and briefings
+    report_language: ReportLanguage = ReportLanguage.AUTO  # daily reports, meetings and the team's own messages
     daily_research: bool = True  # market research every morning
     daily_briefing: bool = True  # the Team Lead's report and plan every morning
 
