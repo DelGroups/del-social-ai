@@ -12,7 +12,7 @@ from del_social.core.db import set_tenant
 from del_social.models import AgentEvent, ChatMessage, Task
 
 # Agents shown in the Team Room (display names are translated in the panel)
-AGENTS = ("team_lead", "media_analyst", "copywriter", "brand_guardian", "visual_editor", "publisher")
+AGENTS = ("team_lead", "market_researcher", "media_analyst", "copywriter", "brand_guardian", "visual_editor", "publisher")
 
 POST_STEPS = [
     {"key": "photos", "agent": "media_analyst"},

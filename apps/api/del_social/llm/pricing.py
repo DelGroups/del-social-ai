@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 MILLION = Decimal(1_000_000)
+WEB_SEARCH = Decimal("0.01")  # per search ($10 per 1,000), on top of tokens
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,7 @@ class Usage:
     output_tokens: int = 0
     cache_read_tokens: int = 0
     cache_write_tokens: int = 0
+    web_searches: int = 0
 
 
 def cost_usd(model: str, usage: Usage) -> Decimal | None:
@@ -47,5 +49,5 @@ def cost_usd(model: str, usage: Usage) -> Decimal | None:
         + usage.cache_write_tokens * price.cache_write
         + usage.cache_read_tokens * price.cache_read
         + usage.output_tokens * price.output
-    ) / MILLION
+    ) / MILLION + usage.web_searches * WEB_SEARCH
     return total.quantize(Decimal("0.000001"))

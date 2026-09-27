@@ -80,7 +80,6 @@ export function PostEditor({ tenantId, post, productPhotos, canApprove }: Props)
         <span className="text-muted">
           {post.channels.join(" + ")} · {post.format} · {post.with_logo ? t("withLogo") : t("noLogo")} · {formatDateTime(post.created_at)}
         </span>
-        {post.cost_usd && <span className="text-muted">${Number(post.cost_usd).toFixed(3)}</span>}
       </div>
       {post.error && <Alert tone="error">{post.error}</Alert>}
       {post.status === "generating" && <Alert>{t("generatingLong")}</Alert>}

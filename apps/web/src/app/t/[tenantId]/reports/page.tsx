@@ -1,11 +1,31 @@
 import { getTranslations } from "next-intl/server";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { Alert, Card, PageTitle } from "@/components/ui";
+import { DailyActions } from "@/components/daily-actions";
+import { Card, PageTitle } from "@/components/ui";
 import { formatDateTime } from "@/lib/prefs";
 import { apiGet, requireMe } from "@/lib/server-api";
-import type { PostInfo } from "@/lib/types";
+import type { DailyRow, PostInfo } from "@/lib/types";
 
+function ReportList({ tenantId, rows, empty }: { tenantId: string; rows: DailyRow[]; empty: string }) {
+  if (rows.length === 0) return <p className="text-sm text-muted">{empty}</p>;
+  return (
+    <ul className="divide-y divide-border">
+      {rows.map((r) => (
+        <li key={r.report_id}>
+          <Link href={`/t/${tenantId}/reports/${r.report_id}`} className="flex items-center gap-3 py-2.5 text-sm hover:text-accent">
+            <span className="w-24 shrink-0 tabular-nums text-muted">{r.day}</span>
+            <span className={`min-w-0 flex-1 truncate ${r.status === "failed" ? "text-danger" : ""}`} dir="auto">
+              {r.status === "running" ? "…" : r.status === "failed" ? r.error : r.headline}
+            </span>
+            <span aria-hidden="true">→</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default async function ReportsPage({ params }: { params: Promise<{ tenantId: string }> }) {
   const { tenantId } = await params;
@@ -13,14 +33,29 @@ export default async function ReportsPage({ params }: { params: Promise<{ tenant
   const membership = me.memberships.find((m) => m.tenant_id === tenantId);
   if (!membership) redirect("/");
   const t = await getTranslations();
-  const { data: posts } = await apiGet<PostInfo[]>(`/tenants/${tenantId}/posts`);
+  const [{ data: posts }, { data: market }, { data: briefings }] = await Promise.all([
+    apiGet<PostInfo[]>(`/tenants/${tenantId}/posts`),
+    apiGet<DailyRow[]>(`/tenants/${tenantId}/daily?kind=market&limit=30`),
+    apiGet<DailyRow[]>(`/tenants/${tenantId}/daily?kind=briefing&limit=30`),
+  ]);
   const published = (posts ?? []).filter((p) => p.status === "published" || p.status === "partly_published");
+  const canRun = membership.role === "owner" || membership.role === "admin";
   return (
     <>
-      <PageTitle>{t("reports.title")}</PageTitle>
-      <div className="space-y-6">
-        <Alert>{t("reports.soon")}</Alert>
-        <Card title={t("reports.published", { count: published.length })}>
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <PageTitle>{t("reports.title")}</PageTitle>
+        {canRun && <DailyActions tenantId={tenantId} />}
+      </div>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card title={t("daily.marketList")}>
+          <p className="mb-3 text-xs text-muted">{t("daily.marketListHint")}</p>
+          <ReportList tenantId={tenantId} rows={market ?? []} empty={t("daily.noneYet")} />
+        </Card>
+        <Card title={t("daily.briefingList")}>
+          <p className="mb-3 text-xs text-muted">{t("daily.briefingListHint")}</p>
+          <ReportList tenantId={tenantId} rows={briefings ?? []} empty={t("daily.noneYet")} />
+        </Card>
+        <Card title={t("reports.published", { count: published.length })} className="lg:col-span-2">
           {published.length === 0 ? (
             <p className="text-sm text-muted">{t("reports.nonePublished")}</p>
           ) : (
@@ -40,6 +75,7 @@ export default async function ReportsPage({ params }: { params: Promise<{ tenant
             </ul>
           )}
         </Card>
+        <p className="text-xs text-muted lg:col-span-2">{t("reports.soon")}</p>
       </div>
     </>
   );

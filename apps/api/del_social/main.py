@@ -12,7 +12,7 @@ from redis.asyncio import Redis
 from del_social import __version__
 from del_social.core.config import get_settings
 from del_social.billing.quota import QuotaError
-from del_social.routes import auth, brand, connections, evals, media, plan, platform, posts, products, team, tenants, usage
+from del_social.routes import auth, brand, connections, daily, evals, media, plan, platform, posts, products, team, tenants, usage
 
 settings = get_settings()
 
@@ -21,16 +21,22 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    """Background loop that publishes approved posts at their time (del_social.team.scheduler)."""
+    """Background loops: publishing approved posts at their time (team.scheduler) and the team's
+    own morning work, market research and the Team Lead's report (team.daily)."""
     from del_social.core import deps
-    from del_social.team import lead, scheduler
+    from del_social.llm import build_llm
+    from del_social.team import daily, lead, scheduler
 
-    task = None
-    meta, vault = deps.get_meta_optional(deps._http()), deps._vault()
+    tasks = []
+    http = deps._http()
+    meta, vault = deps.get_meta_optional(http), deps._vault()
     if settings.scheduler_enabled and meta is not None and vault is not None:
-        task = asyncio.create_task(scheduler.loop(engine=deps._engine(), settings=settings, meta=meta, vault=vault))
+        tasks.append(asyncio.create_task(scheduler.loop(engine=deps._engine(), settings=settings, meta=meta, vault=vault)))
+    if settings.scheduler_enabled and settings.anthropic_api_key:
+        llm = build_llm(settings, deps._engine(), http)
+        tasks.append(asyncio.create_task(daily.loop(engine=deps._engine(), http=http, llm=llm, meta=meta, vault=vault)))
     yield
-    if task is not None:
+    for task in tasks:
         task.cancel()
     await lead.settle()
 
@@ -63,6 +69,7 @@ async def quota_exceeded(_, exc: QuotaError) -> JSONResponse:
 
 app.include_router(auth.router)
 app.include_router(plan.router)
+app.include_router(daily.router)
 app.include_router(tenants.router)
 app.include_router(platform.router)
 app.include_router(connections.router)

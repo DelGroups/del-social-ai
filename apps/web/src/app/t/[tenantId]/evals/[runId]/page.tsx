@@ -29,7 +29,6 @@ export default async function EvalRunPage({ params }: { params: Promise<{ tenant
           <span className="text-muted">
             {t("progress", { completed: run.completed, total: run.briefs_total, rated: run.rated })}
           </span>
-          <span className="text-muted">${Number(run.cost_usd).toFixed(2)}</span>
           <span className="text-muted">{formatDateTime(run.created_at)}</span>
         </div>
         <p className="mt-3 text-xs text-muted">

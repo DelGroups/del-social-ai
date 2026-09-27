@@ -77,7 +77,7 @@ function ItemCard({ tenantId, runId, item, canRate }: { tenantId: string; runId:
         {item.result?.question && <Alert>❓ {item.result.question}</Alert>}
         {item.result && (
           <p className="text-xs text-muted">
-            {t("revisions", { count: item.result.revisions })} · ${Number(item.result.cost_usd).toFixed(3)}
+            {t("revisions", { count: item.result.revisions })}
           </p>
         )}
       </div>

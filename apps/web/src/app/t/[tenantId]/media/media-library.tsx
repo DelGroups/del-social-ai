@@ -627,12 +627,6 @@ function PhotoEditor({
             {parent.urls.thumb && <img src={parent.urls.thumb} alt={t("before")} className="w-full rounded border border-border" />}
             <img src={asset.urls.thumb} alt={t("after")} className="w-full rounded border border-accent" />
           </div>
-          {asset.edit?.cost_usd && (
-            <p className="text-xs text-muted">
-              ${asset.edit.cost_usd}
-              {asset.edit.cost_complete === false ? ` + ${t("costUnknownPart")}` : ""}
-            </p>
-          )}
           {canManage && !asset.approved_at && (
             <div className="flex items-center gap-3">
               <Button

@@ -6,24 +6,21 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ApprovalCard } from "@/components/approval-card";
+import { BriefingCard, MarketCard } from "@/components/report-cards";
+import { AGENT_COLOR } from "@/lib/agents";
 import { ApiError, api } from "@/lib/client-api";
 import { formatDateTime } from "@/lib/prefs";
 import type { ChatMsg, LiveInfo, TaskInfo } from "@/lib/types";
 
 import { LiveStudio } from "./live-studio";
 
-const AGENT_STYLE: Record<string, { letter: string; color: string }> = {
-  team_lead: { letter: "R", color: "#6C5CE7" },
-  media_analyst: { letter: "Ş", color: "#0E9F9F" },
-  copywriter: { letter: "K", color: "#E0752D" },
-  brand_guardian: { letter: "N", color: "#2F8F6B" },
-  visual_editor: { letter: "V", color: "#C2549B" },
-  publisher: { letter: "P", color: "#3B6FD8" },
+const LETTER: Record<string, string> = {
+  team_lead: "R", market_researcher: "B", media_analyst: "Ş", copywriter: "K", brand_guardian: "N", visual_editor: "V", publisher: "P",
 };
 const POLL_MS = 3000;
 
 function Avatar({ agent, size = 30 }: { agent: string; size?: number }) {
-  const s = AGENT_STYLE[agent] ?? { letter: "?", color: "#777" };
+  const s = { letter: LETTER[agent] ?? "?", color: AGENT_COLOR[agent] ?? "#777" };
   return (
     <span
       className="grid shrink-0 place-items-center rounded-full font-semibold text-white"
@@ -167,7 +164,21 @@ export function TeamRoom({ tenantId, canAct }: { tenantId: string; canAct: boole
                     <p className="text-xs text-muted">
                       {t(`agents.${m.agent ?? "team_lead"}`)} · {formatDateTime(m.created_at)}
                     </p>
-                    <p className="whitespace-pre-wrap rounded-lg bg-bg px-3 py-2 text-sm">{m.text}</p>
+                    {m.payload?.type === "briefing" ? (
+                      <BriefingCard
+                        tenantId={tenantId}
+                        messageId={m.message_id}
+                        briefing={m.payload.briefing}
+                        marketReportId={m.payload.market_report_id}
+                        reportId={m.payload.report_id}
+                        canAct={canAct}
+                        onChange={refresh}
+                      />
+                    ) : m.payload?.type === "market" ? (
+                      <MarketCard tenantId={tenantId} payload={m.payload} />
+                    ) : (
+                      <p className="whitespace-pre-wrap rounded-lg bg-bg px-3 py-2 text-sm" dir="auto">{m.text}</p>
+                    )}
                     {m.task && <TaskCard task={m.task} />}
                     {m.post && <ApprovalCard tenantId={tenantId} post={m.post} canAct={canAct} onChange={refresh} />}
                   </div>

@@ -34,7 +34,6 @@ export default async function EvalsPage({ params }: { params: Promise<{ tenantId
                   <span className="text-muted">
                     {t("progress", { completed: r.completed, total: r.briefs_total, rated: r.rated })}
                   </span>
-                  <span className="text-muted">${Number(r.cost_usd).toFixed(2)}</span>
                   <span className="ml-auto">
                     <RateBadge rate={r.success_rate} target={r.target} />
                   </span>
