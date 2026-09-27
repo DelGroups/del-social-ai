@@ -78,7 +78,8 @@ async def step(
         return
     async with AsyncSession(engine) as db, db.begin():
         await set_tenant(db, tenant_id)
-        task = await db.get(Task, task_id)
+        # Locked: steps of one task can finish at the same moment (a meeting's members answer in parallel)
+        task = await db.get(Task, task_id, with_for_update=True)
         if task is None:
             return
         steps: list[dict[str, Any]] = [dict(s) for s in task.steps]

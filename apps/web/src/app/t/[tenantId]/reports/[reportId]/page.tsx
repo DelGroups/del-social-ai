@@ -7,7 +7,7 @@ import { notFound, redirect } from "next/navigation";
 import { Alert, Card, PageTitle } from "@/components/ui";
 import { formatDateTime } from "@/lib/prefs";
 import { apiGet, requireMe } from "@/lib/server-api";
-import type { BriefingData, CollectedAccount, DailyFull, Finding, MarketReportData } from "@/lib/types";
+import type { BriefingData, CollectedAccount, DailyFull, Finding, MarketReportData, MeetingData } from "@/lib/types";
 
 const TONE: Record<Finding["confidence"], string> = {
   high: "border-success text-success",
@@ -118,7 +118,8 @@ export default async function ReportPage({ params }: { params: Promise<{ tenantI
   const { data: r, status } = await apiGet<DailyFull>(`/tenants/${tenantId}/daily/${reportId}`);
   if (!r || status === 404) notFound();
 
-  const title = r.kind === "market" ? t("marketTitle") : t("briefingTitle");
+  const tm = await getTranslations("meeting");
+  const title = r.kind === "market" ? t("marketTitle") : r.kind === "meeting" ? tm("title") : t("briefingTitle");
   return (
     <div className="space-y-6" dir="auto">
       <div>
@@ -163,6 +164,44 @@ export default async function ReportPage({ params }: { params: Promise<{ tenantI
                 {m.data_gaps.map((g) => <p key={g} className="text-xs text-muted">• {g}</p>)}
               </Card>
             )}
+          </>
+        );
+      })()}
+
+      {r.kind === "meeting" && r.output && (() => {
+        const m = r.output as MeetingData;
+        return (
+          <>
+            <Card>
+              <p className="text-lg font-semibold">{m.focus}</p>
+              <p className="mt-2 text-sm">{m.summary}</p>
+              <ul className="mt-2 list-inside list-disc text-sm">{m.decisions.map((d) => <li key={d}>{d}</li>)}</ul>
+            </Card>
+            <Card title={tm("transcript")}>
+              <div className="space-y-4 text-sm">
+                {m.transcript.map((a) => (
+                  <div key={a.agent} className="space-y-1">
+                    <p className="text-xs text-muted">→ {a.question}</p>
+                    <p><b>{a.agent}</b>: {a.answer}</p>
+                    {a.proposals.map((p) => <p key={p.title} className="text-xs">💡 <b>{p.title}</b> — {p.why} ({p.expected_effect})</p>)}
+                    {a.risks.map((x) => <p key={x} className="text-xs text-danger">⚠ {x}</p>)}
+                    {a.needs_from_owner.map((x) => <p key={x} className="text-xs text-accent">🙋 {x}</p>)}
+                  </div>
+                ))}
+              </div>
+            </Card>
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card title={tm("weekPlan")}>
+                <ul className="space-y-1 text-sm">
+                  {m.week_plan.map((s) => <li key={s.date + s.angle}><span className="text-muted">{s.at}</span> · <b>{s.product_name ?? tm("idea")}</b> — {s.angle}</li>)}
+                </ul>
+              </Card>
+              <Card title={tm("improvements")}>
+                <ul className="space-y-1 text-sm">
+                  {m.improvements.map((i) => <li key={i.title}>{i.owner_action ? "🙋" : "🔧"} <b>{i.title}</b> — <span className="text-muted">{i.why}</span></li>)}
+                </ul>
+              </Card>
+            </div>
           </>
         );
       })()}

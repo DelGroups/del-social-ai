@@ -584,7 +584,10 @@
       "image_editor": "Visual editor",
       "market_researcher": "Market Researcher",
       "daily_briefing": "Team Lead",
-      "web_researcher": "Market Researcher"
+      "web_researcher": "Market Researcher",
+      "meeting_agenda": "Team Lead",
+      "meeting_decision": "Team Lead",
+      "meeting_member": "Team (meeting)"
     },
     "steps": {
       "photos": "Photos selected",
@@ -716,7 +719,13 @@
         "deliver": "Report sent",
         "facts": "What was done",
         "read_market": "Reads the market report",
-        "plan": "Plan & suggestions"
+        "plan": "Plan & suggestions",
+        "trigger_meeting": "Team meeting",
+        "agenda": "Sets the agenda",
+        "ask_market": "Market view",
+        "ask_content": "Content view",
+        "ask_quality": "Quality view",
+        "decide": "Decision"
       },
       "status": {
         "pending": "waiting",
@@ -728,12 +737,14 @@
       "triggerStatus": {
         "post": "started",
         "market": "started",
-        "briefing": "started"
+        "briefing": "started",
+        "meeting": "called"
       },
       "kind": {
         "post": "Post",
         "market": "Market research",
-        "briefing": "Morning report"
+        "briefing": "Morning report",
+        "meeting": "Team meeting"
       },
       "task": {
         "running": "in progress",
@@ -743,7 +754,9 @@
         "failed": "stopped",
         "cancelled": "cancelled"
       }
-    }
+    },
+    "goalsTitle": "Goals",
+    "noGoals": "No goals yet: the Team Lead proposes them in the Friday meeting."
   },
   "settingsHub": {
     "title": "Settings",
@@ -850,22 +863,22 @@
     "comingTitle": "Joining the team next",
     "team_lead": {
       "role": "Marketing manager and coordinator",
-      "schedule": "Every day 09:00 · and whenever you write",
+      "schedule": "Every day 09:00 · meeting Friday 09:30",
       "duties": [
-        "Reports to you every morning: what was done, what the market says, today's plan",
+        "Runs the team meeting every Friday: asks each agent, decides, brings you goals and a week plan",
+        "Reports to you every morning: done, market, goal progress, today's plan",
         "Suggests posts and campaigns you can start with one click",
-        "Turns your instructions into work and splits it across the team",
-        "Keeps the posting plan even across the week, within your package"
+        "Turns your instructions into work and splits it across the team"
       ]
     },
     "market_researcher": {
       "role": "Market research",
       "schedule": "Every day 08:00",
       "duties": [
-        "Watches competitors' Instagram: what they post and which posts work",
+        "Watches competitors' Instagram and finds new competitors on the web by itself",
         "Reads what your customers ask in comments",
         "Searches the web for demand, popular models, colours and local events",
-        "Writes a report with evidence and post ideas for your products"
+        "Writes a report with evidence and post ideas; answers in team meetings"
       ]
     },
     "media_analyst": {
@@ -915,16 +928,19 @@
   "daily": {
     "run": {
       "market": "Research the market now",
-      "briefing": "Morning report now"
+      "briefing": "Morning report now",
+      "meeting": "Call a team meeting"
     },
     "confirm": {
       "market": "Run today's market research now? It uses AI credit (about $0.15).",
-      "briefing": "Make the Team Lead's report now? It uses a little AI credit."
+      "briefing": "Make the Team Lead's report now? It uses a little AI credit.",
+      "meeting": "Call a team meeting now? The Team Lead asks three agents and brings you goals and a week plan (about $0.30)."
     },
     "started": {
       "market": "Research started; the report appears in the Team Room.",
       "briefing": "The Team Lead is writing the report.",
-      "post": "started"
+      "post": "started",
+      "meeting": "The meeting has started; watch it on the home page."
     },
     "briefingTitle": "Team Lead's morning report",
     "marketTitle": "Market research",
@@ -983,6 +999,80 @@
     },
     "ideasHint": "The Team Lead turns the best ideas into suggestions you can start with one click.",
     "sources": "Web sources",
-    "madeAt": "Made {at}"
+    "madeAt": "Made {at}",
+    "newCompetitors": "New competitors found and added: {list}"
+  },
+  "meeting": {
+    "title": "Team meeting",
+    "transcript": "What the team said",
+    "decision": "Team Lead's decision",
+    "goals": "Proposed goals",
+    "weekPlan": "Plan for the week",
+    "idea": "Idea (needs photos)",
+    "prepared": "prepared",
+    "slot": {
+      "open": "ready to prepare",
+      "idea": "idea only",
+      "started": "prepared",
+      "skipped": "day passed"
+    },
+    "format": {
+      "photo": "photo",
+      "carousel": "carousel",
+      "reel": "reel",
+      "story": "story"
+    },
+    "acceptPlan": "Approve the plan: prepare {count, plural, one {# post} other {# posts}}",
+    "planConfirm": "Prepare {count} posts for their days? Each post still comes to you for approval before it is published.",
+    "planStarted": "{count, plural, =0 {Nothing started.} one {# post is being prepared.} other {# posts are being prepared.}}",
+    "improvements": "What must improve",
+    "needsYou": "needs you",
+    "answerInChat": "Answer in the chat below.",
+    "full": "Full meeting report",
+    "list": "Team meetings",
+    "listHint": "Every Friday 09:30, and whenever you or the Team Lead call one."
+  },
+  "goals": {
+    "title": "Goals",
+    "none": "No goals yet. The Team Lead proposes goals in the team meeting (Friday, or call one now).",
+    "due": "until {date}",
+    "accept": "Accept goal",
+    "decline": "Decline",
+    "status": {
+      "proposed": "waiting for you",
+      "active": "active",
+      "achieved": "achieved",
+      "missed": "missed",
+      "dropped": "declined"
+    },
+    "metric": {
+      "followers": "Followers",
+      "engagement_rate": "Engagement",
+      "avg_likes": "Avg likes",
+      "avg_comments": "Avg comments",
+      "posts_per_week": "Posts a week"
+    }
+  },
+  "competitors": {
+    "title": "Competitors the team watches",
+    "hint": "Your list from the brand profile plus accounts the Market Researcher found on the web and verified on Instagram.",
+    "none": "None yet. The researcher looks for competitors every morning.",
+    "account": "Account",
+    "source": "Added by",
+    "state": "Status",
+    "followers": "Followers",
+    "lastPost": "Last post",
+    "watch": "watch again",
+    "ignore": "stop watching",
+    "src": {
+      "owner": "you",
+      "discovered": "the team found it"
+    },
+    "st": {
+      "active": "active",
+      "invalid": "not found on Instagram",
+      "inactive": "no posts for 90 days",
+      "ignored": "not watched"
+    }
   }
 }

@@ -17,7 +17,7 @@ from del_social.core.vault import TokenVault
 from del_social.llm import LLM
 from del_social.models import ChatMessage, DailyReport
 from del_social.routes.media import get_analyst
-from del_social.team import daily, lead, timing, work
+from del_social.team import daily, lead, meeting, timing, work
 from del_social.tenants.permissions import Permission
 
 router = APIRouter(prefix="/tenants/{tenant_id}", tags=["daily"])
@@ -48,14 +48,14 @@ def _row(r: DailyReport) -> dict[str, Any]:
     out = r.output or {}
     return {
         "report_id": r.report_id, "kind": r.kind, "day": r.day, "status": r.status,
-        "headline": out.get("headline") or out.get("greeting"), "error": r.error,
+        "headline": out.get("headline") or out.get("greeting") or out.get("focus"), "error": r.error,
         "created_at": r.created_at, "finished_at": r.finished_at,
     }
 
 
 @router.get("/daily", response_model=list[ReportRow])
 async def list_reports(
-    kind: Literal["market", "briefing"] | None = None,
+    kind: Literal["market", "briefing", "meeting"] | None = None,
     limit: int = Query(default=30, ge=1, le=100),
     ctx: TenantContext = Depends(can_view),
     db: AsyncSession = Depends(get_db),
@@ -78,7 +78,7 @@ async def get_report(report_id: uuid.UUID, ctx: TenantContext = Depends(can_view
 
 @router.post("/daily/{kind}/run", response_model=ReportRow, status_code=status.HTTP_202_ACCEPTED)
 async def run_now(
-    kind: Literal["market", "briefing"],
+    kind: Literal["market", "briefing", "meeting"],
     ctx: TenantContext = Depends(can_run),
     db: AsyncSession = Depends(get_db),
     engine: AsyncEngine = Depends(get_engine),
@@ -99,8 +99,10 @@ async def run_now(
         raise HTTPException(status.HTTP_409_CONFLICT, "This report is being made right now")
     if kind == "market":
         lead.spawn(daily.run_market, engine=engine, http=http, llm=llm, meta=meta, vault=vault, tenant_id=ctx.tenant_id, report_id=rid)
-    else:
+    elif kind == "briefing":
         lead.spawn(daily.run_briefing, engine=engine, llm=llm, tenant_id=ctx.tenant_id, report_id=rid)
+    else:
+        lead.spawn(meeting.run_meeting, engine=engine, llm=llm, tenant_id=ctx.tenant_id, report_id=rid)
     async with AsyncSession(engine) as own, own.begin():
         await set_tenant(own, ctx.tenant_id)
         return ReportRow(**_row(await own.get(DailyReport, rid)))

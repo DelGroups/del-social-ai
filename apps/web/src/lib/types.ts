@@ -273,7 +273,7 @@ export type PostInfo = {
 export type TaskInfo = {
   task_id: string;
   title: string;
-  kind: "post" | "market" | "briefing";
+  kind: "post" | "market" | "briefing" | "meeting";
   status: "running" | "waiting_approval" | "scheduled" | "done" | "failed" | "cancelled";
   steps: { key: string; agent: string | null; status: "pending" | "running" | "done" | "waiting" | "failed"; note?: string }[];
   post_id: string | null;
@@ -401,8 +401,65 @@ export type BriefingData = {
   suggestions: SuggestionData[];
   questions: string[];
 };
+export type GoalInfo = {
+  goal_id: string;
+  title: string;
+  metric: "followers" | "engagement_rate" | "avg_likes" | "avg_comments" | "posts_per_week";
+  unit: string;
+  baseline: number | null;
+  target: number;
+  current: number | null;
+  due: string;
+  why: string;
+  status: "proposed" | "active" | "achieved" | "missed" | "dropped";
+  progress: number | null;
+};
+export type MeetingAnswer = {
+  agent: "market_researcher" | "copywriter" | "brand_guardian";
+  question: string;
+  answer: string;
+  observations: string[];
+  proposals: { title: string; why: string; expected_effect: string; effort: "low" | "medium" | "high" }[];
+  risks: string[];
+  needs_from_owner: string[];
+};
+export type PlanSlot = {
+  day_offset: number;
+  product_id: string | null;
+  product_name: string | null;
+  format: "photo" | "carousel" | "reel" | "story";
+  angle: string;
+  why: string;
+  date: string;
+  at: string;
+  status: "open" | "idea" | "started" | "skipped";
+  post_id?: string;
+};
+export type MeetingData = {
+  focus: string;
+  transcript: MeetingAnswer[];
+  summary: string;
+  decisions: string[];
+  goal_ids: string[];
+  goals?: GoalInfo[];
+  week_plan: PlanSlot[];
+  improvements: { area: string; title: string; why: string; owner_action: boolean }[];
+  questions: string[];
+};
+export type CompetitorInfo = {
+  competitor_id: string;
+  username: string;
+  name: string | null;
+  source: "owner" | "discovered";
+  status: "active" | "invalid" | "inactive" | "ignored";
+  followers: number | null;
+  last_post_at: string | null;
+  checked_at: string | null;
+  note: string;
+};
 export type CardPayload =
-  | { type: "market"; report_id: string; headline: string; ideas: number; questions: string[] }
+  | ({ type: "meeting"; report_id: string } & MeetingData)
+  | { type: "market"; report_id: string; headline: string; ideas: number; questions: string[]; new_competitors?: string[] }
   | { type: "briefing"; report_id: string; briefing: BriefingData; market_report_id: string | null };
 
 export type AccountStats = {
@@ -425,7 +482,7 @@ export type CollectedAccount = {
 };
 export type DailyRow = {
   report_id: string;
-  kind: "market" | "briefing";
+  kind: "market" | "briefing" | "meeting";
   day: string;
   status: "running" | "done" | "failed";
   headline: string | null;
@@ -435,6 +492,6 @@ export type DailyRow = {
 };
 export type DailyFull = DailyRow & {
   input: { own?: CollectedAccount | null; competitors?: CollectedAccount[]; facts?: Record<string, unknown> };
-  output: (MarketReportData | BriefingData) | null;
+  output: (MarketReportData | BriefingData | MeetingData) | null;
   sources: { title: string; url: string }[];
 };

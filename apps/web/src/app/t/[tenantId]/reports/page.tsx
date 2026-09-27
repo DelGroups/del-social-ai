@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { DailyActions } from "@/components/daily-actions";
+import { CompetitorsPanel } from "@/components/strategy-panels";
 import { Card, PageTitle } from "@/components/ui";
 import { formatDateTime } from "@/lib/prefs";
 import { apiGet, requireMe } from "@/lib/server-api";
@@ -33,10 +34,11 @@ export default async function ReportsPage({ params }: { params: Promise<{ tenant
   const membership = me.memberships.find((m) => m.tenant_id === tenantId);
   if (!membership) redirect("/");
   const t = await getTranslations();
-  const [{ data: posts }, { data: market }, { data: briefings }] = await Promise.all([
+  const [{ data: posts }, { data: market }, { data: briefings }, { data: meetings }] = await Promise.all([
     apiGet<PostInfo[]>(`/tenants/${tenantId}/posts`),
     apiGet<DailyRow[]>(`/tenants/${tenantId}/daily?kind=market&limit=30`),
     apiGet<DailyRow[]>(`/tenants/${tenantId}/daily?kind=briefing&limit=30`),
+    apiGet<DailyRow[]>(`/tenants/${tenantId}/daily?kind=meeting&limit=20`),
   ]);
   const published = (posts ?? []).filter((p) => p.status === "published" || p.status === "partly_published");
   const canRun = membership.role === "owner" || membership.role === "admin";
@@ -47,6 +49,13 @@ export default async function ReportsPage({ params }: { params: Promise<{ tenant
         {canRun && <DailyActions tenantId={tenantId} />}
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
+        <Card title={t("meeting.list")}>
+          <p className="mb-3 text-xs text-muted">{t("meeting.listHint")}</p>
+          <ReportList tenantId={tenantId} rows={meetings ?? []} empty={t("daily.noneYet")} />
+        </Card>
+        <Card title={t("competitors.title")} className="lg:col-span-2 lg:order-first">
+          <CompetitorsPanel tenantId={tenantId} canManage={canRun} />
+        </Card>
         <Card title={t("daily.marketList")}>
           <p className="mb-3 text-xs text-muted">{t("daily.marketListHint")}</p>
           <ReportList tenantId={tenantId} rows={market ?? []} empty={t("daily.noneYet")} />

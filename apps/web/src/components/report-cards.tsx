@@ -122,6 +122,9 @@ export function MarketCard({ tenantId, payload }: { tenantId: string; payload: E
       <p className="text-xs font-semibold uppercase tracking-wide text-muted">{t("marketTitle")}</p>
       <p className="font-medium">📊 {payload.headline}</p>
       <p className="text-xs text-muted">{t("ideasCount", { count: payload.ideas })}</p>
+      {payload.new_competitors && payload.new_competitors.length > 0 && (
+        <p className="rounded-md bg-success/10 px-3 py-2 text-xs">🔎 {t("newCompetitors", { list: payload.new_competitors.join(", ") })}</p>
+      )}
       {payload.questions.map((q) => (
         <p key={q} className="rounded-md bg-accent/10 px-3 py-2">❓ {q}</p>
       ))}

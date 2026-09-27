@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
 
 import { DailyActions } from "@/components/daily-actions";
+import { GoalsPanel } from "@/components/strategy-panels";
 import { PageTitle } from "@/components/ui";
 import { formatDateTime } from "@/lib/prefs";
 import { AGENT_COLOR } from "@/lib/agents";
@@ -24,7 +25,7 @@ export default async function TeamPage({ params }: { params: Promise<{ tenantId:
   const ta = await getTranslations("team");
   const [{ data: live }, { data: reports }] = await Promise.all([
     apiGet<LiveInfo>(`/tenants/${tenantId}/team/live`),
-    apiGet<DailyRow[]>(`/tenants/${tenantId}/daily?limit=4`),
+    apiGet<DailyRow[]>(`/tenants/${tenantId}/daily?limit=6`),
   ]);
   const state = Object.fromEntries((live?.agents ?? []).map((a) => [a.agent, a]));
   const last = (kind: string) => reports?.find((r) => r.kind === kind);
@@ -40,11 +41,15 @@ export default async function TeamPage({ params }: { params: Promise<{ tenantId:
         {canRun && <DailyActions tenantId={tenantId} />}
       </div>
 
+      <div className="mb-8">
+        <GoalsPanel tenantId={tenantId} canDecide={canRun} />
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {ACTIVE.map((key) => {
           const a = state[key];
           const working = a?.state === "working";
-          const report = key === "market_researcher" ? last("market") : key === "team_lead" ? last("briefing") : undefined;
+          const report = key === "market_researcher" ? last("market") : key === "team_lead" ? last("meeting") ?? last("briefing") : undefined;
           return (
             <section key={key} className={`flex flex-col gap-3 rounded-xl border bg-surface p-4 ${working ? "border-accent" : "border-border"}`}>
               <div className="flex items-center gap-3">
