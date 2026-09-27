@@ -3,13 +3,24 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
+from del_social.connections.meta import MetaClient
 from del_social.core.db import set_tenant
-from del_social.core.deps import TenantContext, get_db, get_engine, require_permission
+from del_social.core.deps import (
+    TenantContext,
+    get_db,
+    get_engine,
+    get_http,
+    get_meta_optional,
+    get_vault_optional,
+    require_permission,
+)
+from del_social.core.vault import TokenVault
 from del_social.llm import LLM
 from del_social.media.storage import MediaStore
 from del_social.models import AgentEvent, ChatMessage, Connection, MediaAsset, Post, Task
@@ -91,6 +102,9 @@ async def send(
     engine: AsyncEngine = Depends(get_engine),
     llm: LLM | None = Depends(get_analyst),
     store: MediaStore = Depends(get_store),
+    http: httpx.AsyncClient = Depends(get_http),
+    meta: MetaClient | None = Depends(get_meta_optional),
+    vault: TokenVault | None = Depends(get_vault_optional),
 ) -> dict[str, str]:
     """Write to the Team Lead. It answers in the chat and starts work in the background."""
     async with AsyncSession(engine) as own, own.begin():
@@ -102,6 +116,7 @@ async def send(
     background.add_task(
         lead.run_lead, engine=engine, llm=llm, store=store, tenant_id=ctx.tenant_id,
         account_id=ctx.account.account_id, can_act=has_permission(ctx.role, Permission.APPROVE_CONTENT),
+        http=http, meta=meta, vault=vault,
     )
     return {"status": "accepted"}
 

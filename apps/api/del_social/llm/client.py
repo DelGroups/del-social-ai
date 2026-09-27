@@ -225,8 +225,6 @@ class LLM:
         tier: Tier = Tier.DEFAULT,
         max_tokens: int = 6000,
         max_searches: int = 5,
-        country: str = "AZ",
-        city: str = "Baku",
     ) -> ResearchResult:
         """Web research with Anthropic's server-side search: free-text notes plus the pages found.
 
@@ -239,10 +237,9 @@ class LLM:
         t0 = time.monotonic()
         usage = Usage()
         messages: list[dict] = [{"role": "user", "content": user}]
-        tools = [{
-            "type": "web_search_20250305", "name": "web_search", "max_uses": max_searches,
-            "user_location": {"type": "approximate", "country": country, "city": city, "timezone": "Asia/Baku"},
-        }]
+        # No user_location: the search API rejects Azerbaijan ("Country code AZ is not supported");
+        # the prompt names the market and the city instead.
+        tools = [{"type": "web_search_20250305", "name": "web_search", "max_uses": max_searches}]
         text, sources, error = "", {}, None
         try:
             for _ in range(4):  # a long search turn may pause; continue it a few times at most
@@ -269,9 +266,8 @@ class LLM:
             else:
                 error = "Research did not finish"
         except anthropic.APIStatusError as e:
-            error = f"Anthropic API error {e.status_code}"
-            if e.status_code == 400 and "web_search" in str(e).lower():
-                error += " (web search is not enabled for this organization)"
+            # The API's own reason (it never contains the key), so a failure explains itself
+            error = f"Anthropic API error {e.status_code}: {str(getattr(e, 'message', ''))[:200]}"
         except anthropic.APIConnectionError:
             error = "Anthropic API could not be reached"
         latency_ms = int((time.monotonic() - t0) * 1000)

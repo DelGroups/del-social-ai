@@ -10,18 +10,21 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import httpx
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from del_social.agents import team_lead
 from del_social.billing import quota
+from del_social.connections.meta import MetaClient
 from del_social.core.db import set_tenant
+from del_social.core.vault import TokenVault
 from del_social.llm import LLM, LLMError
 from del_social.media import analysis
 from del_social.media.storage import MediaStore
 from del_social.models import AgentEvent, ChatMessage, DailyReport, MediaAsset, Post, Product, Task
 from del_social.posts import service
-from del_social.team import activity, timing, work
+from del_social.team import activity, daily, timing, work
 
 log = logging.getLogger(__name__)
 
@@ -99,6 +102,7 @@ def _uuid(value: str | None) -> uuid.UUID | None:
 
 async def run_lead(
     *, engine: AsyncEngine, llm: LLM, store: MediaStore, tenant_id: uuid.UUID, account_id: uuid.UUID, can_act: bool,
+    http: httpx.AsyncClient | None = None, meta: MetaClient | None = None, vault: TokenVault | None = None,
 ) -> None:
     await activity.event(engine, tenant_id, "team_lead", "started", "Mesajı oxuyur")
     try:
@@ -149,6 +153,21 @@ async def run_lead(
                     ))).all()
                 for asset_id in ids:
                     spawn(analysis.run_analysis, engine=engine, llm=llm, store=store, tenant_id=tenant_id, asset_id=asset_id)
+                started += 1
+            elif action.type in ("run_market_research", "morning_report"):
+                kind = "market" if action.type == "run_market_research" else "briefing"
+                async with AsyncSession(engine) as db, db.begin():
+                    await set_tenant(db, tenant_id)
+                    if (await quota.allowance(db)).state in ("none", "expired"):
+                        raise quota.QuotaError("expired", "An active package is needed for the team's daily work")
+                rid = await daily.claim(engine, tenant_id, kind, daily.baku_day(datetime.now(UTC)), force=True)
+                if rid is None:
+                    raise work.WorkError("That report is being made right now")
+                if kind == "market":
+                    spawn(daily.run_market, engine=engine, http=http or httpx.AsyncClient(timeout=20), llm=llm,
+                          meta=meta, vault=vault, tenant_id=tenant_id, report_id=rid)
+                else:
+                    spawn(daily.run_briefing, engine=engine, llm=llm, tenant_id=tenant_id, report_id=rid)
                 started += 1
         except (work.WorkError, timing.TimingError, quota.QuotaError) as e:
             notes.append(f"Alınmadı: {e}.")

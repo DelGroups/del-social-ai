@@ -17,7 +17,7 @@ Until now the agents only reacted: nothing happened until the owner uploaded pho
      - customers' comments from the last 14 days, as text only, without names.
 
      All numbers are computed by code: posts per week, average likes and comments, engagement = (likes + comments) / followers, top posts.
-   - **A web researcher** uses Anthropic's server-side web search. It is limited to 5 searches and located in Baku, AZ. It writes plain-text notes with numbered sources. It is a separate call, so web content never reaches an agent that has tools.
+   - **A web researcher** uses Anthropic's server-side web search. It is limited to 5 searches. No search location is sent: the API rejects Azerbaijan ("Country code AZ is not supported", found on the first real run), so the prompt names Baku and Azerbaijan instead. It writes plain-text notes with numbered sources. It is a separate call, so web content never reaches an agent that has tools.
    - **The Market Researcher** (Sonnet, with photos of the best competitor posts) writes a structured report:
      - findings, each with evidence and a confidence level;
      - post ideas with our real products (made-up product ids are dropped by code);
@@ -49,4 +49,5 @@ That is roughly $4–7 a month per company. It is recorded per agent in `llm_cal
 
 - There is a second background loop in the API process (`team.daily.loop`, every 5 minutes), next to the publishing scheduler. Both can move to the arq worker later without changes elsewhere.
 - Web search must be allowed for the Anthropic organization. If it is not, the report is still made, and it says that the web part is missing.
+- The Team Lead can start the research or its report at once from the chat (actions `run_market_research`, `morning_report`, prompt v2), for example when the owner has just added competitors.
 - Competitors with personal (non-business) Instagram accounts are not visible through Business Discovery. The report says so for each one.
