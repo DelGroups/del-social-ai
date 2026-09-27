@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import Numeric, cast, func, select
+from sqlalchemy import Numeric, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from del_social.core.db import set_tenant
@@ -24,6 +24,7 @@ router = APIRouter(prefix="/tenants/{tenant_id}/team", tags=["team"])
 can_view = require_permission(Permission.VIEW)
 
 WORKING_WINDOW = timedelta(minutes=10)
+JOB_LINGER = timedelta(minutes=30)  # finished work stays on the live line this long
 
 
 class ChatIn(BaseModel):
@@ -112,9 +113,19 @@ class AgentState(BaseModel):
     done_today: int
 
 
+class Job(TaskOut):
+    """A task on the live production line, with its first photo."""
+
+    thumb_url: str | None
+    post_status: str | None
+    scheduled_at: datetime | None
+    updated_at: datetime
+
+
 class Live(BaseModel):
     agents: list[AgentState]
     running: list[TaskOut]
+    jobs: list[Job]  # in progress, waiting, scheduled, and just finished (they leave the line after a while)
     waiting: list[PostOut]  # waiting for your approval
     scheduled: list[PostOut]
     published: list[PostOut]  # latest published
@@ -153,6 +164,24 @@ async def live(ctx: TenantContext = Depends(can_view), db: AsyncSession = Depend
     waiting = (await db.scalars(posts("ready"))).all()
     scheduled = (await db.scalars(posts("scheduled", order=Post.scheduled_at))).all()
     published = (await db.scalars(posts("published", "partly_published", order=Post.published_at.desc(), limit=5))).all()
+    job_rows = (await db.scalars(
+        select(Task).where(or_(
+            Task.status.in_(("running", "waiting_approval", "scheduled")),
+            Task.updated_at >= now - JOB_LINGER,
+        )).order_by(Task.created_at.desc()).limit(12)
+    )).all()
+    job_posts = {p.post_id: post_out(p, has_logo) for p in (await db.scalars(
+        select(Post).where(Post.post_id.in_([t.post_id for t in job_rows if t.post_id]))
+    )).all()}
+
+    def job(t: Task) -> Job:
+        p = job_posts.get(t.post_id) if t.post_id else None
+        return Job(
+            **TaskOut.model_validate(t, from_attributes=True).model_dump(), updated_at=t.updated_at,
+            thumb_url=p.photos[0].url if p and p.photos else None, post_status=p.status if p else None,
+            scheduled_at=p.scheduled_at if p else None,
+        )
+
     events = (await db.scalars(select(AgentEvent).order_by(AgentEvent.created_at.desc()).limit(30))).all()
 
     async def cost(since: datetime) -> Decimal:
@@ -171,6 +200,7 @@ async def live(ctx: TenantContext = Depends(can_view), db: AsyncSession = Depend
     return Live(
         agents=agents,
         running=[TaskOut.model_validate(t, from_attributes=True) for t in running],
+        jobs=[job(t) for t in reversed(job_rows)],
         waiting=[post_out(p, has_logo) for p in waiting],
         scheduled=[post_out(p, has_logo) for p in scheduled],
         published=[post_out(p, has_logo) for p in published],

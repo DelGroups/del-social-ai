@@ -107,6 +107,8 @@ async def test_one_instruction_to_scheduled_post(client, team, world, admin, app
 
     live = (await client.get(turl(tenants["a"], "/live"), headers=owner)).json()
     assert [p["post_id"] for p in live["waiting"]] == [post["post_id"]]
+    job = next(j for j in live["jobs"] if j["post_id"] == post["post_id"])
+    assert job["status"] == "waiting_approval" and job["thumb_url"] and job["post_status"] == "ready"
     copy = next(a for a in live["agents"] if a["agent"] == "copywriter")
     assert copy["state"] == "idle" and copy["done_today"] >= 1
     assert any(e["agent"] == "brand_guardian" and e["kind"] == "finished" for e in live["events"])
@@ -171,4 +173,4 @@ async def test_lead_guards(client, team, tenants, session_for):
     # Another company sees none of it
     assert (await client.get(turl(tenants["b"], "/chat"), headers=owner_b)).json() == []
     live_b = (await client.get(turl(tenants["b"], "/live"), headers=owner_b)).json()
-    assert live_b["events"] == [] and live_b["waiting"] == []
+    assert live_b["events"] == [] and live_b["waiting"] == [] and live_b["jobs"] == []

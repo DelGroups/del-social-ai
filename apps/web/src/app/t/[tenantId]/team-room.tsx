@@ -10,6 +10,8 @@ import { ApiError, api } from "@/lib/client-api";
 import { formatDateTime } from "@/lib/prefs";
 import type { ChatMsg, LiveInfo, TaskInfo } from "@/lib/types";
 
+import { LiveStudio } from "./live-studio";
+
 const AGENT_STYLE: Record<string, { letter: string; color: string }> = {
   team_lead: { letter: "R", color: "#6C5CE7" },
   media_analyst: { letter: "Ş", color: "#0E9F9F" },
@@ -17,15 +19,6 @@ const AGENT_STYLE: Record<string, { letter: string; color: string }> = {
   brand_guardian: { letter: "N", color: "#2F8F6B" },
   visual_editor: { letter: "V", color: "#C2549B" },
   publisher: { letter: "P", color: "#3B6FD8" },
-};
-// Positions in the team diagram (percent of the box)
-const NODES: Record<string, [number, number]> = {
-  team_lead: [50, 14],
-  media_analyst: [16, 48],
-  copywriter: [50, 48],
-  brand_guardian: [84, 48],
-  visual_editor: [28, 84],
-  publisher: [72, 84],
 };
 const POLL_MS = 3000;
 
@@ -69,42 +62,6 @@ function TaskCard({ task }: { task: TaskInfo }) {
           </li>
         ))}
       </ol>
-    </div>
-  );
-}
-
-function TeamDiagram({ live }: { live: LiveInfo | null }) {
-  const t = useTranslations("team");
-  const state = Object.fromEntries((live?.agents ?? []).map((a) => [a.agent, a]));
-  return (
-    <div className="relative h-60 rounded-lg border border-border bg-bg">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" aria-hidden="true">
-        {Object.entries(NODES)
-          .filter(([k]) => k !== "team_lead")
-          .map(([k, [x, y]]) => (
-            <line
-              key={k}
-              x1={NODES.team_lead[0]}
-              y1={NODES.team_lead[1]}
-              x2={x}
-              y2={y}
-              vectorEffect="non-scaling-stroke"
-              className={state[k]?.state === "working" ? "team-link-live" : "team-link"}
-            />
-          ))}
-      </svg>
-      {Object.entries(NODES).map(([k, [x, y]]) => (
-        <div
-          key={k}
-          className="absolute flex w-24 -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 text-center text-[11px] text-muted"
-          style={{ left: `${x}%`, top: `${y}%` }}
-        >
-          <span className={`rounded-full ${state[k]?.state === "working" ? "team-node-busy" : ""}`}>
-            <Avatar agent={k} size={32} />
-          </span>
-          {t(`agents.${k}`)}
-        </div>
-      ))}
     </div>
   );
 }
@@ -170,14 +127,12 @@ export function TeamRoom({ tenantId, canAct }: { tenantId: string; canAct: boole
         [t("kpi.running"), live.running.length],
         [t("kpi.scheduled"), live.scheduled.length, undefined],
         [t("kpi.published"), live.published.length],
-        [t("kpi.costToday"), `$${Number(live.cost_today_usd).toFixed(2)}`],
-        [t("kpi.costMonth"), `$${Number(live.cost_month_usd).toFixed(2)}`],
       ]
     : [];
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {kpis.map(([label, value, tone]) => (
           <div key={label} className={`rounded-lg border bg-surface px-3 py-2 ${tone === "accent" ? "border-accent" : "border-border"}`}>
             <p className="text-xs text-muted">{label}</p>
@@ -185,6 +140,8 @@ export function TeamRoom({ tenantId, canAct }: { tenantId: string; canAct: boole
           </div>
         ))}
       </div>
+
+      <LiveStudio live={live} />
 
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <section className="flex min-h-[560px] flex-col rounded-lg border border-border bg-surface" aria-label={t("chatTitle")}>
@@ -251,28 +208,7 @@ export function TeamRoom({ tenantId, canAct }: { tenantId: string; canAct: boole
           </form>
         </section>
 
-        <aside className="space-y-4" aria-label={t("teamTitle")}>
-          <div className="space-y-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t("teamTitle")}</h2>
-            <TeamDiagram live={live} />
-            <ul className="space-y-2">
-              {(live?.agents ?? [])
-                .filter((a) => a.agent !== "team_lead")
-                .map((a) => (
-                  <li key={a.agent} className="flex items-start gap-2 text-sm">
-                    <Avatar agent={a.agent} size={24} />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium">{t(`agents.${a.agent}`)}</p>
-                      <p className="truncate text-xs text-muted">{a.activity ?? t("noActivity")}</p>
-                    </div>
-                    <span className={`rounded-full px-2 py-0.5 text-[11px] ${a.state === "working" ? "bg-accent/15 text-accent" : "bg-bg text-muted"}`}>
-                      {a.state === "working" ? t("working") : t("doneToday", { count: a.done_today })}
-                    </span>
-                  </li>
-                ))}
-            </ul>
-          </div>
-
+        <aside className="space-y-4" aria-label={t("activity")}>
           <div className="space-y-2">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t("upcoming")}</h2>
             {(live?.scheduled ?? []).length === 0 ? (
@@ -315,8 +251,8 @@ export function TeamRoom({ tenantId, canAct }: { tenantId: string; canAct: boole
           <div className="space-y-2">
             <h2 className="text-xs font-semibold uppercase tracking-wide text-muted">{t("activity")}</h2>
             <ul className="max-h-64 space-y-1 overflow-y-auto text-xs">
-              {(live?.events ?? []).map((e, i) => (
-                <li key={i} className="flex gap-2">
+              {(live?.events ?? []).map((e) => (
+                <li key={`${e.at}${e.title}`} className="ls-slide flex gap-2">
                   <span className="shrink-0 tabular-nums text-muted">{formatDateTime(e.at).slice(-5)}</span>
                   <span className={e.kind === "failed" ? "text-danger" : ""}>
                     <b className="font-medium">{t(`agents.${e.agent}`)}</b> · {e.title}
