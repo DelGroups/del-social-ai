@@ -26,6 +26,7 @@ from del_social.media.storage import MediaNotConfigured, signed_url
 from del_social.models import MediaAsset, Post
 from del_social.posts import service
 from del_social.team import activity, work
+from del_social.team.texts import m
 from del_social.team.timing import baku_label
 from del_social.routes.media import _current_logo, get_analyst
 from del_social.routes.products import get_product
@@ -314,8 +315,8 @@ async def approve(
     await db.refresh(post)
     when = baku_label(post.scheduled_at)
     await activity.step(engine, ctx.tenant_id, post.task_id, "approval", "done", task_status="scheduled")
-    await activity.event(engine, ctx.tenant_id, "publisher", "info", f"{when} üçün planlaşdırıldı", post.task_id, post_id)
-    await activity.say(engine, ctx.tenant_id, "publisher", f"Təsdiqləndi. {when}-də (Bakı) avtomatik paylaşılacaq.", post.task_id)
+    await activity.event(engine, ctx.tenant_id, "publisher", "info", m("schedule.event", when=when), post.task_id, post_id)
+    await activity.say(engine, ctx.tenant_id, "publisher", m("schedule.say", when=when), post.task_id)
     return _out(post, await _current_logo(db) is not None)
 
 

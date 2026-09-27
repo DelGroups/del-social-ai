@@ -91,7 +91,7 @@ export type BrandProfileData = {
     watch_sites: string[];
     keywords: string[];
     notes: string;
-    report_language: "az" | "ru" | "en" | "fa";
+    report_language: "auto" | "az" | "ru" | "en" | "fa";
     daily_research: boolean;
     daily_briefing: boolean;
   };

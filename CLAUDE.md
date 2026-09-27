@@ -68,14 +68,15 @@ Per tenant: list of channels, status, token expiry, connect/disconnect, test but
 - Tokens stored encrypted (AES-GCM, master key from env), never returned to the frontend, never logged.
 
 ## Design
-Brand: DEL SOCIAL AI. Modern, minimal, calm. Themes selectable per user; all colours are CSS tokens.
-| Theme | Mode | Background | Surface | Text | Accent |
+Brand: DEL SOCIAL AI. Modern, minimal, calm. Themes selectable per user (swatches at the bottom of the menu); each theme is a full personality: colours, fonts, corner radius, border style, elevation, buttons and the live workflow stage (ADR 010). All values are CSS tokens in `globals.css`.
+| Theme (id) | Mode | Background | Accent | Type | Shape |
 |---|---|---|---|---|---|
-| Midnight (default, DEL brand) | dark | #0B1422 | #121E30 | #E8EDF5 | #FF7A1A |
-| Daylight | light | #F7F7F4 | #FFFFFF | #13233A | #F26B0F |
-| Graphite | dark | #101113 | #18191C | #EDEDED | #7C8CFF |
-| Sage | light | #F4F6F3 | #FFFFFF | #1E2A24 | #2F8F6B |
-Font: Inter (Latin + Cyrillic, supports ə ş ğ ı). RTL not needed.
+| Midnight (`midnight`, default, DEL brand) | dark | #0B1422 | #FF7A1A | Inter | rounded 8–16px, soft glow |
+| Paper (`daylight`) | light | #F4F0E6 | #C8401E | Lora headings + Inter | almost square, hairlines, no shadows |
+| Terminal (`graphite`) | dark | #0A0B09 | #B8F34A | JetBrains Mono, uppercase headings | square, dashed borders |
+| Soft (`sage`) | light | #E8EEE7 | #3E8E6E | Nunito | very rounded, pill buttons, soft shadows |
+All fonts cover Azerbaijani (ə ş ğ ı) and Cyrillic. RTL not needed (Persian chat text renders with the system font).
+UI languages: az / ru / en (switch at the bottom of the menu). The team answers in the language the owner writes in (az/ru/en/fa); content for the social pages is always the brand's languages (Azerbaijani + Russian).
 
 ## Phases (definition of done is numeric; new ideas go to the next phase's list)
 - **Phase 0 — Foundation.** Repo, Compose, Caddy + HTTPS on both subdomains, Postgres with RLS, auth + roles (owner, admin, approver, viewer + platform superadmin), tenants, i18n shell, themes, Connections page with encrypted token vault, CI deploy. **Done when:** two test tenants exist and the automated isolation test is green in CI.

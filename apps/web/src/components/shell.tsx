@@ -1,11 +1,14 @@
 // Frame for signed-in pages: header with company switcher, navigation and account menu.
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { DEFAULT_THEME, THEME_COOKIE, isTheme } from "@/lib/prefs";
 import type { Me } from "@/lib/types";
 
 import { SignOutButton, TenantSwitcher } from "./client";
+import { PrefsSwitcher } from "./prefs-switcher";
 
 export async function Shell({
   me,
@@ -19,6 +22,9 @@ export async function Shell({
   children: ReactNode;
 }) {
   const t = await getTranslations();
+  const themeCookie = (await cookies()).get(THEME_COOKIE)?.value;
+  const theme = isTheme(themeCookie) ? themeCookie : DEFAULT_THEME;
+  const locale = await getLocale();
   return (
     <div className="min-h-screen">
       <header className="border-b border-border bg-surface">
@@ -34,7 +40,8 @@ export async function Shell({
               </Link>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-3 text-sm">
+          <div className="ml-auto flex flex-wrap items-center gap-3 text-sm">
+            <PrefsSwitcher locale={locale} theme={theme} compact />
             {me.is_platform_admin && (
               <Link href="/platform" className="text-muted hover:text-text">
                 {t("home.platform")}

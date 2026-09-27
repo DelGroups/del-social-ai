@@ -28,6 +28,7 @@ from del_social.routes.media import _current_logo, get_analyst, get_store
 from del_social.routes.posts import PostOut, _out as post_out
 from del_social.routes.strategy import with_goals
 from del_social.team import activity, lead, timing
+from del_social.team.texts import m
 from del_social.tenants.permissions import Permission, has_permission
 
 router = APIRouter(prefix="/tenants/{tenant_id}/team", tags=["team"])
@@ -115,7 +116,7 @@ async def send(
         await set_tenant(own, ctx.tenant_id)
         own.add(ChatMessage(tenant_id=ctx.tenant_id, role="user", text=body.text.strip(), author=ctx.account.account_id))
     if llm is None:
-        await activity.say(engine, ctx.tenant_id, "team_lead", "Komanda hələ qurulmayıb (AI açarı yoxdur).")
+        await activity.say(engine, ctx.tenant_id, "team_lead", m("lead.no_key"))
         return {"status": "not_configured"}
     background.add_task(
         lead.run_lead, engine=engine, llm=llm, store=store, tenant_id=ctx.tenant_id,

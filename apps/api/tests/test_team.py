@@ -181,3 +181,37 @@ async def test_lead_guards(client, team, tenants, session_for):
     assert (await client.get(turl(tenants["b"], "/chat"), headers=owner_b)).json() == []
     live_b = (await client.get(turl(tenants["b"], "/live"), headers=owner_b)).json()
     assert live_b["events"] == [] and live_b["waiting"] == [] and live_b["jobs"] == []
+
+
+# --- the team speaks the owner's language ---
+
+
+def test_language_is_detected_from_the_script():
+    from del_social.team.texts import detect
+
+    assert detect("Salam, Wendy üçün post hazırla") == "az"
+    assert detect("salam necesen") == "az"
+    assert detect("Подготовь пост на завтра") == "ru"
+    assert detect("بازار را الان بررسی کن") == "fa"
+    assert detect("Please prepare a post for tomorrow") == "en"
+    assert detect("123 !!") is None
+
+
+async def test_team_answers_in_the_owners_language(client, team, admin, tenants, session_for):
+    owner = await session_for(tenants["a_owner"])
+    team.lead.append(LLMError("Anthropic API error 529"))
+    await say(client, tenants["a"], owner, "بازار را بررسی کن")  # Persian
+    msgs = (await client.get(turl(tenants["a"], "/chat"), headers=owner)).json()
+    assert msgs[-1]["text"].startswith("الان نمی‌توانم پاسخ دهم")
+    live = (await client.get(turl(tenants["a"], "/live"), headers=owner)).json()
+    assert live["events"][0]["title"].startswith("نتوانست پاسخ دهد")
+
+    # A fixed report language in the brand profile wins over the chat language
+    await admin.execute(
+        "INSERT INTO brand_profiles (tenant_id, version, data) VALUES ($1, 1, $2::jsonb)",
+        tenants["a"], '{"market": {"report_language": "en"}}',
+    )
+    team.lead.append(LLMError("Anthropic API error 529"))
+    await say(client, tenants["a"], owner, "Привет")
+    msgs = (await client.get(turl(tenants["a"], "/chat"), headers=owner)).json()
+    assert msgs[-1]["text"].startswith("I can't answer right now")

@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-/* Theme tokens (CLAUDE.md "Design"). Midnight is the default. */
+/* Themes (ADR 010). Four different personalities, all minimal: each sets colours, fonts, corner
+   radius, border style, elevation, button style and the live workflow stage. Midnight is the
+   default. Every component reads these tokens, so a theme changes everything at once. */
 :root,
 [data-theme="midnight"] {
   --bg: #0b1422;
@@ -12,46 +14,100 @@
   --border: #22324a;
   --danger: #ff5c5c;
   --success: #3ecf8e;
+  --r-sm: 6px; --r-md: 8px; --r-lg: 10px; --r-xl: 12px; --r-2xl: 16px;
+  --font-body: var(--font-inter);
+  --font-head: var(--font-inter);
+  --head-weight: 600; --head-tracking: -0.01em; --head-transform: none;
+  --border-style: solid;
+  --shadow: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 10px 30px -18px rgb(0 0 0 / 0.6);
+  --btn-shadow: 0 6px 20px -8px color-mix(in srgb, var(--accent) 60%, transparent);
+  --btn-transform: none; --btn-tracking: 0; --btn-radius: var(--r-md);
+  --stage-bg: radial-gradient(900px 320px at 50% -80px, rgb(62 232 154 / 0.1), transparent 70%), radial-gradient(600px 300px at 100% 100%, rgb(108 92 231 / 0.1), transparent 70%), #060c0a;
+  --stage-border: #16261f; --stage-text: #ffffff; --stage-muted: rgb(255 255 255 / 0.55);
+  --flow: #3ee89a; --node-bg: linear-gradient(160deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.015));
+  --node-line: #22352d; --node-glow: 1;
   color-scheme: dark;
 }
+
+/* Paper: editorial. Warm paper, ink, serif headings, hairlines, almost square, no shadows. */
 [data-theme="daylight"] {
-  --bg: #f7f7f4;
-  --surface: #ffffff;
-  --text: #13233a;
-  --accent: #f26b0f;
+  --bg: #f4f0e6;
+  --surface: #fffdf7;
+  --text: #1b1a17;
+  --accent: #c8401e;
   --accent-text: #ffffff;
-  --muted: #5d6b7e;
-  --border: #dfe3e8;
-  --danger: #c62828;
-  --success: #1b8a5a;
-  color-scheme: light;
-}
-[data-theme="graphite"] {
-  --bg: #101113;
-  --surface: #18191c;
-  --text: #ededed;
-  --accent: #7c8cff;
-  --accent-text: #101113;
-  --muted: #9a9ca3;
-  --border: #2a2c31;
-  --danger: #ff6b6b;
-  --success: #4cd4a0;
-  color-scheme: dark;
-}
-[data-theme="sage"] {
-  --bg: #f4f6f3;
-  --surface: #ffffff;
-  --text: #1e2a24;
-  --accent: #2f8f6b;
-  --accent-text: #ffffff;
-  --muted: #5f6f66;
-  --border: #d9e0da;
+  --muted: #6d675c;
+  --border: #d9d1c1;
   --danger: #b3261e;
-  --success: #2f8f6b;
+  --success: #2e7d4f;
+  --r-sm: 2px; --r-md: 2px; --r-lg: 3px; --r-xl: 3px; --r-2xl: 4px;
+  --font-body: var(--font-inter);
+  --font-head: var(--font-lora);
+  --head-weight: 600; --head-tracking: -0.015em; --head-transform: none;
+  --border-style: solid;
+  --shadow: none;
+  --btn-shadow: none;
+  --btn-transform: none; --btn-tracking: 0.01em; --btn-radius: 2px;
+  --stage-bg: #fbf8f1;
+  --stage-border: #d9d1c1; --stage-text: #1b1a17; --stage-muted: #6d675c;
+  --flow: #c8401e; --node-bg: #fffdf7;
+  --node-line: #d3cab7; --node-glow: 0;
   color-scheme: light;
 }
 
-/* Expose tokens as Tailwind colors: bg-bg, bg-surface, text-text, text-muted, border-border, ... */
+/* Terminal: monospace everywhere, square, dashed lines, uppercase labels, lime on black. */
+[data-theme="graphite"] {
+  --bg: #0a0b09;
+  --surface: #10120e;
+  --text: #d7e3cf;
+  --accent: #b8f34a;
+  --accent-text: #0a0b09;
+  --muted: #7f8c77;
+  --border: #2b3228;
+  --danger: #ff6b5b;
+  --success: #86e07b;
+  --r-sm: 0px; --r-md: 0px; --r-lg: 0px; --r-xl: 0px; --r-2xl: 0px;
+  --font-body: var(--font-mono);
+  --font-head: var(--font-mono);
+  --head-weight: 500; --head-tracking: 0.06em; --head-transform: uppercase;
+  --border-style: dashed;
+  --shadow: none;
+  --btn-shadow: 0 0 0 1px var(--accent), 0 0 16px -4px color-mix(in srgb, var(--accent) 50%, transparent);
+  --btn-transform: uppercase; --btn-tracking: 0.08em; --btn-radius: 0px;
+  --stage-bg: repeating-linear-gradient(0deg, transparent 0 23px, rgb(184 243 74 / 0.035) 23px 24px), #060705;
+  --stage-border: #2b3228; --stage-text: #d7e3cf; --stage-muted: #7f8c77;
+  --flow: #b8f34a; --node-bg: #0d0f0b;
+  --node-line: #2b3228; --node-glow: 1;
+  color-scheme: dark;
+}
+
+/* Soft: pale sage, rounded type, pill buttons, soft floating surfaces, no hard lines. */
+[data-theme="sage"] {
+  --bg: #e8eee7;
+  --surface: #f7f9f5;
+  --text: #22302a;
+  --accent: #3e8e6e;
+  --accent-text: #ffffff;
+  --muted: #67776d;
+  --border: #dbe3d9;
+  --danger: #c0473a;
+  --success: #3e8e6e;
+  --r-sm: 10px; --r-md: 14px; --r-lg: 18px; --r-xl: 22px; --r-2xl: 28px;
+  --font-body: var(--font-nunito);
+  --font-head: var(--font-nunito);
+  --head-weight: 800; --head-tracking: -0.01em; --head-transform: none;
+  --border-style: solid;
+  --shadow: 0 14px 34px -20px rgb(34 48 42 / 0.35), 0 1px 0 rgb(255 255 255 / 0.8) inset;
+  --btn-shadow: 0 8px 18px -10px color-mix(in srgb, var(--accent) 80%, transparent);
+  --btn-transform: none; --btn-tracking: 0; --btn-radius: 999px;
+  --stage-bg: radial-gradient(700px 260px at 20% 0%, rgb(62 142 110 / 0.12), transparent 70%), #eef3ed;
+  --stage-border: #dbe3d9; --stage-text: #22302a; --stage-muted: #67776d;
+  --flow: #3e8e6e; --node-bg: #fbfcfa;
+  --node-line: #cfd9cd; --node-glow: 0;
+  color-scheme: light;
+}
+
+/* Tokens as Tailwind utilities: bg-bg, bg-surface, text-muted, border-border, rounded-lg, font-sans… */
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
@@ -62,13 +118,36 @@
   --color-border: var(--border);
   --color-danger: var(--danger);
   --color-success: var(--success);
-  --font-sans: var(--font-inter), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+  --radius-2xl: var(--r-2xl);
+  --font-sans: var(--font-body), system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif;
+  --font-head: var(--font-head), var(--font-body), system-ui, sans-serif;
 }
 
-body {
-  background: var(--bg);
-  color: var(--text);
+@layer base {
+  *, ::before, ::after { border-style: var(--border-style); }
+  body { background: var(--bg); color: var(--text); }
+  h1, h2, h3 {
+    font-family: var(--font-head), var(--font-body), system-ui, sans-serif;
+    font-weight: var(--head-weight);
+    letter-spacing: var(--head-tracking);
+    text-transform: var(--head-transform);
+  }
+  button { letter-spacing: var(--btn-tracking); text-transform: var(--btn-transform); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  ::selection { background: color-mix(in srgb, var(--accent) 35%, transparent); }
 }
+
+/* Surfaces float or lie flat depending on the theme; primary buttons follow the theme's style */
+.bg-surface { box-shadow: var(--shadow); }
+button.bg-accent, a.bg-accent { box-shadow: var(--btn-shadow); border-radius: var(--btn-radius); }
+[data-theme="daylight"] main a:not([class*="bg-"]):not([class*="rounded"]) { text-decoration-thickness: 1px; text-underline-offset: 3px; }
+[data-theme="sage"] .border-border { border-color: transparent; }
+[data-theme="sage"] input, [data-theme="sage"] select, [data-theme="sage"] textarea { border-color: var(--border) !important; background: #ffffff; }
+[data-theme="graphite"] h1::before { content: "> "; color: var(--accent); }
 
 /* Live studio (home): the production line with animated agents */
 .ls-stage {
@@ -118,16 +197,11 @@ body {
 }
 
 /* Workflow canvas (home): a dark neon stage whatever the theme, so the motion reads clearly */
-.wf-stage {
-  border-color: #16261f;
-  background:
-    radial-gradient(900px 320px at 50% -80px, rgba(62, 232, 154, 0.10), transparent 70%),
-    radial-gradient(600px 300px at 100% 100%, rgba(108, 92, 231, 0.10), transparent 70%),
-    #060c0a;
-}
+.wf-stage { border-color: var(--stage-border); background: var(--stage-bg); color: var(--stage-text); }
 .wf-node {
   border: 1px solid;
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+  border-radius: var(--r-2xl);
+  background: var(--node-bg);
   backdrop-filter: blur(6px);
   transition: border-color .5s, opacity .5s, box-shadow .5s;
 }

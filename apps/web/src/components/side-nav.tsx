@@ -10,6 +10,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import type { Me, PlanStatus } from "@/lib/types";
 
 import { SignOutButton, TenantSwitcher } from "./client";
+import { PrefsSwitcher } from "./prefs-switcher";
 
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; badge?: number; exact?: boolean };
 
@@ -77,12 +78,14 @@ export function SideNav({
   tenantId,
   items,
   plan,
+  prefs,
   children,
 }: {
   me: Me;
   tenantId: string;
   items: NavItem[];
   plan: PlanStatus | null;
+  prefs: { locale: string; theme: string };
   children: ReactNode;
 }) {
   const t = useTranslations();
@@ -115,6 +118,7 @@ export function SideNav({
       </nav>
       <div className="mt-auto space-y-3">
         <PackageCard tenantId={tenantId} plan={plan} />
+        <PrefsSwitcher locale={prefs.locale} theme={prefs.theme} />
         <div className="space-y-1 border-t border-border pt-3 text-xs">
           <p className="truncate px-1 text-muted" title={me.email}>{me.email}</p>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1">

@@ -1,9 +1,11 @@
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { PlanBar } from "@/components/plan-bar";
 import { SideNav } from "@/components/side-nav";
 import { apiGet, requireMe } from "@/lib/server-api";
+import { DEFAULT_THEME, THEME_COOKIE, isTheme } from "@/lib/prefs";
 import type { LiveInfo, PlanStatus } from "@/lib/types";
 
 export default async function TenantLayout({
@@ -23,11 +25,14 @@ export default async function TenantLayout({
     apiGet<LiveInfo>(`/tenants/${tenantId}/team/live`),
   ]);
   const base = `/t/${tenantId}`;
+  const themeCookie = (await cookies()).get(THEME_COOKIE)?.value;
+  const prefs = { locale: await getLocale(), theme: isTheme(themeCookie) ? themeCookie : DEFAULT_THEME };
   return (
     <SideNav
       me={me}
       tenantId={tenantId}
       plan={plan}
+      prefs={prefs}
       items={[
         { href: base, label: t("home"), icon: "home", exact: true },
         { href: `${base}/team`, label: t("team"), icon: "team" },

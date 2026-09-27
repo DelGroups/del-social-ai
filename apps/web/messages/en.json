@@ -23,9 +23,9 @@
   },
   "themes": {
     "midnight": "Midnight",
-    "daylight": "Daylight",
-    "graphite": "Graphite",
-    "sage": "Sage"
+    "daylight": "Paper",
+    "graphite": "Terminal",
+    "sage": "Soft"
   },
   "login": {
     "title": "Sign in",
@@ -252,7 +252,7 @@
         "watch_sites": "Websites and marketplaces to watch",
         "keywords": "Search words (az / ru)",
         "notes": "Notes for the researcher",
-        "report_language": "Language of daily reports",
+        "report_language": "Language of the team's messages and reports",
         "daily_research": "Market research every morning (08:00)",
         "daily_briefing": "Team Lead's report every morning (09:00)"
       }
@@ -273,7 +273,8 @@
       "lang_az": "Azerbaijani",
       "lang_ru": "Russian",
       "lang_en": "English",
-      "lang_fa": "Persian"
+      "lang_fa": "Persian",
+      "lang_auto": "The language I write in (automatic)"
     }
   },
   "usage": {
