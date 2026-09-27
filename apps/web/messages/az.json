@@ -696,6 +696,53 @@
         }
       },
       "researchSchedule": "hər gün 08:00"
+    },
+    "flow": {
+      "you": "Siz",
+      "idle": "Komanda boşdur. Araşdırma hər səhər 08:00-da, Rəhbərin hesabatı 09:00-da; indi iş başlatmaq üçün tapşırıq verin.",
+      "steps": {
+        "trigger_post": "Tapşırıq",
+        "trigger_market": "Gündəlik araşdırma",
+        "trigger_briefing": "Səhər hesabatı",
+        "photos": "Şəkillər seçildi",
+        "copy": "3 mətn yazır",
+        "guard": "Brend yoxlaması",
+        "approval": "Sizin təsdiqiniz",
+        "publish": "Paylaşım",
+        "competitors": "Rəqiblərin Instagramı",
+        "own_page": "Səhifəmiz və şərhlər",
+        "web": "İnternet axtarışı",
+        "analyse": "Təhlil",
+        "deliver": "Hesabat göndərildi",
+        "facts": "Görülən işlər",
+        "read_market": "Bazar hesabatını oxuyur",
+        "plan": "Plan və təkliflər"
+      },
+      "status": {
+        "pending": "gözləyir",
+        "running": "işləyir…",
+        "done": "hazır",
+        "failed": "alınmadı",
+        "waiting": "sizi gözləyir"
+      },
+      "triggerStatus": {
+        "post": "başladı",
+        "market": "başladı",
+        "briefing": "başladı"
+      },
+      "kind": {
+        "post": "Post",
+        "market": "Bazar araşdırması",
+        "briefing": "Səhər hesabatı"
+      },
+      "task": {
+        "running": "icra olunur",
+        "waiting_approval": "təsdiqinizi gözləyir",
+        "scheduled": "təsdiqlənib, planlaşdırılıb",
+        "done": "bitdi",
+        "failed": "dayandı",
+        "cancelled": "ləğv edildi"
+      }
     }
   },
   "settingsHub": {

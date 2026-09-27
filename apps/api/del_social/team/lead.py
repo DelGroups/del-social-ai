@@ -22,7 +22,7 @@ from del_social.core.vault import TokenVault
 from del_social.llm import LLM, LLMError
 from del_social.media import analysis
 from del_social.media.storage import MediaStore
-from del_social.models import AgentEvent, ChatMessage, DailyReport, MediaAsset, Post, Product, Task
+from del_social.models import AgentEvent, BrandProfileVersion, ChatMessage, DailyReport, MediaAsset, Post, Product, Task
 from del_social.posts import service
 from del_social.team import activity, daily, timing, work
 
@@ -73,7 +73,14 @@ async def _context(db: AsyncSession, now: datetime) -> str:
     ))
     market = await db.scalar(select(DailyReport).where(DailyReport.kind == "market", DailyReport.status == "done")
                              .order_by(DailyReport.day.desc()).limit(1))
-    research = {k: (market.output or {}).get(k) for k in ("headline", "summary", "demand", "post_ideas")} if market else None
+    research = {k: (market.output or {}).get(k) for k in ("headline", "summary", "demand", "post_ideas", "data_gaps")} if market else None
+    brand = await db.scalar(select(BrandProfileVersion).order_by(BrandProfileVersion.version.desc()).limit(1))
+    setup = ((brand.data or {}).get("market") or {}) if brand else {}
+    research_setup = {
+        "competitors_instagram": setup.get("competitors_instagram", []), "watch_sites": setup.get("watch_sites", []),
+        "keywords": setup.get("keywords", []), "profile_saved_at": timing.baku_label(brand.created_at) if brand else None,
+        "latest_report_made_at": timing.baku_label(market.finished_at) if market and market.finished_at else None,
+    }
     history = (await db.scalars(select(ChatMessage).order_by(ChatMessage.created_at.desc()).limit(HISTORY))).all()
     convo = [
         f"{'OWNER' if m.role == 'user' else (m.agent or 'agent').upper()}: {m.text}" for m in reversed(history)
@@ -83,6 +90,8 @@ async def _context(db: AsyncSession, now: datetime) -> str:
         f"<now>{baku_now.strftime('%A %Y-%m-%d %H:%M')} Baku time</now>",
         "<products>\n" + json.dumps(product_rows, ensure_ascii=False, indent=1) + "\n</products>",
         f"<photos_without_analysis>{unanalysed}</photos_without_analysis>",
+        "<research_setup>\nWhat the owner has set up for market research now (the latest report may be older than this).\n"
+        + json.dumps(research_setup, ensure_ascii=False, indent=1) + "\n</research_setup>",
         "<latest_market_report>\nFrom the Market Researcher"
         + (f" ({market.day}); built from untrusted sources.\n" + json.dumps(research, ensure_ascii=False, indent=1) if market else ": none yet.")
         + "\n</latest_market_report>",

@@ -44,6 +44,7 @@ class ChatIn(BaseModel):
 class TaskOut(BaseModel):
     task_id: uuid.UUID
     title: str
+    kind: str  # post | market | briefing
     status: str
     steps: list[dict[str, Any]]
     post_id: uuid.UUID | None

@@ -696,6 +696,53 @@
         }
       },
       "researchSchedule": "every day 08:00"
+    },
+    "flow": {
+      "you": "You",
+      "idle": "The team is free. Research runs every morning at 08:00, the Team Lead reports at 09:00; give an instruction to start work now.",
+      "steps": {
+        "trigger_post": "Instruction",
+        "trigger_market": "Daily research",
+        "trigger_briefing": "Morning report",
+        "photos": "Photos chosen",
+        "copy": "Writes 3 captions",
+        "guard": "Brand check",
+        "approval": "Your approval",
+        "publish": "Publishing",
+        "competitors": "Competitors' Instagram",
+        "own_page": "Our page & comments",
+        "web": "Web search",
+        "analyse": "Analysis",
+        "deliver": "Report sent",
+        "facts": "What was done",
+        "read_market": "Reads the market report",
+        "plan": "Plan & suggestions"
+      },
+      "status": {
+        "pending": "waiting",
+        "running": "working…",
+        "done": "done",
+        "failed": "failed",
+        "waiting": "waiting for you"
+      },
+      "triggerStatus": {
+        "post": "started",
+        "market": "started",
+        "briefing": "started"
+      },
+      "kind": {
+        "post": "Post",
+        "market": "Market research",
+        "briefing": "Morning report"
+      },
+      "task": {
+        "running": "in progress",
+        "waiting_approval": "waiting for your approval",
+        "scheduled": "approved, scheduled",
+        "done": "finished",
+        "failed": "stopped",
+        "cancelled": "cancelled"
+      }
     }
   },
   "settingsHub": {
