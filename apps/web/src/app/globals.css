@@ -2,7 +2,7 @@
 
 /* Themes (ADR 010). Four different personalities, all minimal: each sets colours, fonts, corner
    radius, border style, elevation, button style and the live workflow stage. Midnight is the
-   default. Every component reads these tokens, so a theme changes everything at once. */
+   default. Ids stay midnight / graphite (Aurora) / daylight (Pearl) / sage (Soft) for saved preferences. Every component reads these tokens, so a theme changes everything at once. */
 :root,
 [data-theme="midnight"] {
   --bg: #0b1422;
@@ -29,56 +29,56 @@
   color-scheme: dark;
 }
 
-/* Paper: editorial. Warm paper, ink, serif headings, hairlines, almost square, no shadows. */
-[data-theme="daylight"] {
-  --bg: #f4f0e6;
-  --surface: #fffdf7;
-  --text: #1b1a17;
-  --accent: #c8401e;
-  --accent-text: #ffffff;
-  --muted: #6d675c;
-  --border: #d9d1c1;
-  --danger: #b3261e;
-  --success: #2e7d4f;
-  --r-sm: 2px; --r-md: 2px; --r-lg: 3px; --r-xl: 3px; --r-2xl: 4px;
-  --font-body: var(--font-inter);
-  --font-head: var(--font-lora);
-  --head-weight: 600; --head-tracking: -0.015em; --head-transform: none;
+/* Aurora: deep violet night, glass cards, violet glow, Manrope. */
+[data-theme="graphite"] {
+  --bg: #0d0a19;
+  --surface: #161226;
+  --text: #ece9f7;
+  --accent: #8b7cff;
+  --accent-text: #0d0a19;
+  --muted: #9a93b5;
+  --border: #2a2440;
+  --danger: #ff6b81;
+  --success: #4ade9c;
+  --r-sm: 8px; --r-md: 10px; --r-lg: 14px; --r-xl: 18px; --r-2xl: 22px;
+  --font-body: var(--font-manrope);
+  --font-head: var(--font-manrope);
+  --head-weight: 700; --head-tracking: -0.02em; --head-transform: none;
   --border-style: solid;
-  --shadow: none;
-  --btn-shadow: none;
-  --btn-transform: none; --btn-tracking: 0.01em; --btn-radius: 2px;
-  --stage-bg: #fbf8f1;
-  --stage-border: #d9d1c1; --stage-text: #1b1a17; --stage-muted: #6d675c;
-  --flow: #c8401e; --node-bg: #fffdf7;
-  --node-line: #d3cab7; --node-glow: 0;
-  color-scheme: light;
+  --shadow: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 24px 48px -28px rgb(0 0 0 / 0.8);
+  --btn-shadow: 0 8px 24px -8px color-mix(in srgb, var(--accent) 70%, transparent);
+  --btn-transform: none; --btn-tracking: 0; --btn-radius: var(--r-md);
+  --stage-bg: radial-gradient(900px 340px at 20% -60px, rgb(139 124 255 / 0.22), transparent 70%), radial-gradient(700px 320px at 100% 110%, rgb(236 72 153 / 0.12), transparent 70%), #0a0814;
+  --stage-border: #241e3a; --stage-text: #f3f1fb; --stage-muted: rgb(236 233 247 / 0.55);
+  --flow: #a99bff; --node-bg: linear-gradient(160deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.02));
+  --node-line: #2c2545; --node-glow: 1;
+  color-scheme: dark;
 }
 
-/* Terminal: monospace everywhere, square, dashed lines, uppercase labels, lime on black. */
-[data-theme="graphite"] {
-  --bg: #0a0b09;
-  --surface: #10120e;
-  --text: #d7e3cf;
-  --accent: #b8f34a;
-  --accent-text: #0a0b09;
-  --muted: #7f8c77;
-  --border: #2b3228;
-  --danger: #ff6b5b;
-  --success: #86e07b;
-  --r-sm: 0px; --r-md: 0px; --r-lg: 0px; --r-xl: 0px; --r-2xl: 0px;
-  --font-body: var(--font-mono);
-  --font-head: var(--font-mono);
-  --head-weight: 500; --head-tracking: 0.06em; --head-transform: uppercase;
-  --border-style: dashed;
-  --shadow: none;
-  --btn-shadow: 0 0 0 1px var(--accent), 0 0 16px -4px color-mix(in srgb, var(--accent) 50%, transparent);
-  --btn-transform: uppercase; --btn-tracking: 0.08em; --btn-radius: 0px;
-  --stage-bg: repeating-linear-gradient(0deg, transparent 0 23px, rgb(184 243 74 / 0.035) 23px 24px), #060705;
-  --stage-border: #2b3228; --stage-text: #d7e3cf; --stage-muted: #7f8c77;
-  --flow: #b8f34a; --node-bg: #0d0f0b;
-  --node-line: #2b3228; --node-glow: 1;
-  color-scheme: dark;
+/* Pearl: clean white and cool grey, crisp blue, precise and calm. */
+[data-theme="daylight"] {
+  --bg: #f3f4f7;
+  --surface: #ffffff;
+  --text: #111827;
+  --accent: #2563eb;
+  --accent-text: #ffffff;
+  --muted: #6b7280;
+  --border: #e3e6eb;
+  --danger: #dc2626;
+  --success: #16a34a;
+  --r-sm: 6px; --r-md: 8px; --r-lg: 10px; --r-xl: 12px; --r-2xl: 16px;
+  --font-body: var(--font-inter);
+  --font-head: var(--font-manrope);
+  --head-weight: 700; --head-tracking: -0.02em; --head-transform: none;
+  --border-style: solid;
+  --shadow: 0 1px 2px rgb(16 24 40 / 0.05), 0 1px 3px rgb(16 24 40 / 0.08);
+  --btn-shadow: 0 1px 2px rgb(16 24 40 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.18);
+  --btn-transform: none; --btn-tracking: 0; --btn-radius: var(--r-md);
+  --stage-bg: radial-gradient(circle at 1px 1px, rgb(17 24 39 / 0.07) 1px, transparent 0) 0 0 / 22px 22px, #fafbfc;
+  --stage-border: #e3e6eb; --stage-text: #111827; --stage-muted: #6b7280;
+  --flow: #2563eb; --node-bg: #ffffff;
+  --node-line: #d5dae2; --node-glow: 0;
+  color-scheme: light;
 }
 
 /* Soft: pale sage, rounded type, pill buttons, soft floating surfaces, no hard lines. */
@@ -144,10 +144,8 @@
 /* Surfaces float or lie flat depending on the theme; primary buttons follow the theme's style */
 .bg-surface { box-shadow: var(--shadow); }
 button.bg-accent, a.bg-accent { box-shadow: var(--btn-shadow); border-radius: var(--btn-radius); }
-[data-theme="daylight"] main a:not([class*="bg-"]):not([class*="rounded"]) { text-decoration-thickness: 1px; text-underline-offset: 3px; }
 [data-theme="sage"] .border-border { border-color: transparent; }
 [data-theme="sage"] input, [data-theme="sage"] select, [data-theme="sage"] textarea { border-color: var(--border) !important; background: #ffffff; }
-[data-theme="graphite"] h1::before { content: "> "; color: var(--accent); }
 
 /* Live studio (home): the production line with animated agents */
 .ls-stage {

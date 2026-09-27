@@ -23,8 +23,8 @@
   },
   "themes": {
     "midnight": "Gecə",
-    "daylight": "Kağız",
-    "graphite": "Terminal",
+    "graphite": "Aurora",
+    "daylight": "İnci",
     "sage": "Yumşaq"
   },
   "login": {
@@ -1075,5 +1075,11 @@
       "inactive": "90 gündür post yoxdur",
       "ignored": "izlənmir"
     }
+  },
+  "themeHints": {
+    "midnight": "Tünd · göy və narıncı",
+    "graphite": "Tünd · bənövşəyi işıq",
+    "daylight": "Açıq · ağ və mavi",
+    "sage": "Açıq · yumşaq yaşıl"
   }
 }
