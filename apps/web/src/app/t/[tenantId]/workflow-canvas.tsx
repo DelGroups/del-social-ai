@@ -24,6 +24,9 @@ const ICON: Record<string, string> = {
   trigger_briefing: "M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0",
   trigger_meeting: "M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6m13 9v-1a4 4 0 0 0-3-3.87M16 4.13a3 3 0 0 1 0 5.74",
   agenda: "M9 11l2 2 4-4M5 4h14v16H5z",
+  trigger_competitors: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14m9 16-4.35-4.35",
+  search: "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14m9 16-4.35-4.35",
+  verify: "M4 4h16v16H4zM8 12l3 3 5-6",
   ask_market: "M4 19V9m5 10V5m5 14v-7m5 7V9",
   ask_content: "M4 20h4L19 9l-4-4L4 16zM13 7l4 4",
   ask_quality: "M12 3 5 6v5c0 4.4 3 8.3 7 9.5 4-1.2 7-5.1 7-9.5V6zM9 12l2 2 4-4",
@@ -56,7 +59,8 @@ function useWidth<T extends HTMLElement>() {
 }
 
 function nodesOf(job: LiveJob): FlowNode[] {
-  const trigger: FlowNode = { key: `trigger_${job.kind}`, agent: job.kind === "post" ? "team_lead" : job.kind === "market" ? "market_researcher" : "team_lead", status: "done", trigger: true };
+  const researcher = job.kind === "market" || job.kind === "competitors";
+  const trigger: FlowNode = { key: `trigger_${job.kind}`, agent: researcher ? "market_researcher" : "team_lead", status: "done", trigger: true };
   return [trigger, ...job.steps.map((s) => ({ key: s.key, agent: s.agent, status: s.status as Status, note: s.note }))];
 }
 

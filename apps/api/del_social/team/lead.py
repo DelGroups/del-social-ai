@@ -24,7 +24,7 @@ from del_social.media import analysis
 from del_social.media.storage import MediaStore
 from del_social.models import AgentEvent, BrandProfileVersion, ChatMessage, DailyReport, Goal, MediaAsset, Post, Product, Task
 from del_social.posts import service
-from del_social.team import activity, daily, meeting, metrics, texts, timing, work
+from del_social.team import activity, competitor_hunt, daily, meeting, metrics, texts, timing, work
 from del_social.team.texts import m
 
 log = logging.getLogger(__name__)
@@ -90,8 +90,11 @@ async def _context(db: AsyncSession, now: datetime) -> str:
         f"{'OWNER' if m.role == 'user' else (m.agent or 'agent').upper()}: {m.text}" for m in reversed(history)
     ]
     baku_now = now.astimezone(timing.BAKU)
+    last_owner = next((c.text for c in history if c.role == "user"), "")
+    reply_language = texts.detect(last_owner) or await texts.language_of(db)
     return "\n\n".join([
         f"<now>{baku_now.strftime('%A %Y-%m-%d %H:%M')} Baku time</now>",
+        f"<reply_language>{reply_language}</reply_language>",
         "<products>\n" + json.dumps(product_rows, ensure_ascii=False, indent=1) + "\n</products>",
         f"<photos_without_analysis>{unanalysed}</photos_without_analysis>",
         "<goals>\nThe team's goals; progress measured by code.\n" + json.dumps(goal_rows, ensure_ascii=False, indent=1) + "\n</goals>",
@@ -167,6 +170,14 @@ async def run_lead(
                     ))).all()
                 for asset_id in ids:
                     spawn(analysis.run_analysis, engine=engine, llm=llm, store=store, tenant_id=tenant_id, asset_id=asset_id)
+                started += 1
+            elif action.type == "find_competitors":
+                spawn(competitor_hunt.run_search, engine=engine, llm=llm, meta=meta, vault=vault, tenant_id=tenant_id)
+                started += 1
+            elif action.type == "add_competitors":
+                if not action.usernames:
+                    raise work.WorkError("No usernames were given")
+                spawn(competitor_hunt.run_add, engine=engine, meta=meta, vault=vault, tenant_id=tenant_id, usernames=action.usernames)
                 started += 1
             elif action.type in ("run_market_research", "morning_report", "team_meeting"):
                 kind = {"run_market_research": "market", "morning_report": "briefing", "team_meeting": "meeting"}[action.type]

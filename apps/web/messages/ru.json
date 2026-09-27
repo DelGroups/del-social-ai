@@ -726,7 +726,10 @@
         "ask_market": "Взгляд рынка",
         "ask_content": "Взгляд контента",
         "ask_quality": "Взгляд качества",
-        "decide": "Решение"
+        "decide": "Решение",
+        "trigger_competitors": "Поиск конкурентов",
+        "search": "Ищет в интернете",
+        "verify": "Проверяет в Instagram"
       },
       "status": {
         "pending": "ждёт",
@@ -739,13 +742,15 @@
         "post": "начато",
         "market": "начато",
         "briefing": "начато",
-        "meeting": "созвано"
+        "meeting": "созвано",
+        "competitors": "начато"
       },
       "kind": {
         "post": "Пост",
         "market": "Исследование рынка",
         "briefing": "Утренний отчёт",
-        "meeting": "Совещание команды"
+        "meeting": "Совещание команды",
+        "competitors": "Поиск конкурентов"
       },
       "task": {
         "running": "в работе",

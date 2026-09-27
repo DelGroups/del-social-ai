@@ -150,4 +150,17 @@ CATALOG: dict[str, dict[str, str]] = {
     "meeting.done": {"az": "İclas bitdi: nəticələr sizə göndərildi", "ru": "Совещание завершено: итоги отправлены вам", "en": "Meeting finished: the outcome was sent to you", "fa": "جلسه تمام شد: نتیجه برای شما ارسال شد"},
     "meeting.failed": {"az": "İclas alınmadı: {error}", "ru": "Совещание не удалось: {error}", "en": "The meeting failed: {error}", "fa": "جلسه انجام نشد: {error}"},
     "step.decided": {"az": "{goals} hədəf · {plan} post planı", "ru": "Целей: {goals} · постов в плане: {plan}", "en": "{goals} goals · {plan} planned posts", "fa": "{goals} هدف · {plan} پست در برنامه"},
+    # Finding competitors
+    "hunt.title": {"az": "Rəqib axtarışı", "ru": "Поиск конкурентов", "en": "Competitor search", "fa": "جستجوی رقبا"},
+    "hunt.start": {"az": "İnternetdə rəqiblərin Instagram hesablarını axtarır", "ru": "Ищет Instagram-аккаунты конкурентов в интернете", "en": "Searching the web for competitors' Instagram accounts", "fa": "در حال جستجوی حساب‌های اینستاگرام رقبا در اینترنت"},
+    "hunt.result": {"az": "Rəqib axtarışı bitdi. {added}{replaced}{missing}", "ru": "Поиск конкурентов завершён. {added}{replaced}{missing}", "en": "Competitor search finished. {added}{replaced}{missing}", "fa": "جستجوی رقبا تمام شد. {added}{replaced}{missing}"},
+    "hunt.added": {"az": "Instagramda yoxlanılıb izləməyə əlavə edildi: {list}.", "ru": "Проверены в Instagram и добавлены под наблюдение: {list}.", "en": "Checked on Instagram and now watched: {list}.", "fa": "در اینستاگرام بررسی و به فهرست پیگیری اضافه شد: {list}."},
+    "hunt.none": {"az": "Yeni aktiv rəqib hesabı tapılmadı.", "ru": "Новых активных аккаунтов конкурентов не найдено.", "en": "No new active competitor accounts were found.", "fa": "حساب فعال جدیدی از رقبا پیدا نشد."},
+    "hunt.replaced": {"az": " Səhv adlar düzgün hesablarla əvəz olundu: {list}.", "ru": " Неверные имена заменены настоящими аккаунтами: {list}.", "en": " Wrong usernames replaced by the real accounts: {list}.", "fa": " نام‌های کاربری اشتباه با حساب‌های واقعی جایگزین شدند: {list}."},
+    "hunt.missing": {"az": " Hələ tapılmayanlar: {list}; düzgün adı bilirsinizsə, yazın.", "ru": " Пока не найдены: {list}; если знаете точное имя, напишите.", "en": " Still not found: {list}; if you know the exact username, write it.", "fa": " هنوز پیدا نشده: {list}؛ اگر نام دقیق را می‌دانید بنویسید."},
+    "hunt.not_found": {"az": " Instagramda tapılmadı (və ya biznes hesabı deyil): {list}.", "ru": " Не найдены в Instagram (или не бизнес-аккаунты): {list}.", "en": " Not found on Instagram (or not business accounts): {list}.", "fa": " در اینستاگرام پیدا نشد (یا حساب بیزنسی نیست): {list}."},
+    "hunt.failed": {"az": "Rəqib axtarışı alınmadı: {error}", "ru": "Поиск конкурентов не удался: {error}", "en": "The competitor search failed: {error}", "fa": "جستجوی رقبا انجام نشد: {error}"},
+    "step.hunt_found": {"az": "{n} hesab tapıldı · {sources} mənbə", "ru": "Найдено аккаунтов: {n} · источников: {sources}", "en": "{n} accounts found · {sources} sources", "fa": "{n} حساب پیدا شد · {sources} منبع"},
+    "step.hunt_verified": {"az": "{checked} hesab yoxlanıldı · {added} əlavə edildi", "ru": "Проверено: {checked} · добавлено: {added}", "en": "{checked} checked · {added} added", "fa": "{checked} حساب بررسی شد · {added} اضافه شد"},
+    "step.hunt_done": {"az": "{n} yeni rəqib izlənilir", "ru": "Новых конкурентов под наблюдением: {n}", "en": "{n} new competitors watched", "fa": "{n} رقیب جدید پیگیری می‌شود"},
 }

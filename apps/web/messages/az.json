@@ -726,7 +726,10 @@
         "ask_market": "Bazar baxışı",
         "ask_content": "Kontent baxışı",
         "ask_quality": "Keyfiyyət baxışı",
-        "decide": "Qərar"
+        "decide": "Qərar",
+        "trigger_competitors": "Rəqib axtarışı",
+        "search": "İnternetdə axtarır",
+        "verify": "Instagramda yoxlayır"
       },
       "status": {
         "pending": "gözləyir",
@@ -739,13 +742,15 @@
         "post": "başladı",
         "market": "başladı",
         "briefing": "başladı",
-        "meeting": "çağırıldı"
+        "meeting": "çağırıldı",
+        "competitors": "başladı"
       },
       "kind": {
         "post": "Post",
         "market": "Bazar araşdırması",
         "briefing": "Səhər hesabatı",
-        "meeting": "Komanda iclası"
+        "meeting": "Komanda iclası",
+        "competitors": "Rəqib axtarışı"
       },
       "task": {
         "running": "icra olunur",

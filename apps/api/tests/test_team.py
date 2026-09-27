@@ -206,6 +206,13 @@ async def test_team_answers_in_the_owners_language(client, team, admin, tenants,
     live = (await client.get(turl(tenants["a"], "/live"), headers=owner)).json()
     assert live["events"][0]["title"].startswith("نتوانست پاسخ دهد")
 
+    # The Team Lead is told, by code, to answer in the language of the owner's last message
+    team.lead.append(LeadOutput(reply="باشه", actions=[Action(type="add_competitors", usernames=["@rival_mebel"])]))
+    await say(client, tenants["a"], owner, "این رقیب را اضافه کن: @rival_mebel")
+    assert "<reply_language>fa</reply_language>" in team.lead_inputs[-1]
+    msgs = (await client.get(turl(tenants["a"], "/chat"), headers=owner)).json()
+    assert msgs[-1]["agent"] == "market_researcher" and "Instagram is not connected" in msgs[-1]["text"]  # no Instagram in this test
+
     # A fixed report language in the brand profile wins over the chat language
     await admin.execute(
         "INSERT INTO brand_profiles (tenant_id, version, data) VALUES ($1, 1, $2::jsonb)",

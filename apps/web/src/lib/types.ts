@@ -273,7 +273,7 @@ export type PostInfo = {
 export type TaskInfo = {
   task_id: string;
   title: string;
-  kind: "post" | "market" | "briefing" | "meeting";
+  kind: "post" | "market" | "briefing" | "meeting" | "competitors";
   status: "running" | "waiting_approval" | "scheduled" | "done" | "failed" | "cancelled";
   steps: { key: string; agent: string | null; status: "pending" | "running" | "done" | "waiting" | "failed"; note?: string }[];
   post_id: string | null;
