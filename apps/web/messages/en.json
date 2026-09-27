@@ -594,7 +594,63 @@
     "changePlaceholder": "What should change? e.g. “it has round handles, don't write handleless”",
     "sendChange": "Send to the Copywriter",
     "approvalsTitle": "Approvals",
-    "nothingWaiting": "Nothing is waiting for you. The team will bring the next post here."
+    "nothingWaiting": "Nothing is waiting for you. The team will bring the next post here.",
+    "studio": {
+      "station": {
+        "team_lead": "Team Lead",
+        "media_analyst": "Photo Analyst",
+        "copywriter": "Copywriter",
+        "brand_guardian": "Brand Guardian",
+        "approval": "You (approval)",
+        "publisher": "Publisher",
+        "channels": "Instagram · Facebook"
+      },
+      "waitingYou": "{count, plural, one {# post waits for you} other {# posts wait for you}}",
+      "nothingToApprove": "Nothing to approve",
+      "publishedRecent": "{count} published recently",
+      "noPublishYet": "Nothing published yet",
+      "working": "working…",
+      "ready": "ready",
+      "jobs": "{count, plural, =0 {no work in progress} one {# job in progress} other {# jobs in progress}}",
+      "lineEmpty": "The line is empty. Give the Team Lead an instruction and watch the work move here.",
+      "jobDone": "✓ published",
+      "jobFailed": "stopped: see chat",
+      "jobScheduled": "⏱ {time}",
+      "jobWaiting": "waiting for you",
+      "jobActive": "being worked on…",
+      "moreTeam": "Rest of the team:",
+      "soon": "soon",
+      "coming": {
+        "planner": {
+          "name": "SMM Planner",
+          "hint": "Weekly content plan, every Friday morning"
+        },
+        "visual_designer": {
+          "name": "Visual Designer",
+          "hint": "Templates, text on images, stories"
+        },
+        "community": {
+          "name": "Community Manager",
+          "hint": "Comments and direct messages"
+        },
+        "analyst": {
+          "name": "Analyst",
+          "hint": "Weekly reports, competitors, PDF"
+        },
+        "cmo": {
+          "name": "Marketing Director",
+          "hint": "Monthly strategy and budget"
+        },
+        "ads": {
+          "name": "Ads Specialist",
+          "hint": "Meta ad campaigns, with budget limits and your approval"
+        },
+        "video": {
+          "name": "Video Editor",
+          "hint": "Reels and short videos"
+        }
+      }
+    }
   },
   "settingsHub": {
     "title": "Settings",

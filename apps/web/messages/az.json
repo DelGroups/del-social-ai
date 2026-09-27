@@ -594,7 +594,63 @@
     "changePlaceholder": "Nə dəyişməlidir? məs. “dairəvi qulpları var, qulpsuz yazma”",
     "sendChange": "Kopirayterə göndər",
     "approvalsTitle": "Təsdiqlər",
-    "nothingWaiting": "Sizi gözləyən heç nə yoxdur. Komanda növbəti postu bura gətirəcək."
+    "nothingWaiting": "Sizi gözləyən heç nə yoxdur. Komanda növbəti postu bura gətirəcək.",
+    "studio": {
+      "station": {
+        "team_lead": "Rəhbər",
+        "media_analyst": "Şəkil analitiki",
+        "copywriter": "Kopirayter",
+        "brand_guardian": "Brend nəzarətçisi",
+        "approval": "Siz (təsdiq)",
+        "publisher": "Paylaşım",
+        "channels": "Instagram · Facebook"
+      },
+      "waitingYou": "{count} post sizi gözləyir",
+      "nothingToApprove": "Təsdiq gözləyən yoxdur",
+      "publishedRecent": "Son {count} paylaşım",
+      "noPublishYet": "Hələ paylaşım yoxdur",
+      "working": "işləyir…",
+      "ready": "hazırdır",
+      "jobs": "{count, plural, =0 {icrada iş yoxdur} other {# iş icrada}}",
+      "lineEmpty": "Xətt boşdur. Rəhbərə tapşırıq verin və işin burada necə hərəkət etdiyinə baxın.",
+      "jobDone": "✓ paylaşıldı",
+      "jobFailed": "dayandı: söhbətə baxın",
+      "jobScheduled": "⏱ {time}",
+      "jobWaiting": "sizi gözləyir",
+      "jobActive": "üzərində işlənir…",
+      "moreTeam": "Komandanın qalanı:",
+      "soon": "tezliklə",
+      "coming": {
+        "planner": {
+          "name": "SMM planlayıcı",
+          "hint": "Həftəlik kontent planı, hər cümə səhəri"
+        },
+        "visual_designer": {
+          "name": "Vizual dizayner",
+          "hint": "Şablonlar, şəkil üzərində mətn, storilər"
+        },
+        "community": {
+          "name": "İcma meneceri",
+          "hint": "Şərhlər və birbaşa mesajlar"
+        },
+        "analyst": {
+          "name": "Analitik",
+          "hint": "Həftəlik hesabatlar, rəqiblər, PDF"
+        },
+        "cmo": {
+          "name": "Marketinq direktoru",
+          "hint": "Aylıq strategiya və büdcə"
+        },
+        "ads": {
+          "name": "Reklam mütəxəssisi",
+          "hint": "Meta reklam kampaniyaları, büdcə limiti və təsdiqinizlə"
+        },
+        "video": {
+          "name": "Video redaktor",
+          "hint": "Reels və qısa videolar"
+        }
+      }
+    }
   },
   "settingsHub": {
     "title": "Tənzimləmələr",

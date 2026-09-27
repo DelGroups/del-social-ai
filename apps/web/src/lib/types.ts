@@ -270,6 +270,13 @@ export type TaskInfo = {
   created_at: string;
 };
 
+export type LiveJob = TaskInfo & {
+  thumb_url: string | null;
+  post_status: PostInfo["status"] | null;
+  scheduled_at: string | null;
+  updated_at: string;
+};
+
 export type ChatMsg = {
   message_id: string;
   role: "user" | "agent";
@@ -283,6 +290,7 @@ export type ChatMsg = {
 export type LiveInfo = {
   agents: { agent: string; state: "working" | "idle"; activity: string | null; last_at: string | null; done_today: number }[];
   running: TaskInfo[];
+  jobs: LiveJob[];
   waiting: PostInfo[];
   scheduled: PostInfo[];
   published: PostInfo[];
