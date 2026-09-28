@@ -57,7 +57,8 @@
     "reports": "Hesabatlar",
     "settings": "Tənzimləmələr",
     "team": "Komanda",
-    "menu": "Menyu"
+    "menu": "Menyu",
+    "youtube": "YouTube Studio"
   },
   "members": {
     "title": "Üzvlər",
@@ -175,7 +176,15 @@
     "metaError": "Meta girişi qəbul etmədi. Yenidən cəhd edin.",
     "metaNopages": "Bu Meta hesabında Facebook səhifəsi tapılmadı. Səhifəni idarə etdiyinizə və ona giriş icazəsi verdiyinizə əmin olun.",
     "metaSession": "Giriş başqa hesabdan və ya brauzerdən başladılıb. Yenidən cəhd edin.",
-    "metaForbidden": "Bağlantıları idarə etmək icazəniz artıq yoxdur."
+    "metaForbidden": "Bağlantıları idarə etmək icazəniz artıq yoxdur.",
+    "connectGoogle": "Google ilə qoş",
+    "googleHint": "Kanalın sahibi olan Google hesabı ilə daxil olun. Paket səhifəsində YouTube Studio aktiv olmalıdır.",
+    "googleCancelled": "Google girişi ləğv edildi.",
+    "googleError": "Google girişi tamamlanmadı. Yenidən cəhd edin.",
+    "googleNoChannel": "Bu Google hesabının YouTube kanalı yoxdur. Kanalın sahibi olan hesabı (və ya brend hesabını) seçin.",
+    "googleNoRefresh": "Google davamlı giriş vermədi. myaccount.google.com → Təhlükəsizlik → Üçüncü tərəf girişi bölməsində tətbiqi silin və yenidən qoşun.",
+    "googleChannels": "YouTube Studio bir kanal daxildir. Əvvəlcə digər kanalı ayırın və ya Paket səhifəsində əlavə istəyin.",
+    "googleNoAddon": "Bu şirkət üçün YouTube Studio aktiv deyil. Paket səhifəsində istəyin."
   },
   "brand": {
     "title": "Brend profili",
@@ -853,7 +862,8 @@
     "paymentNote": "Ödəniş hesab-faktura və ya bank köçürməsi ilə; paket ödənişdən sonra aktivləşir. Onlayn ödəniş tezliklə.",
     "ownerOnly": "Paketi yalnız şirkət sahibi dəyişə bilər.",
     "daysLeft": "{days} gün qalıb",
-    "manage": "Paketi idarə et"
+    "manage": "Paketi idarə et",
+    "addonsTitle": "Əlavə modullar"
   },
   "roster": {
     "title": "Komandanız",
@@ -1108,5 +1118,51 @@
     "pausedNoData": "Meta dayandırılıb: yandırdıqdan sonra rəqəmlər qayıdacaq.",
     "emptyTitle": "Kanallarınızı qoşun",
     "emptyHint": "Instagram, Facebook və YouTube rəqəmləri hər səhər burada görünəcək."
+  },
+  "addons": {
+    "kicker": "Əlavə modul",
+    "price": "{price} AZN / ay · hər ay {credits} kredit",
+    "on": "Aktiv",
+    "off": "Aktiv deyil",
+    "ask": "YouTube Studio istə",
+    "requested": "İstənilib",
+    "total": "Qalan kredit",
+    "monthly": "Bu ayın krediti",
+    "renews": "Yeni kreditlər: {date}",
+    "bought": "Alınmış kredit",
+    "neverExpire": "vaxtı bitmir",
+    "until": "{date} tarixinədək aktivdir",
+    "packs": "Əlavə kredit al",
+    "credits": "{n} kredit",
+    "packPrice": "{price} AZN",
+    "buy": "İstə",
+    "costsTitle": "Hər işin qiyməti",
+    "history": "Son kredit hərəkətləri",
+    "does": {
+      "thumbs": "Hər video üçün müxtəlif üslublu thumbnail",
+      "texts": "Başlıq, təsvir, teqlər, fəsillər, tərcümələr",
+      "reports": "Hər gün və ya bir neçə saatdan bir kanal hesabatı",
+      "review": "Məsləhətlərlə dərin kanal təhlili",
+      "ideas": "Kanalınız üçün trend mövzular və video ideyaları",
+      "comments": "Şərhlərə cavab qaralamaları",
+      "editor": "Süni intellektlə video redaktor, altyazı və Shorts",
+      "generate": "Süni intellektlə video yaratma"
+    },
+    "work": {
+      "metadata": "Bir video üçün başlıq, təsvir, teqlər",
+      "comments": "Cavab qaralamaları (20 şərhə qədər)",
+      "ideas": "Trend araşdırması və ideyalar",
+      "review": "Dərin kanal təhlili",
+      "thumbnail_ai": "Bir AI fon şəkli",
+      "thumbnail_edit": "Bir AI foto redaktəsi",
+      "cutout": "Fonun silinməsi",
+      "transcribe_10min": "Mətnə çevirmə, hər 10 dəqiqə",
+      "render_min": "Video hazırlanması, hər dəqiqə",
+      "shorts_pick": "Shorts üçün ən yaxşı anların seçilməsi",
+      "video_gen": "AI ilə video yaratma",
+      "purchase": "Kredit alındı",
+      "refund": "Geri qaytarma (iş alınmadı)",
+      "grant": "Kredit verildi"
+    }
   }
 }

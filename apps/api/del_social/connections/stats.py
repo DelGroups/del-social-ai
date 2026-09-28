@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from del_social.connections.base import ChannelError, Credentials
 from del_social.connections.meta import MetaClient
+from del_social.connections.youtube import YouTubeClient
 from del_social.connections.service import credentials
 from del_social.core.db import set_tenant
 from del_social.core.vault import TokenVault, VaultError
@@ -76,6 +77,25 @@ def meta_readers(meta: MetaClient | None) -> dict[str, Reader]:
         }
 
     return {Channel.INSTAGRAM.value: instagram, Channel.FACEBOOK.value: facebook}
+
+
+def youtube_readers(yt: YouTubeClient | None) -> dict[str, Reader]:
+    """YouTube: subscribers, videos and total views of the channel (one unit a day)."""
+    if yt is None:
+        return {}
+
+    async def youtube(creds: Credentials, now: datetime) -> dict[str, Any]:
+        ch = await yt.my_channel(creds)
+        st, sn = ch.get("statistics") or {}, ch.get("snippet") or {}
+        thumbs = sn.get("thumbnails") or {}
+        return {
+            "followers": None if st.get("hiddenSubscriberCount") else _int(st.get("subscriberCount")),
+            "posts": _int(st.get("videoCount")), "views": _int(st.get("viewCount")),
+            "extra": {"title": sn.get("title"), "handle": sn.get("customUrl"),
+                      "avatar": (thumbs.get("medium") or thumbs.get("default") or {}).get("url")},
+        }
+
+    return {Channel.YOUTUBE.value: youtube}
 
 
 async def save(db: AsyncSession, conn: Connection, day: date, values: dict[str, Any]) -> None:

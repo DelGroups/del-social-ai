@@ -28,16 +28,29 @@ const NOTICES: Record<string, string> = {
   forbidden: "metaForbidden",
   expired: "pickExpired",
 };
+// ?google=<reason> set by the API's Google callback
+const GOOGLE_NOTICES: Record<string, string> = {
+  cancelled: "googleCancelled",
+  error: "googleError",
+  nochannel: "googleNoChannel",
+  norefresh: "googleNoRefresh",
+  session: "metaSession",
+  forbidden: "metaForbidden",
+  channels: "googleChannels",
+  no_addon: "googleNoAddon",
+  addon_expired: "googleNoAddon",
+};
 
 type Props = {
   tenantId: string;
   manage: boolean;
   channels: ChannelInfo[];
   notice: string | null;
+  googleNotice?: string | null;
   pick: { id: string; pages: PageOption[] | null } | null;
 };
 
-export function ConnectionsManager({ tenantId, manage, channels, notice, pick }: Props) {
+export function ConnectionsManager({ tenantId, manage, channels, notice, googleNotice, pick }: Props) {
   const t = useTranslations();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +77,18 @@ export function ConnectionsManager({ tenantId, manage, channels, notice, pick }:
     try {
       const { url } = await api<{ url: string }>(`${base}/meta/start`, { method: "POST" });
       window.location.href = url; // Facebook's sign-in page; it sends the browser back to our callback
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t("common.error"));
+      setBusy(false);
+    }
+  }
+
+  async function startGoogle() {
+    setBusy(true);
+    setError(null);
+    try {
+      const { url } = await api<{ url: string }>(`${base}/google/start`, { method: "POST" });
+      window.location.href = url; // Google's sign-in page; it sends the browser back to our callback
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t("common.error"));
       setBusy(false);
@@ -103,6 +128,16 @@ export function ConnectionsManager({ tenantId, manage, channels, notice, pick }:
             {t("connections.connect")}
           </Button>
         </form>
+      );
+    }
+    if (c.channel === "youtube") {
+      return (
+        <div className="space-y-2">
+          <Button onClick={startGoogle} disabled={busy}>
+            {t("connections.connectGoogle")}
+          </Button>
+          <p className="text-xs text-muted">{t("connections.googleHint")}</p>
+        </div>
       );
     }
     return (
@@ -162,6 +197,7 @@ export function ConnectionsManager({ tenantId, manage, channels, notice, pick }:
     <div className="space-y-6">
       <p className="text-sm text-muted">{t("connections.intro")}</p>
       {notice && NOTICES[notice] && <Alert tone="error">{t(`connections.${NOTICES[notice]}`)}</Alert>}
+      {googleNotice && GOOGLE_NOTICES[googleNotice] && <Alert tone="error">{t(`connections.${GOOGLE_NOTICES[googleNotice]}`)}</Alert>}
       {error && <Alert tone="error">{error}</Alert>}
 
       {pick && (

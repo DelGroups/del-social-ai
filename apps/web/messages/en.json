@@ -57,7 +57,8 @@
     "reports": "Reports",
     "settings": "Settings",
     "team": "Team",
-    "menu": "Menu"
+    "menu": "Menu",
+    "youtube": "YouTube Studio"
   },
   "members": {
     "title": "Members",
@@ -175,7 +176,15 @@
     "metaError": "Meta did not accept the sign-in. Please try again.",
     "metaNopages": "No Facebook pages were found for this Meta account. Make sure you manage the page and allowed access to it.",
     "metaSession": "The sign-in was started from a different account or browser. Please try again.",
-    "metaForbidden": "You no longer have permission to manage connections."
+    "metaForbidden": "You no longer have permission to manage connections.",
+    "connectGoogle": "Connect with Google",
+    "googleHint": "Sign in with the Google account that owns the channel. YouTube Studio must be active on the Package page.",
+    "googleCancelled": "The Google sign-in was cancelled.",
+    "googleError": "Google did not complete the sign-in. Please try again.",
+    "googleNoChannel": "This Google account has no YouTube channel. Choose the account (or brand account) that owns the channel.",
+    "googleNoRefresh": "Google did not give lasting access. Remove the app at myaccount.google.com → Security → Third-party access, then connect again.",
+    "googleChannels": "YouTube Studio includes one channel. Disconnect the other channel first, or ask for more on the Package page.",
+    "googleNoAddon": "YouTube Studio is not active for this company. Ask for it on the Package page."
   },
   "brand": {
     "title": "Brand profile",
@@ -853,7 +862,8 @@
     "paymentNote": "Payment by invoice or bank transfer; the package is activated once it is paid. Online payment is coming.",
     "ownerOnly": "Only the company owner can change the package.",
     "daysLeft": "{days} days left",
-    "manage": "Manage package"
+    "manage": "Manage package",
+    "addonsTitle": "Add-ons"
   },
   "roster": {
     "title": "Your team",
@@ -1108,5 +1118,51 @@
     "pausedNoData": "Meta is paused: numbers return when you switch it on.",
     "emptyTitle": "Connect your channels",
     "emptyHint": "Instagram, Facebook and YouTube numbers appear here every morning."
+  },
+  "addons": {
+    "kicker": "Add-on",
+    "price": "{price} AZN / month · {credits} credits every month",
+    "on": "Active",
+    "off": "Not active",
+    "ask": "Ask for YouTube Studio",
+    "requested": "Requested",
+    "total": "Credits left",
+    "monthly": "This month's credits",
+    "renews": "New credits on {date}",
+    "bought": "Bought credits",
+    "neverExpire": "never expire",
+    "until": "Active until {date}",
+    "packs": "Buy more credits",
+    "credits": "{n} credits",
+    "packPrice": "{price} AZN",
+    "buy": "Ask for it",
+    "costsTitle": "What each job costs",
+    "history": "Latest credit movements",
+    "does": {
+      "thumbs": "Thumbnails in many styles for every video",
+      "texts": "Titles, descriptions, tags, chapters, translations",
+      "reports": "Channel reports every day or every few hours",
+      "review": "Deep channel review with advice",
+      "ideas": "Trending topics and video ideas for your channel",
+      "comments": "Reply drafts for comments",
+      "editor": "AI video editor, subtitles and Shorts",
+      "generate": "AI video generation"
+    },
+    "work": {
+      "metadata": "Titles, description, tags for one video",
+      "comments": "Reply drafts (up to 20 comments)",
+      "ideas": "Trend research and ideas",
+      "review": "Deep channel review",
+      "thumbnail_ai": "One AI background image",
+      "thumbnail_edit": "One AI photo edit",
+      "cutout": "Background removal",
+      "transcribe_10min": "Transcription, per 10 minutes",
+      "render_min": "Video rendering, per minute",
+      "shorts_pick": "Picking the best moments for Shorts",
+      "video_gen": "AI video generation",
+      "purchase": "Credits bought",
+      "refund": "Refund (the job failed)",
+      "grant": "Credits given"
+    }
   }
 }

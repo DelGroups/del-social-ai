@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     meta_login_config_id: str = ""  # set when the app uses "Facebook Login for Business"
     # The owner's master switch: no request of any kind goes to Meta while true (ADR 011)
     meta_paused: bool = False
+    # YouTube Studio (ADR 012): a Google Cloud OAuth client (web application) with the YouTube Data
+    # and Analytics APIs enabled. Redirect URI: <app_base_url>/api/connections/google/callback
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    youtube_daily_units: int = 10000  # the Google project's Data API quota
 
     # LLMs (docs/phase-1-plan.md §4, §9). Model ids are config, not code.
     anthropic_api_key: str = ""
@@ -50,6 +55,10 @@ class Settings(BaseSettings):
     @property
     def langfuse_configured(self) -> bool:
         return bool(self.langfuse_public_key and self.langfuse_secret_key)
+
+    @property
+    def google_configured(self) -> bool:
+        return bool(self.google_client_id and self.google_client_secret)
 
     @property
     def meta_configured(self) -> bool:

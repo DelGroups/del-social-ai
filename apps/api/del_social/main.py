@@ -51,7 +51,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     if settings.scheduler_enabled and vault is not None:
         from del_social.connections import stats
 
-        readers = stats.meta_readers(meta)
+        readers = stats.meta_readers(meta) | stats.youtube_readers(deps.get_youtube_optional())
         tasks.append(asyncio.create_task(stats.loop(engine=deps._engine(), vault=vault, readers=readers)))
     if settings.scheduler_enabled and settings.anthropic_api_key:
         llm = build_llm(settings, deps._engine(), http)

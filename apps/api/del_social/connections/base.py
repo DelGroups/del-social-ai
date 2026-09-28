@@ -97,8 +97,3 @@ class WhatsAppAdapter(ChannelAdapter):
 class TikTokAdapter(ChannelAdapter):
     channel = Channel.TIKTOK
     connect_method = "oauth"
-
-
-class YouTubeAdapter(ChannelAdapter):
-    channel = Channel.YOUTUBE
-    connect_method = "oauth"

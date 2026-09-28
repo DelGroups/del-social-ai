@@ -342,6 +342,7 @@ export type PlanStatus = {
   video: Meter;
   catalog: PlanInfo[];
   open_request: { plan_id: string; created_at: string } | null;
+  addons: AddonStatus[];
 };
 
 export const canBuyPlan = (role: Role) => role === "owner";
@@ -517,4 +518,22 @@ export type ChannelCard = {
   growth_30d: number | null;
   series: { day: string; followers: number | null }[];
   extra: { username?: string; handle?: string; [k: string]: unknown };
+};
+
+export type AddonStatus = {
+  addon_id: string;
+  name: string;
+  price_azn: string;
+  monthly_credits: number;
+  active: boolean;
+  starts_at: string | null;
+  expires_at: string | null;
+  period_end: string | null;
+  monthly_left: number;
+  purchased: number;
+  total: number;
+  packs: { pack_id: string; credits: number; price_azn: string }[];
+  history: { delta: number; reason: string; created_at: string }[];
+  open_request: string | null;
+  costs: Record<string, number>;
 };

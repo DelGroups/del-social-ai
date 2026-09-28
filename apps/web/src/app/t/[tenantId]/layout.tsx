@@ -25,6 +25,8 @@ export default async function TenantLayout({
     apiGet<LiveInfo>(`/tenants/${tenantId}/team/live`),
   ]);
   const base = `/t/${tenantId}`;
+  const youtube = plan?.addons?.find((a) => a.addon_id === "youtube" && a.active);
+  const social = plan?.plan != null || !youtube; // a YouTube-only company sees only its studio
   const themeCookie = (await cookies()).get(THEME_COOKIE)?.value;
   const prefs = { locale: await getLocale(), theme: isTheme(themeCookie) ? themeCookie : DEFAULT_THEME };
   return (
@@ -34,12 +36,17 @@ export default async function TenantLayout({
       plan={plan}
       prefs={prefs}
       items={[
-        { href: base, label: t("home"), icon: "home", exact: true },
-        { href: `${base}/team`, label: t("team"), icon: "team" },
-        { href: `${base}/approvals`, label: t("approvals"), icon: "check", badge: live?.waiting.length },
-        { href: `${base}/posts`, label: t("posts"), icon: "posts" },
-        { href: `${base}/media`, label: t("media"), icon: "photos" },
-        { href: `${base}/reports`, label: t("reports"), icon: "reports" },
+        ...(social
+          ? ([
+              { href: base, label: t("home"), icon: "home", exact: true },
+              { href: `${base}/team`, label: t("team"), icon: "team" },
+              { href: `${base}/approvals`, label: t("approvals"), icon: "check", badge: live?.waiting.length },
+              { href: `${base}/posts`, label: t("posts"), icon: "posts" },
+              { href: `${base}/media`, label: t("media"), icon: "photos" },
+              { href: `${base}/reports`, label: t("reports"), icon: "reports" },
+            ] as const)
+          : []),
+        ...(youtube ? [{ href: `${base}/youtube`, label: t("youtube"), icon: "youtube" as const }] : []),
         { href: `${base}/settings`, label: t("settings"), icon: "settings" },
       ]}
     >

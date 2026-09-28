@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from del_social.billing import quota
+from del_social.billing import credits, quota
 from del_social.connections.base import Credentials, Identity
 from del_social.core.vault import TokenVault, connection_aad
 from del_social.models import Channel, Connection, ConnectionStatus
@@ -33,7 +33,10 @@ async def save_connection(
         )
     )
     if conn is None:
-        await quota.check_new_channel(db)  # the package limits how many channels a company connects
+        if channel == Channel.YOUTUBE:
+            await credits.require_youtube_channel(db)  # the YouTube Studio add-on, not the package (ADR 012)
+        else:
+            await quota.check_new_channel(db)  # the package limits how many channels a company connects
         conn = Connection(
             connection_id=uuid.uuid4(),
             tenant_id=tenant_id,
