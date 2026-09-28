@@ -495,3 +495,26 @@ export type DailyFull = DailyRow & {
   output: (MarketReportData | BriefingData | MeetingData) | null;
   sources: { title: string; url: string }[];
 };
+
+export type ChannelCard = {
+  connection_id: string;
+  channel: string;
+  name: string;
+  status: string;
+  paused: boolean;
+  avatar: string | null;
+  url: string | null;
+  day: string | null;
+  collected_at: string | null;
+  followers: number | null;
+  posts: number | null;
+  views: number | null;
+  likes: number | null;
+  comments: number | null;
+  recent: number | null;
+  engagement_rate: number | null;
+  growth_7d: number | null;
+  growth_30d: number | null;
+  series: { day: string; followers: number | null }[];
+  extra: { username?: string; handle?: string; [k: string]: unknown };
+};

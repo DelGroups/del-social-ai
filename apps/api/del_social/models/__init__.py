@@ -12,6 +12,7 @@ from del_social.models.membership import MemberRole, Membership
 from del_social.models.password_reset import PasswordReset
 from del_social.models.post import Post
 from del_social.models.product import Product
+from del_social.models.stats import ChannelStat
 from del_social.models.strategy import Competitor, Goal
 from del_social.models.team import AgentEvent, ChatMessage, DailyReport, Task
 from del_social.models.tenant import Tenant
@@ -24,6 +25,7 @@ __all__ = [
     "Base",
     "BrandProfileVersion",
     "Channel",
+    "ChannelStat",
     "ChatMessage",
     "Competitor",
     "Connection",

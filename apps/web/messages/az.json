@@ -1087,5 +1087,26 @@
     "graphite": "Tünd · bənövşəyi işıq",
     "daylight": "Açıq · ağ və mavi",
     "sage": "Açıq · yumşaq yaşıl"
+  },
+  "channels": {
+    "title": "Kanallar",
+    "followers": "izləyici",
+    "subscribers": "abunəçi",
+    "posts": "Paylaşım",
+    "videos": "Video",
+    "views": "Baxış",
+    "likesPerPost": "Bəyənmə / post",
+    "commentsPerPost": "Şərh / post",
+    "engagement": "Aktivlik",
+    "week": "7 gün",
+    "month": "30 gün",
+    "updated": "Yeniləndi: {at}",
+    "live": "Aktiv",
+    "paused": "Meta dayandırılıb",
+    "problem": "Bağlantını yoxlayın",
+    "noData": "İlk rəqəmlər sabah saat 07:30-da gələcək.",
+    "pausedNoData": "Meta dayandırılıb: yandırdıqdan sonra rəqəmlər qayıdacaq.",
+    "emptyTitle": "Kanallarınızı qoşun",
+    "emptyHint": "Instagram, Facebook və YouTube rəqəmləri hər səhər burada görünəcək."
   }
 }

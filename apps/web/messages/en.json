@@ -1087,5 +1087,26 @@
     "graphite": "Dark · violet glow",
     "daylight": "Light · white and blue",
     "sage": "Light · soft sage"
+  },
+  "channels": {
+    "title": "Channels",
+    "followers": "followers",
+    "subscribers": "subscribers",
+    "posts": "Posts",
+    "videos": "Videos",
+    "views": "Views",
+    "likesPerPost": "Likes / post",
+    "commentsPerPost": "Comments / post",
+    "engagement": "Engagement",
+    "week": "7 days",
+    "month": "30 days",
+    "updated": "Updated {at}",
+    "live": "Live",
+    "paused": "Meta paused",
+    "problem": "Check connection",
+    "noData": "The first numbers arrive tomorrow at 07:30.",
+    "pausedNoData": "Meta is paused: numbers return when you switch it on.",
+    "emptyTitle": "Connect your channels",
+    "emptyHint": "Instagram, Facebook and YouTube numbers appear here every morning."
   }
 }
