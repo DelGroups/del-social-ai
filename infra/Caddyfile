@@ -2,6 +2,7 @@
 #   APP_DOMAIN  app.del-groups.com  → Next.js panel
 #   API_DOMAIN  api.del-groups.com  → FastAPI (API, webhooks, media)
 #   AI_DOMAIN   ai.del-groups.com   → redirects to the panel
+#   erp.del-groups.com              → Del Groups ERP (separate stack in /opt/del-groups-erp)
 # For local dev use app.localhost / api.localhost / ai.localhost (self-signed TLS).
 
 {
@@ -51,5 +52,20 @@
 
 	handle {
 		redir https://{$APP_DOMAIN:app.del-groups.com}{uri} permanent
+	}
+}
+
+# DEL GROUPS ERP — separate stack in /opt/del-groups-erp (docker-compose.prod.yml),
+# reached over the shared frontend network as erp:3000.
+erp.del-groups.com {
+	encode zstd gzip
+
+	handle {
+		reverse_proxy erp:3000
+	}
+
+	log {
+		output stdout
+		format json
 	}
 }
