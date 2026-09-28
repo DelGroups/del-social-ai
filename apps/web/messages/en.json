@@ -1164,5 +1164,308 @@
       "refund": "Refund (the job failed)",
       "grant": "Credits given"
     }
+  },
+  "yt": {
+    "tabs": {
+      "overview": "Overview",
+      "videos": "Videos",
+      "ideas": "Ideas",
+      "comments": "Comments",
+      "reports": "Reports",
+      "settings": "Channel settings"
+    },
+    "credits": "credits",
+    "cost": "{n} cr",
+    "working": "The team is working on it…",
+    "todo": "To do",
+    "error": "Something went wrong. Please try again.",
+    "upsell": {
+      "title": "YouTube Studio",
+      "text": "Thumbnails in many styles, titles, descriptions and chapters, channel reports every few hours, a deep channel review, trending ideas, comment replies and an AI video editor — for your YouTube channel.",
+      "cta": "See it on the Package page"
+    },
+    "connect": {
+      "title": "Connect your YouTube channel",
+      "text": "Sign in with the Google account that owns the channel. The team can then read your numbers, prepare thumbnails and texts, and — only when you press the button — update your videos.",
+      "button": "Connect with Google",
+      "notConfigured": "Google sign-in is not set up on the server yet."
+    },
+    "privacy": {
+      "public": "Public",
+      "unlisted": "Unlisted",
+      "private": "Private"
+    },
+    "views": "views",
+    "likes": "likes",
+    "commentsWord": "comments",
+    "kit": {
+      "running": "kit in progress",
+      "ready": "kit ready",
+      "applied": "kit on YouTube",
+      "failed": "kit failed"
+    },
+    "thumbDone": "thumbnail on YouTube",
+    "sync": "Sync now",
+    "subscribers": "subscribers",
+    "week": "7 days",
+    "totalViews": "total views",
+    "videos": "videos",
+    "pulseTitle": "Pulse · last hours",
+    "pulseEmpty": "The first pulse comes within a few hours of connecting.",
+    "dailyTitle": "Daily report",
+    "dailyEmpty": "The daily report comes every morning (YouTube's numbers are 1–2 days behind).",
+    "reviewTitle": "Channel review",
+    "reviewHint": "A deep, honest review of packaging, retention, topics and growth, with the actions that matter most.",
+    "reviewRun": "Review my channel",
+    "open": "Open",
+    "ideasTitle": "Video ideas",
+    "ideasNew": "{n} new ideas waiting",
+    "ideasHint": "Trending topics in your field, competitor hits and web research, turned into ideas for your channel.",
+    "ideasRun": "Find ideas",
+    "commentsTitle": "Comments",
+    "commentsWaiting": "waiting for an answer",
+    "latestVideos": "Latest videos",
+    "allVideos": "All videos",
+    "noVideos": "No videos yet. Press “Sync now”.",
+    "filter": {
+      "all": "All",
+      "long": "Videos",
+      "shorts": "Shorts",
+      "todo": "Not finished"
+    },
+    "search": "Search titles",
+    "ideaTab": {
+      "new": "New",
+      "saved": "Kept",
+      "used": "Made"
+    },
+    "ideasEmpty": "No ideas here yet.",
+    "format": {
+      "long": "Video",
+      "short": "Shorts",
+      "series": "Series"
+    },
+    "hook": "First 10 seconds",
+    "why": "Why",
+    "thumbIdea": "Thumbnail",
+    "difficulty": {
+      "easy": "easy",
+      "medium": "medium",
+      "hard": "hard"
+    },
+    "keep": "Keep",
+    "made": "Made it",
+    "drop": "Drop",
+    "commentTab": {
+      "open": "To answer",
+      "sent": "Answered",
+      "dismissed": "Skipped"
+    },
+    "checkComments": "Check for new comments",
+    "draftReplies": "Draft replies ({n})",
+    "noComments": "Nothing here.",
+    "send": "Send reply",
+    "skip": "Skip",
+    "topActions": "What to do first",
+    "effort": "Effort",
+    "impact": "Impact",
+    "level": {
+      "low": "low",
+      "medium": "medium",
+      "high": "high"
+    },
+    "area": {
+      "packaging": "Titles & thumbnails",
+      "retention": "Retention",
+      "topics": "Topics",
+      "consistency": "Consistency",
+      "audience": "Audience",
+      "shorts": "Shorts",
+      "seo": "Search",
+      "community": "Community",
+      "growth": "Growth"
+    },
+    "grade": {
+      "strong": "strong",
+      "ok": "ok",
+      "weak": "weak",
+      "unknown": "not enough data"
+    },
+    "experiments": "Try in the next videos",
+    "reportKind": {
+      "review": "Reviews",
+      "daily": "Daily",
+      "pulse": "Pulse"
+    },
+    "reportRun": {
+      "review": "New review",
+      "daily": "Daily report now",
+      "pulse": "Pulse now"
+    },
+    "noReports": "No reports yet.",
+    "status": {
+      "running": "in progress",
+      "failed": "failed",
+      "done": "done"
+    },
+    "set": {
+      "title": "What the team should know",
+      "about": "What the channel is about",
+      "aboutHint": "e.g. Honest car reviews and test drives in Baku, for people choosing their next car",
+      "audience": "Who watches",
+      "tone": "Your voice",
+      "toneHint": "e.g. friendly, direct, a little humour",
+      "languages": "Languages of your videos",
+      "languagesHint": "The first (★) is the main language; the others get translated titles and descriptions.",
+      "pulse": "Pulse report",
+      "everyHours": "every {n} hours",
+      "off": "off",
+      "daily": "Daily report at",
+      "region": "Audience country",
+      "reportLanguage": "Language of reports",
+      "links": "Links to keep in every description",
+      "linksHint": "Instagram, website, contact…"
+    },
+    "lang": {
+      "az": "Azerbaijani",
+      "ru": "Russian",
+      "en": "English",
+      "tr": "Turkish"
+    },
+    "rlang": {
+      "auto": "The language I write in",
+      "az": "Azerbaijani",
+      "ru": "Russian",
+      "en": "English",
+      "fa": "Persian"
+    },
+    "save": "Save",
+    "saved": "Saved.",
+    "rivals": "Channels to watch",
+    "rivalsHint": "Competitors or channels you admire. The ideas research looks at their best recent videos.",
+    "add": "Add",
+    "rivalsAdded": "Added: {list}.",
+    "rivalsMissing": "Not found on YouTube: {list}.",
+    "remove": "Remove",
+    "kitKeywords": "Keywords to include",
+    "kitTone": "Tone (optional)",
+    "kitAvoid": "Avoid (optional)",
+    "kitAgain": "Write a new kit",
+    "kitMake": "Write the kit",
+    "kitWithSubtitles": "The video has subtitles: chapters will be made from them.",
+    "kitNoSubtitles": "No subtitles on YouTube: the kit is written without chapters.",
+    "kitEmpty": "No kit yet. The team writes three titles, the description with chapters, tags, hashtags, translations and a comment.",
+    "kitWorking": "Writing the kit…",
+    "kitTitles": "Title",
+    "titleStyle": {
+      "search": "for search",
+      "curiosity": "curiosity",
+      "benefit": "benefit",
+      "emotional": "emotional",
+      "list": "list"
+    },
+    "kitDescription": "Description",
+    "kitTags": "Tags",
+    "kitAddTag": "Add a tag and press Enter",
+    "kitTranslations": "Translations",
+    "kitComment": "Comment to pin",
+    "kitPostComment": "Post it under the video (pin it in YouTube Studio)",
+    "kitKeyword": "Main keyword",
+    "seo": {
+      "title_length_ok": "Titles up to 70 characters",
+      "keyword_in_title": "Keyword in the title",
+      "keyword_early_in_description": "Keyword early in the description",
+      "description_long_enough": "Description long enough",
+      "tags_count_ok": "Enough tags",
+      "hashtags_ok": "Hashtags (up to 5)",
+      "chapters_ok": "Chapters",
+      "translations_ok": "Translations"
+    },
+    "kitChapters": "Chapters",
+    "kitPublish": "Publishing",
+    "publish": {
+      "keep": "Keep visibility as it is",
+      "public": "Make public now",
+      "unlisted": "Unlisted",
+      "private": "Private",
+      "schedule": "Schedule publishing"
+    },
+    "kitNoPlaylist": "No playlist",
+    "kitApply": "Send to YouTube",
+    "kitAppliedAt": "On YouTube since {at}",
+    "kitConfirm": "Send this title, description, tags and settings to YouTube now?",
+    "kitApplied": "Done — the video on YouTube is updated.",
+    "thumbConfirm": "Set this thumbnail on YouTube now?",
+    "thumbApplied": "The thumbnail is on YouTube.",
+    "thumbApply": "Set on YouTube",
+    "download": "Download",
+    "thumbText": "Thumbnail text (up to 4 words works best)",
+    "thumbEmphasis": "Word to highlight",
+    "thumbBadge": "Badge (NEW, TOP 5…)",
+    "thumbLayout": "Layout",
+    "layout": {
+      "left_text": "Text left",
+      "right_text": "Text right",
+      "center_big": "Big centre",
+      "top_banner": "Top banner",
+      "bottom_bar": "Bottom bar",
+      "split": "Split / VS",
+      "corner_badge": "Corner",
+      "minimal": "Minimal"
+    },
+    "thumbColours": "Colours",
+    "thumbFont": "Font & size",
+    "font": {
+      "bold": "Bold",
+      "condensed": "Condensed",
+      "wide": "Wide",
+      "tech": "Tech",
+      "elegant": "Elegant",
+      "rounded": "Rounded"
+    },
+    "fx": {
+      "upper": "CAPITALS",
+      "outline": "Outline",
+      "shadow": "Shadow",
+      "glow": "Glow",
+      "frame": "Frame",
+      "arrow": "Arrow",
+      "darken": "Darken",
+      "blur": "Blur",
+      "saturation": "Colour",
+      "brightness": "Brightness"
+    },
+    "thumbBackground": "Background",
+    "bg": {
+      "frame": "Video frame",
+      "upload": "Upload photo",
+      "colours": "Plain colours",
+      "prompt": "Describe a background: “a red SUV on a snowy mountain road at sunset”, or an edit: “make it night”",
+      "ai": "New AI background",
+      "edit": "AI edit of this one"
+    },
+    "thumbSubject": "Subject (you or the product)",
+    "subject": {
+      "cut": "Cut out from this photo",
+      "upload": "Upload a photo to cut out",
+      "none": "None",
+      "left": "Left",
+      "center": "Centre",
+      "right": "Right",
+      "scale": "Size",
+      "outline": "White outline"
+    },
+    "thumbWishes": "Your wishes (optional): style, colours, text, mood…",
+    "thumbDesign": "Design 3 thumbnails",
+    "thumbAiBg": "with new AI backgrounds (otherwise the video's frame)",
+    "thumbBlank": "Start from scratch",
+    "onYoutube": "ON YOUTUBE",
+    "thumbEmpty": "No designs yet.",
+    "videoMissing": "This video was not found. Sync the channel.",
+    "openYoutube": "Watch on YouTube",
+    "videoTab": {
+      "thumbs": "Thumbnails",
+      "kit": "Title & description"
+    }
   }
 }

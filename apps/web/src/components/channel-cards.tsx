@@ -22,7 +22,7 @@ export function formatCount(n: number | null | undefined): string {
 }
 
 /** Counts up from 0 to the value once, so a fresh number feels alive (skipped with reduced motion). */
-function useCountUp(value: number | null): number | null {
+export function useCountUp(value: number | null): number | null {
   const [shown, setShown] = useState(value);
   const from = useRef(0);
   useEffect(() => {
@@ -44,7 +44,7 @@ function useCountUp(value: number | null): number | null {
   return shown;
 }
 
-function LogoOrb({ channel, live }: { channel: string; live: boolean }) {
+export function LogoOrb({ channel, live }: { channel: string; live: boolean }) {
   const ring = BRANDS[channel]?.ring ?? ["var(--accent)", "var(--accent)"];
   const style = {
     "--ch-ring": `conic-gradient(from 0deg, ${ring.join(", ")})`,
@@ -62,7 +62,7 @@ function LogoOrb({ channel, live }: { channel: string; live: boolean }) {
   );
 }
 
-function Sparkline({ points, color }: { points: { day: string; followers: number | null }[]; color: string }) {
+export function Sparkline({ points, color }: { points: { day: string; followers: number | null }[]; color: string }) {
   const id = useId().replaceAll(":", "");
   const values = points.map((p) => p.followers).filter((v): v is number => v !== null);
   if (values.length < 2) return <div className="h-12" />;

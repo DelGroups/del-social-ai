@@ -1164,5 +1164,308 @@
       "refund": "Geri qaytarma (iş alınmadı)",
       "grant": "Kredit verildi"
     }
+  },
+  "yt": {
+    "tabs": {
+      "overview": "Ümumi",
+      "videos": "Videolar",
+      "ideas": "İdeyalar",
+      "comments": "Şərhlər",
+      "reports": "Hesabatlar",
+      "settings": "Kanal ayarları"
+    },
+    "credits": "kredit",
+    "cost": "{n} kr",
+    "working": "Komanda üzərində işləyir…",
+    "todo": "Ediləsi",
+    "error": "Nəsə alınmadı. Yenidən cəhd edin.",
+    "upsell": {
+      "title": "YouTube Studio",
+      "text": "Müxtəlif üslublu thumbnail-lar, başlıqlar, təsvirlər və fəsillər, bir neçə saatdan bir kanal hesabatı, dərin kanal təhlili, trend ideyalar, şərhlərə cavablar və AI video redaktor — YouTube kanalınız üçün.",
+      "cta": "Paket səhifəsində bax"
+    },
+    "connect": {
+      "title": "YouTube kanalınızı qoşun",
+      "text": "Kanalın sahibi olan Google hesabı ilə daxil olun. Sonra komanda rəqəmlərinizi oxuya, thumbnail və mətnlər hazırlaya və yalnız siz düyməni basanda videolarınızı yeniləyə bilər.",
+      "button": "Google ilə qoş",
+      "notConfigured": "Google girişi serverdə hələ qurulmayıb."
+    },
+    "privacy": {
+      "public": "Açıq",
+      "unlisted": "Siyahıda yoxdur",
+      "private": "Gizli"
+    },
+    "views": "baxış",
+    "likes": "bəyənmə",
+    "commentsWord": "şərh",
+    "kit": {
+      "running": "hazırlanır",
+      "ready": "mətnlər hazırdır",
+      "applied": "mətnlər YouTube-da",
+      "failed": "alınmadı"
+    },
+    "thumbDone": "thumbnail YouTube-da",
+    "sync": "İndi yenilə",
+    "subscribers": "abunəçi",
+    "week": "7 gün",
+    "totalViews": "ümumi baxış",
+    "videos": "video",
+    "pulseTitle": "Nəbz · son saatlar",
+    "pulseEmpty": "İlk nəbz qoşulduqdan bir neçə saat sonra gələcək.",
+    "dailyTitle": "Gündəlik hesabat",
+    "dailyEmpty": "Gündəlik hesabat hər səhər gəlir (YouTube rəqəmləri 1–2 gün gecikir).",
+    "reviewTitle": "Kanal təhlili",
+    "reviewHint": "Başlıq və thumbnail, izləmə müddəti, mövzular və böyümə üzrə dərin, dürüst təhlil və ən vacib addımlar.",
+    "reviewRun": "Kanalımı təhlil et",
+    "open": "Aç",
+    "ideasTitle": "Video ideyaları",
+    "ideasNew": "{n} yeni ideya gözləyir",
+    "ideasHint": "Sahənizdə trend mövzular, rəqiblərin hitləri və veb araşdırma — kanalınız üçün ideyalara çevrilir.",
+    "ideasRun": "İdeya tap",
+    "commentsTitle": "Şərhlər",
+    "commentsWaiting": "cavab gözləyir",
+    "latestVideos": "Son videolar",
+    "allVideos": "Bütün videolar",
+    "noVideos": "Hələ video yoxdur. «İndi yenilə» düyməsini basın.",
+    "filter": {
+      "all": "Hamısı",
+      "long": "Videolar",
+      "shorts": "Shorts",
+      "todo": "Bitməyənlər"
+    },
+    "search": "Başlıqlarda axtar",
+    "ideaTab": {
+      "new": "Yeni",
+      "saved": "Saxlanılan",
+      "used": "Çəkilən"
+    },
+    "ideasEmpty": "Burada hələ ideya yoxdur.",
+    "format": {
+      "long": "Video",
+      "short": "Shorts",
+      "series": "Seriya"
+    },
+    "hook": "İlk 10 saniyə",
+    "why": "Niyə",
+    "thumbIdea": "Thumbnail",
+    "difficulty": {
+      "easy": "asan",
+      "medium": "orta",
+      "hard": "çətin"
+    },
+    "keep": "Saxla",
+    "made": "Çəkdim",
+    "drop": "Sil",
+    "commentTab": {
+      "open": "Cavab gözləyən",
+      "sent": "Cavablanan",
+      "dismissed": "Keçilən"
+    },
+    "checkComments": "Yeni şərhləri yoxla",
+    "draftReplies": "Cavab qaralamaları ({n})",
+    "noComments": "Burada heç nə yoxdur.",
+    "send": "Cavabı göndər",
+    "skip": "Keç",
+    "topActions": "İlk nə etməli",
+    "effort": "Zəhmət",
+    "impact": "Təsir",
+    "level": {
+      "low": "az",
+      "medium": "orta",
+      "high": "yüksək"
+    },
+    "area": {
+      "packaging": "Başlıq və thumbnail",
+      "retention": "İzləmə müddəti",
+      "topics": "Mövzular",
+      "consistency": "Ardıcıllıq",
+      "audience": "Auditoriya",
+      "shorts": "Shorts",
+      "seo": "Axtarış",
+      "community": "İcma",
+      "growth": "Böyümə"
+    },
+    "grade": {
+      "strong": "güclü",
+      "ok": "normal",
+      "weak": "zəif",
+      "unknown": "məlumat azdır"
+    },
+    "experiments": "Növbəti videolarda sınayın",
+    "reportKind": {
+      "review": "Təhlillər",
+      "daily": "Gündəlik",
+      "pulse": "Nəbz"
+    },
+    "reportRun": {
+      "review": "Yeni təhlil",
+      "daily": "İndi gündəlik hesabat",
+      "pulse": "İndi nəbz"
+    },
+    "noReports": "Hələ hesabat yoxdur.",
+    "status": {
+      "running": "hazırlanır",
+      "failed": "alınmadı",
+      "done": "hazırdır"
+    },
+    "set": {
+      "title": "Komanda nəyi bilməlidir",
+      "about": "Kanal nə haqqındadır",
+      "aboutHint": "məs. Bakıda dürüst avtomobil icmalları və test sürüşləri, növbəti maşınını seçənlər üçün",
+      "audience": "Kim baxır",
+      "tone": "Sizin üslubunuz",
+      "toneHint": "məs. səmimi, düz, bir az yumorla",
+      "languages": "Videolarınızın dilləri",
+      "languagesHint": "Birinci (★) əsas dildir; digərləri üçün başlıq və təsvir tərcümə olunur.",
+      "pulse": "Nəbz hesabatı",
+      "everyHours": "hər {n} saatdan bir",
+      "off": "söndürülüb",
+      "daily": "Gündəlik hesabat saatı",
+      "region": "Auditoriyanın ölkəsi",
+      "reportLanguage": "Hesabatların dili",
+      "links": "Hər təsvirdə saxlanılacaq linklər",
+      "linksHint": "Instagram, sayt, əlaqə…"
+    },
+    "lang": {
+      "az": "Azərbaycan",
+      "ru": "Rus",
+      "en": "İngilis",
+      "tr": "Türk"
+    },
+    "rlang": {
+      "auto": "Yazdığım dildə",
+      "az": "Azərbaycan",
+      "ru": "Rus",
+      "en": "İngilis",
+      "fa": "Fars"
+    },
+    "save": "Yadda saxla",
+    "saved": "Yadda saxlanıldı.",
+    "rivals": "İzlənən kanallar",
+    "rivalsHint": "Rəqiblər və ya bəyəndiyiniz kanallar. İdeya araşdırması onların son ən yaxşı videolarına baxır.",
+    "add": "Əlavə et",
+    "rivalsAdded": "Əlavə edildi: {list}.",
+    "rivalsMissing": "YouTube-da tapılmadı: {list}.",
+    "remove": "Sil",
+    "kitKeywords": "Daxil ediləcək açar sözlər",
+    "kitTone": "Ton (istəyə görə)",
+    "kitAvoid": "Olmasın (istəyə görə)",
+    "kitAgain": "Yenidən yaz",
+    "kitMake": "Mətnləri yaz",
+    "kitWithSubtitles": "Videonun altyazısı var: fəsillər ondan hazırlanacaq.",
+    "kitNoSubtitles": "YouTube-da altyazı yoxdur: mətnlər fəsilsiz yazılacaq.",
+    "kitEmpty": "Hələ mətn yoxdur. Komanda üç başlıq, fəsilli təsvir, teqlər, heşteqlər, tərcümələr və şərh yazır.",
+    "kitWorking": "Mətnlər yazılır…",
+    "kitTitles": "Başlıq",
+    "titleStyle": {
+      "search": "axtarış üçün",
+      "curiosity": "maraq",
+      "benefit": "fayda",
+      "emotional": "emosional",
+      "list": "siyahı"
+    },
+    "kitDescription": "Təsvir",
+    "kitTags": "Teqlər",
+    "kitAddTag": "Teq yazıb Enter basın",
+    "kitTranslations": "Tərcümələr",
+    "kitComment": "Sabitlənəcək şərh",
+    "kitPostComment": "Videonun altında paylaş (YouTube Studio-da sabitləyin)",
+    "kitKeyword": "Əsas açar söz",
+    "seo": {
+      "title_length_ok": "Başlıqlar 70 simvola qədər",
+      "keyword_in_title": "Açar söz başlıqda",
+      "keyword_early_in_description": "Açar söz təsvirin əvvəlində",
+      "description_long_enough": "Təsvir kifayət qədər uzundur",
+      "tags_count_ok": "Kifayət qədər teq",
+      "hashtags_ok": "Heşteqlər (5-ə qədər)",
+      "chapters_ok": "Fəsillər",
+      "translations_ok": "Tərcümələr"
+    },
+    "kitChapters": "Fəsillər",
+    "kitPublish": "Paylaşım",
+    "publish": {
+      "keep": "Görünürlüyü dəyişmə",
+      "public": "İndi açıq et",
+      "unlisted": "Siyahıda olmasın",
+      "private": "Gizli",
+      "schedule": "Paylaşımı planla"
+    },
+    "kitNoPlaylist": "Pleylistsiz",
+    "kitApply": "YouTube-a göndər",
+    "kitAppliedAt": "{at} tarixindən YouTube-dadır",
+    "kitConfirm": "Bu başlıq, təsvir, teqlər və ayarlar indi YouTube-a göndərilsin?",
+    "kitApplied": "Hazırdır — YouTube-dakı video yeniləndi.",
+    "thumbConfirm": "Bu thumbnail indi YouTube-da qoyulsun?",
+    "thumbApplied": "Thumbnail YouTube-dadır.",
+    "thumbApply": "YouTube-da qoy",
+    "download": "Yüklə",
+    "thumbText": "Thumbnail yazısı (4 sözə qədər ən yaxşısıdır)",
+    "thumbEmphasis": "Vurğulanacaq söz",
+    "thumbBadge": "Nişan (YENİ, TOP 5…)",
+    "thumbLayout": "Düzülüş",
+    "layout": {
+      "left_text": "Yazı solda",
+      "right_text": "Yazı sağda",
+      "center_big": "Böyük mərkəz",
+      "top_banner": "Yuxarı zolaq",
+      "bottom_bar": "Aşağı zolaq",
+      "split": "Bölünmüş / VS",
+      "corner_badge": "Künc",
+      "minimal": "Minimal"
+    },
+    "thumbColours": "Rənglər",
+    "thumbFont": "Şrift və ölçü",
+    "font": {
+      "bold": "Qalın",
+      "condensed": "Sıx",
+      "wide": "Enli",
+      "tech": "Texno",
+      "elegant": "Zərif",
+      "rounded": "Yumru"
+    },
+    "fx": {
+      "upper": "BÖYÜK HƏRF",
+      "outline": "Kontur",
+      "shadow": "Kölgə",
+      "glow": "Parıltı",
+      "frame": "Çərçivə",
+      "arrow": "Ox",
+      "darken": "Qaraltma",
+      "blur": "Bulanıq",
+      "saturation": "Rəng",
+      "brightness": "Parlaqlıq"
+    },
+    "thumbBackground": "Fon",
+    "bg": {
+      "frame": "Video kadrı",
+      "upload": "Foto yüklə",
+      "colours": "Sadə rənglər",
+      "prompt": "Fonu təsvir edin: «qürubda qarlı dağ yolunda qırmızı SUV» və ya redaktə: «gecəyə çevir»",
+      "ai": "Yeni AI fon",
+      "edit": "Bunu AI ilə redaktə et"
+    },
+    "thumbSubject": "Obyekt (siz və ya məhsul)",
+    "subject": {
+      "cut": "Bu fotodan kəs",
+      "upload": "Kəsmək üçün foto yüklə",
+      "none": "Yoxdur",
+      "left": "Sol",
+      "center": "Mərkəz",
+      "right": "Sağ",
+      "scale": "Ölçü",
+      "outline": "Ağ kontur"
+    },
+    "thumbWishes": "İstəkləriniz (istəyə görə): üslub, rənglər, yazı, əhval…",
+    "thumbDesign": "3 thumbnail dizayn et",
+    "thumbAiBg": "yeni AI fonlarla (əks halda video kadrı)",
+    "thumbBlank": "Sıfırdan başla",
+    "onYoutube": "YOUTUBE-DA",
+    "thumbEmpty": "Hələ dizayn yoxdur.",
+    "videoMissing": "Video tapılmadı. Kanalı yeniləyin.",
+    "openYoutube": "YouTube-da bax",
+    "videoTab": {
+      "thumbs": "Thumbnail-lar",
+      "kit": "Başlıq və təsvir"
+    }
   }
 }
