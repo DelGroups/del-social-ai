@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     meta_app_secret: str = ""
     meta_graph_version: str = "v23.0"
     meta_login_config_id: str = ""  # set when the app uses "Facebook Login for Business"
+    # The owner's master switch: no request of any kind goes to Meta while true (ADR 011)
+    meta_paused: bool = False
 
     # LLMs (docs/phase-1-plan.md §4, §9). Model ids are config, not code.
     anthropic_api_key: str = ""

@@ -97,6 +97,7 @@ def get_meta_optional(http: httpx.AsyncClient = Depends(get_http)) -> MetaClient
         app_secret=s.meta_app_secret,
         version=s.meta_graph_version,
         login_config_id=s.meta_login_config_id,
+        paused=s.meta_paused,
     )
 
 

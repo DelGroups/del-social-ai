@@ -230,6 +230,9 @@ async def publish(
         raise HTTPException(422, "Publishing needs an explicit confirmation")
     if meta is None or vault is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Publishing is not configured on the server")
+    if meta.paused:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE,
+                            "Publishing is paused: the owner switched Meta off. Approve for a later time instead; it goes out when Meta is on again.")
     post = await _get(db, post_id)
     if post.status not in ("ready", "approved", "partly_published") or not (post.caption or "").strip():
         raise HTTPException(status.HTTP_409_CONFLICT, "This post is not ready to publish")

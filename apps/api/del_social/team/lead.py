@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from del_social.agents import team_lead
 from del_social.billing import quota
 from del_social.connections.meta import MetaClient
+from del_social.core.config import get_settings
 from del_social.core.db import set_tenant
 from del_social.core.vault import TokenVault
 from del_social.llm import LLM, LLMError
@@ -102,7 +103,8 @@ async def _context(db: AsyncSession, now: datetime) -> str:
     for status in (await db.scalars(select(Competitor.status))).all():
         watched[status] = watched.get(status, 0) + 1
     research_setup |= {
-        "instagram_access": "none" if ig is None else ("ok" if ig.status == "active" else f"blocked by Meta: {(ig.last_error or '')[:120]}"),
+        "instagram_access": "paused by the owner: no Meta requests (web mode; publishing waits)" if get_settings().meta_paused
+        else "none" if ig is None else ("ok" if ig.status == "active" else f"blocked by Meta: {(ig.last_error or '')[:120]}"),
         "competitors_by_status": watched,
     }
     history = (await db.scalars(select(ChatMessage).order_by(ChatMessage.created_at.desc()).limit(HISTORY))).all()

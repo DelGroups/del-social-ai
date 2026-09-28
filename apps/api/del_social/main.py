@@ -45,7 +45,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     tasks = []
     http = deps._http()
     meta, vault = deps.get_meta_optional(http), deps._vault()
-    if settings.scheduler_enabled and meta is not None and vault is not None:
+    if settings.scheduler_enabled and meta is not None and vault is not None and not settings.meta_paused:
         tasks.append(asyncio.create_task(scheduler.loop(engine=deps._engine(), settings=settings, meta=meta, vault=vault)))
     if settings.scheduler_enabled and settings.anthropic_api_key:
         llm = build_llm(settings, deps._engine(), http)

@@ -25,7 +25,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from del_social.agents import daily_briefing, market_researcher
 from del_social.agents.common import brand_context
 from del_social.billing import quota
-from del_social.connections.meta import MetaClient
+from del_social.connections.meta import PAUSED, MetaClient
 from del_social.connections.service import credentials
 from del_social.core.db import set_tenant
 from del_social.core.vault import TokenVault
@@ -188,6 +188,8 @@ async def run_market(
             watching = await competitors.watched(engine, tenant_id)
             new_found: list[dict[str, Any]] = []
             creds = None
+            if meta is not None and meta.paused:
+                raise _WebMode(PAUSED)  # the owner's switch: no request to Meta, no alarm, connection untouched
             if meta is not None and vault is not None and ig is not None:
                 creds = credentials(vault, ig)
                 data["own"] = await collect.own_account(meta, creds.external_id, creds.token, now)
