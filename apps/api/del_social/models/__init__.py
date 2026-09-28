@@ -26,6 +26,17 @@ from del_social.models.strategy import Competitor, Goal
 from del_social.models.team import AgentEvent, ChatMessage, DailyReport, Task
 from del_social.models.tenant import Tenant
 from del_social.models.tenant_secret import TenantSecret
+from del_social.models.youtube import (
+    YtCompetitor,
+    YtDraft,
+    YtIdea,
+    YtReply,
+    YtReport,
+    YtSettings,
+    YtThumbnail,
+    YtVideo,
+    YtVideoSnapshot,
+)
 
 __all__ = [
     "Account",
@@ -62,4 +73,13 @@ __all__ = [
     "Tenant",
     "TenantAddon",
     "TenantSecret",
+    "YtCompetitor",
+    "YtDraft",
+    "YtIdea",
+    "YtReply",
+    "YtReport",
+    "YtSettings",
+    "YtThumbnail",
+    "YtVideo",
+    "YtVideoSnapshot",
 ]

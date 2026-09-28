@@ -152,7 +152,7 @@ function Card({ c, tenantId }: { c: ChannelCard; tenantId: string }) {
           </div>
           <Sparkline points={c.series} color={brand?.color ?? "var(--accent)"} />
           <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:grid-cols-4">
-            {stats.map(([k, v]) => (
+            {stats.filter(([, v]) => v !== "—").map(([k, v]) => (
               <div key={k}>
                 <dt className="text-muted">{k}</dt>
                 <dd className="font-medium tabular-nums">{v}</dd>
