@@ -283,6 +283,11 @@ class YouTubeClient:
             params["allThreadsRelatedToChannelId"] = channel_id or ""
         return (await self.data("GET", "commentThreads", creds, 1, params=params)).get("items") or []
 
+    async def comment(self, creds: Credentials, video_id: str, text: str) -> dict[str, Any]:
+        """A new top-level comment by the channel (the owner pins it in YouTube Studio; the API can't pin)."""
+        return await self.data("POST", "commentThreads", creds, UNITS["insert"], kind="update", params={"part": "snippet"},
+                               json={"snippet": {"videoId": video_id, "topLevelComment": {"snippet": {"textOriginal": text}}}})
+
     async def reply(self, creds: Credentials, parent_id: str, text: str) -> dict[str, Any]:
         return await self.data("POST", "comments", creds, UNITS["insert"], kind="update", params={"part": "snippet"},
                                json={"snippet": {"parentId": parent_id, "textOriginal": text}})

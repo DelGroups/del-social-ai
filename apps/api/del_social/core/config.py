@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     fal_key: str = ""
     image_edit_model: str = "fal-ai/flux-2-pro/edit"
     image_enhance_model: str = "fal-ai/topaz/upscale/image"
+    thumbnail_image_model: str = "fal-ai/flux-2-pro"  # YouTube thumbnail backgrounds (text-free)
+    cutout_model: str = "fal-ai/birefnet"  # background removal for thumbnail subjects
     image_edit_poll_seconds: float = 3.0
     image_edit_timeout_seconds: float = 300.0
 

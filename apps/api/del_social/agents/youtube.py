@@ -17,6 +17,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from del_social.llm import LLM, Effort, LLMResult, ResearchResult, Tier, load_prompt
+from del_social.youtube.render import LAYOUTS, PALETTES
 
 # --- reports ---
 
@@ -135,8 +136,6 @@ async def metadata(llm: LLM, tenant_id: uuid.UUID, context: str) -> LLMResult[Me
 
 # --- thumbnails ---
 
-LAYOUTS = ("left_text", "right_text", "center_big", "top_banner", "bottom_bar", "split", "corner_badge", "minimal")
-PALETTES = ("red_white", "yellow_black", "neon", "clean_white", "dark_gold", "blue_orange", "pastel", "green_black")
 
 
 class ThumbConcept(BaseModel):

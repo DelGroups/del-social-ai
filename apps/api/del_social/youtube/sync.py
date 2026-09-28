@@ -80,7 +80,7 @@ async def sync_videos(engine: AsyncEngine, yt: YouTubeClient, vault: TokenVault,
     c = creds(vault, studio)
     ids = await yt.playlist_video_ids(c, studio.uploads, MAX_VIDEOS)
     items = await yt.videos(c, ids) if ids else []
-    async with AsyncSession(engine) as db, db.begin():
+    async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
         await set_tenant(db, studio.tenant_id)
         for item in items:
             row = row_of(item)
