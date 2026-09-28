@@ -35,6 +35,9 @@ SCOPES = (
 PAGE_FIELDS = "id,name,access_token,instagram_business_account{id,username,name}"
 
 
+PAUSED = "Meta is paused by the owner: no requests are sent to Meta"
+
+
 class MetaError(ChannelError):
     def __init__(self, message: str, code: int | None = None):
         super().__init__(message)
@@ -56,8 +59,10 @@ class MetaClient:
         app_secret: str,
         version: str,
         login_config_id: str = "",
+        paused: bool = False,
     ):
         self._http = http
+        self.paused = paused  # the owner's switch (settings.meta_paused)
         self._app_id = app_id
         self._secret = app_secret
         self._version = version
@@ -79,7 +84,12 @@ class MetaClient:
         # appsecret_proof: a stolen token alone can't be used against our app
         return hmac.new(self._secret.encode(), token.encode(), hashlib.sha256).hexdigest()
 
+    def _check_paused(self) -> None:
+        if self.paused:
+            raise MetaError(PAUSED)
+
     async def _get(self, path: str, params: dict[str, str]) -> dict[str, Any]:
+        self._check_paused()
         try:
             r = await self._http.get(f"{self._graph}/{path}", params=params)
             data = r.json()
@@ -95,6 +105,7 @@ class MetaClient:
 
     async def post(self, path: str, token: str, **data: str) -> dict[str, Any]:
         """A write call (publish, update). The token goes in the form body, never in a logged URL."""
+        self._check_paused()
         try:
             r = await self._http.post(
                 f"{self._graph}/{path}",

@@ -11,7 +11,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
-from del_social.connections.meta import MetaClient
+from del_social.connections.meta import PAUSED, MetaClient
 from del_social.connections.service import credentials
 from del_social.core.db import set_tenant
 from del_social.core.vault import TokenVault
@@ -62,7 +62,7 @@ async def run_search(
         # Meta access decides how accounts are checked: on Instagram, or (web mode) only from web results
         creds, conn_id = await _instagram(engine, vault, tenant_id)
         own: dict = {}
-        blocked = "Instagram is not connected" if meta is None or creds is None else None
+        blocked = "Instagram is not connected" if meta is None or creds is None else PAUSED if meta.paused else None
         if not blocked:
             own = await collect.own_account(meta, creds.external_id, creds.token, now)
             if blocked := collect.access_problem(own):
@@ -128,6 +128,9 @@ async def run_add(
     creds, conn_id = await _instagram(engine, vault, tenant_id)
     if meta is None or creds is None:
         await activity.say(engine, tenant_id, "market_researcher", m("hunt.failed", error="Instagram is not connected"))
+        return
+    if meta.paused:
+        await activity.say(engine, tenant_id, "market_researcher", m("meta.paused"))
         return
     if problem := collect.access_problem(await collect.own_account(meta, creds.external_id, creds.token, datetime.now(UTC))):
         await daily.mark_connection_error(engine, tenant_id, conn_id, problem)

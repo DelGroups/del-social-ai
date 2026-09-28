@@ -356,3 +356,27 @@ def test_generic_words_never_identify_a_company():
     assert same_company("saloglu_mebel", "saloglu.az")
     assert not same_company("mebel_baku_sifaris", "mebel.sifarisi.az")  # "order" is not a name
     assert not same_company("ofis_mebeli_baku", "mira_ofis_mebeli")
+
+
+async def test_meta_paused_sends_nothing_to_meta(client, setup, admin, app_engine, tenants, session_for):
+    from del_social.team import competitor_hunt
+
+    owner = await session_for(tenants["a_owner"])
+    await connect(admin, setup.vault, tenants["a"], "instagram", IG_ID)
+    await product_with_photos(client, tenants["a"], owner, n=1)
+    setup.meta.paused = True
+    before = len(setup.calls)
+    r = await client.post(f"/tenants/{tenants['a']}/daily/market/run", headers={**owner, **O})
+    await lead.settle()
+    await competitor_hunt.run_search(engine=app_engine, llm=setup.llm, meta=setup.meta, vault=setup.vault, tenant_id=tenants["a"])
+    await competitor_hunt.run_add(engine=app_engine, meta=setup.meta, vault=setup.vault, tenant_id=tenants["a"], usernames=["@x_mebel"])
+    graph_calls = [c for c in setup.calls[before:] if c.startswith("/v23.0")]
+    assert graph_calls == []  # not one request to Meta
+    report = (await client.get(f"/tenants/{tenants['a']}/daily/{r.json()['report_id']}", headers=owner)).json()
+    assert report["status"] == "done"  # web mode
+    rivals = {c["username"]: c for c in (await client.get(f"/tenants/{tenants['a']}/competitors", headers=owner)).json()}
+    assert rivals["embawood_mebel"]["status"] == "unverified"
+    channels = {c["channel"]: c for c in (await client.get(f"/tenants/{tenants['a']}/connections", headers=owner)).json()}
+    assert channels["instagram"]["connections"][0]["status"] == "active"  # the owner's switch is not an error
+    chat = (await client.get(f"/tenants/{tenants['a']}/team/chat", headers=owner)).json()
+    assert not any("developers.facebook.com" in c["text"] for c in chat)
