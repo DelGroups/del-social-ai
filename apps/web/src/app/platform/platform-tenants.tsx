@@ -71,15 +71,77 @@ function AssignForm({ row, onDone }: { row: TenantOverview; onDone: () => void }
   );
 }
 
+type AddonRow = { tenant_id: string; addon_id: string; expires_at: string | null; purchased_balance: number; monthly_spent: number; open_requests: number };
+const PACKS = ["yt_100", "yt_300", "yt_1000", "yt_3000"] as const;
+
+function YoutubeAdmin({ row, addon, onDone }: { row: TenantOverview; addon: AddonRow | undefined; onDone: () => void }) {
+  const t = useTranslations("platform");
+  const tc = useTranslations("common");
+  const [months, setMonths] = useState("1");
+  const [pack, setPack] = useState<string>("yt_100");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function run(fn: () => Promise<unknown>) {
+    setBusy(true);
+    setError(null);
+    try {
+      await fn();
+      onDone();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : tc("error"));
+    } finally {
+      setBusy(false);
+    }
+  }
+  const cls = "rounded-md border border-border bg-bg px-2 py-1 text-sm";
+  return (
+    <div className="flex flex-wrap items-end gap-2 rounded-md bg-bg/60 p-2 text-sm">
+      <b className="w-full text-xs">YouTube Studio · {addon ? t("ytOn", { bought: addon.purchased_balance, spent: addon.monthly_spent }) : t("ytOff")}</b>
+      <label className="text-xs text-muted">
+        {t("months")}
+        <select value={months} onChange={(e) => setMonths(e.target.value)} className={`mt-1 block ${cls}`}>
+          {MONTHS.map((m) => <option key={m} value={m}>{m === "none" ? t("noEnd") : t("monthsN", { n: Number(m) })}</option>)}
+        </select>
+      </label>
+      <button type="button" disabled={busy} className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-text disabled:opacity-50"
+        onClick={() => confirm(t("ytConfirm", { name: row.name })) && run(() => api(`/platform/tenants/${row.tenant_id}/addons/youtube`, {
+          method: "PUT", body: { active: true, months: months === "none" ? null : Number(months) } }))}>
+        {addon ? t("ytRenew") : t("ytTurnOn")}
+      </button>
+      {addon && (
+        <button type="button" disabled={busy} className="rounded-md border border-danger px-3 py-1.5 text-sm text-danger"
+          onClick={() => confirm(t("ytOffConfirm", { name: row.name })) && run(() => api(`/platform/tenants/${row.tenant_id}/addons/youtube`, {
+            method: "PUT", body: { active: false } }))}>
+          {t("ytTurnOff")}
+        </button>
+      )}
+      <label className="text-xs text-muted">
+        {t("ytPack")}
+        <select value={pack} onChange={(e) => setPack(e.target.value)} className={`mt-1 block ${cls}`}>
+          {PACKS.map((p) => <option key={p} value={p}>{t("ytCredits", { n: Number(p.split("_")[1]) })}</option>)}
+        </select>
+      </label>
+      <button type="button" disabled={busy} className="rounded-md border border-accent px-3 py-1.5 text-sm text-accent"
+        onClick={() => confirm(t("ytGrantConfirm", { name: row.name })) && run(() => api(`/platform/tenants/${row.tenant_id}/credits`, {
+          method: "POST", body: { pack_id: pack } }))}>
+        {t("ytGrant")}
+      </button>
+      {error && <p className="w-full text-sm text-danger">{error}</p>}
+    </div>
+  );
+}
+
 export function PlatformTenants() {
   const t = useTranslations("platform");
   const [rows, setRows] = useState<TenantOverview[] | null>(null);
   const [open, setOpen] = useState<string | null>(null);
   const [error, setError] = useState(false);
 
+  const [addons, setAddons] = useState<AddonRow[]>([]);
   const load = useCallback(async () => {
     try {
       setRows(await api<TenantOverview[]>("/platform/tenants"));
+      setAddons(await api<AddonRow[]>("/platform/addons"));
       setError(false);
     } catch {
       setError(true);
@@ -111,6 +173,12 @@ export function PlatformTenants() {
               <span className={`tabular-nums ${r.margin_month_usd !== null && Number(r.margin_month_usd) < 0 ? "text-danger" : "text-success"}`}>
                 {t("margin", { margin: usd(r.margin_month_usd) })}
               </span>
+              {addons.some((a) => a.tenant_id === r.tenant_id) && (
+                <span className="rounded-full bg-[#FF0000]/15 px-2 py-0.5 text-xs text-[#FF4D4D]">YouTube</span>
+              )}
+              {addons.some((a) => a.tenant_id === r.tenant_id && a.open_requests > 0) && (
+                <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs text-accent">{t("ytRequest")}</span>
+              )}
               {r.open_request_plan && (
                 <span className="rounded-full bg-accent/15 px-2 py-0.5 text-xs text-accent">
                   {t("requestBadge", { plan: t(`plans.${r.open_request_plan}`) })}
@@ -121,13 +189,16 @@ export function PlatformTenants() {
               </button>
             </div>
             {open === r.tenant_id && (
-              <AssignForm
-                row={r}
-                onDone={() => {
-                  setOpen(null);
-                  load();
-                }}
-              />
+              <>
+                <AssignForm
+                  row={r}
+                  onDone={() => {
+                    setOpen(null);
+                    load();
+                  }}
+                />
+                <YoutubeAdmin row={r} addon={addons.find((a) => a.tenant_id === r.tenant_id)} onDone={load} />
+              </>
             )}
           </li>
         ))}

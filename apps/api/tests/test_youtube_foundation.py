@@ -200,3 +200,18 @@ def test_quota_meter_stops_before_the_budget_runs_out():
     with pytest.raises(YouTubeError):
         m.spend(50, "update")  # 900 = 90 % reached
     m.spend(1, "list")  # cheap reads continue
+
+
+async def test_platform_creates_a_youtube_only_company(client, admin, platform):
+    r = await client.post("/platform/tenants", json={"name": "Auto Baku", "owner_email": "cars@yt.test", "plan_id": None,
+                                                     "months": None, "addons": ["youtube"]}, headers={**platform, **O})
+    assert r.status_code == 201, r.text
+    tid = uuid.UUID(r.json()["tenant_id"])
+    try:
+        assert await admin.fetchval("SELECT count(*) FROM subscriptions WHERE tenant_id = $1", tid) == 0
+        assert await admin.fetchval("SELECT addon_id FROM tenant_addons WHERE tenant_id = $1 AND status = 'active'", tid) == "youtube"
+        listing = (await client.get("/platform/addons", headers=platform)).json()
+        assert any(row["tenant_id"] == str(tid) for row in listing)
+    finally:
+        for table in ("tenant_addons", "invitations", "tenants"):
+            await admin.execute(f"DELETE FROM {table} WHERE tenant_id = $1", tid)

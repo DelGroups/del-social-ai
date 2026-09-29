@@ -282,8 +282,10 @@ function Generator({ base, models, onStarted }: { base: string; models: VModel[]
         <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={captions} onChange={(e) => setCaptions(e.target.checked)} />{t("captions")}</label>
       </div>
       {model.image && (
-        <label className="flex flex-wrap items-center gap-2 text-xs text-muted">
-          {t("startImage")} <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files?.[0] ?? null)} />
+        <label className="flex cursor-pointer flex-wrap items-center gap-2 text-xs text-muted">
+          {t("startImage")}
+          <span className="rounded-md border border-border px-3 py-1.5 text-text hover:border-accent">{image ? image.name : t("pickPhoto")}</span>
+          <input type="file" accept="image/*" className="hidden" onChange={(e) => setImage(e.target.files?.[0] ?? null)} />
         </label>
       )}
       <CostButton cost={credits} busy={busy} disabled={idea.trim().length < 3} onClick={go}>{t("generate")}</CostButton>

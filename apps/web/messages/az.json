@@ -147,7 +147,21 @@
     "extraVideo": "Əlavə video krediti",
     "assign": "Təyin et",
     "assignConfirm": "{name} üçün {plan} təyin edilsin? Yeni aylıq dövr indi başlayır.",
-    "assignNote": "İndi başlayır (yeni aylıq dövr). Ödəniş alındıqdan sonra təyin edin."
+    "assignNote": "İndi başlayır (yeni aylıq dövr). Ödəniş alındıqdan sonra təyin edin.",
+    "youtubeOnly": "Paketsiz (yalnız YouTube Studio)",
+    "withYoutube": "YouTube Studio ilə",
+    "ytOn": "aktiv · qalan alınmış kredit {bought} · bu ay istifadə {spent}",
+    "ytOff": "aktiv deyil",
+    "ytConfirm": "{name} üçün YouTube Studio yandırılsın? Yeni aylıq dövr indi başlayır.",
+    "ytRenew": "Yenilə",
+    "ytTurnOn": "Yandır",
+    "ytOffConfirm": "{name} üçün YouTube Studio söndürülsün?",
+    "ytTurnOff": "Söndür",
+    "ytPack": "Alınan kredit",
+    "ytCredits": "{n} kredit",
+    "ytGrantConfirm": "Bu kreditlər {name} şirkətinə əlavə edilsin? (ödənişdən sonra)",
+    "ytGrant": "Kredit əlavə et",
+    "ytRequest": "YouTube istəyi"
   },
   "connections": {
     "title": "Bağlantılar",
@@ -1601,7 +1615,8 @@
       "work": "Üzərində işlə",
       "download": "Yüklə",
       "delete": "Sil",
-      "deleteConfirm": "Bu video laboratoriyadan silinsin?"
+      "deleteConfirm": "Bu video laboratoriyadan silinsin?",
+      "pickPhoto": "Foto seç"
     }
   }
 }

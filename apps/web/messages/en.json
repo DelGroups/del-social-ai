@@ -147,7 +147,21 @@
     "extraVideo": "Extra video credits",
     "assign": "Assign",
     "assignConfirm": "Assign {plan} to {name}? A new monthly period starts now.",
-    "assignNote": "Starts now (a new monthly window). Assign after the payment is received."
+    "assignNote": "Starts now (a new monthly window). Assign after the payment is received.",
+    "youtubeOnly": "No package (YouTube Studio only)",
+    "withYoutube": "With YouTube Studio",
+    "ytOn": "active · bought credits left {bought} · used this month {spent}",
+    "ytOff": "not active",
+    "ytConfirm": "Turn on YouTube Studio for {name}? A new monthly period starts now.",
+    "ytRenew": "Renew",
+    "ytTurnOn": "Turn on",
+    "ytOffConfirm": "Turn off YouTube Studio for {name}?",
+    "ytTurnOff": "Turn off",
+    "ytPack": "Credits bought",
+    "ytCredits": "{n} credits",
+    "ytGrantConfirm": "Add these credits to {name}? (after payment)",
+    "ytGrant": "Add credits",
+    "ytRequest": "YouTube request"
   },
   "connections": {
     "title": "Connections",
@@ -1601,7 +1615,8 @@
       "work": "Work on it",
       "download": "Download",
       "delete": "Delete",
-      "deleteConfirm": "Delete this video from the lab?"
+      "deleteConfirm": "Delete this video from the lab?",
+      "pickPhoto": "Choose a photo"
     }
   }
 }

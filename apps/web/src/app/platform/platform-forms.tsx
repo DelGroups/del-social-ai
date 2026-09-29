@@ -51,8 +51,9 @@ export function PlatformForms() {
       body: {
         name: form.get("name"),
         owner_email: email,
-        plan_id: form.get("plan_id"),
+        plan_id: form.get("plan_id") === "none" ? null : form.get("plan_id"),
         months: form.get("months") === "none" ? null : Number(form.get("months")),
+        addons: form.get("youtube") ? ["youtube"] : [],
       },
     });
     return { text: t("tenantCreated", { email }), url: res.owner_invitation_url };
@@ -87,6 +88,7 @@ export function PlatformForms() {
                 {["basic", "pro", "enterprise"].map((p) => (
                   <option key={p} value={p}>{t(`plans.${p}`)}</option>
                 ))}
+                <option value="none">{t("youtubeOnly")}</option>
               </Select>
             </Field>
             <Field label={t("months")}>
@@ -97,6 +99,9 @@ export function PlatformForms() {
               </Select>
             </Field>
           </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" name="youtube" value="1" /> {t("withYoutube")}
+          </label>
           <Button type="submit" disabled={tenant.busy}>
             {t("create")}
           </Button>
