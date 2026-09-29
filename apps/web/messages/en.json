@@ -1194,7 +1194,8 @@
       "comments": "Comments",
       "reports": "Reports",
       "settings": "Channel settings",
-      "lab": "Video lab"
+      "lab": "Video lab",
+      "team": "Team"
     },
     "credits": "credits",
     "cost": "{n} cr",
@@ -1617,6 +1618,50 @@
       "delete": "Delete",
       "deleteConfirm": "Delete this video from the lab?",
       "pickPhoto": "Choose a photo"
+    },
+    "team": {
+      "chat": "Chat with the channel manager",
+      "thinking": "Thinking…",
+      "leadHint": "Tell me what you need; I'll give it to the team.",
+      "empty": "Say hello to your channel manager. Ask for a report, ideas, a thumbnail or text for a video — the team does the work and reports back here.",
+      "placeholder": "Write to the manager… (any language)",
+      "send": "Send",
+      "roster": "The team",
+      "working": "working",
+      "ready": "ready",
+      "error": "Something went wrong. Please try again.",
+      "open": {
+        "reports": "Open the report",
+        "ideas": "Open the ideas",
+        "comments": "Open the comments",
+        "video": "Open the video"
+      },
+      "suggest": {
+        "s1": "How is the channel doing?",
+        "s2": "Review my channel",
+        "s3": "Find new video ideas",
+        "s4": "Answer the new comments"
+      },
+      "names": {
+        "yt_lead": "Channel manager",
+        "yt_reporter": "Analyst",
+        "yt_reviewer": "Strategist",
+        "yt_ideas": "Ideas producer",
+        "yt_metadata": "SEO copywriter",
+        "yt_thumbnail": "Thumbnail designer",
+        "yt_replies": "Community manager",
+        "yt_editor": "Video editor"
+      },
+      "roles": {
+        "yt_lead": "Plans and hands out the work",
+        "yt_reporter": "Pulse and daily reports",
+        "yt_reviewer": "Deep channel review",
+        "yt_ideas": "Trends, competitors, ideas",
+        "yt_metadata": "Titles, descriptions, tags",
+        "yt_thumbnail": "Thumbnails in many styles",
+        "yt_replies": "Reply drafts for comments",
+        "yt_editor": "Cuts, subtitles, Shorts, AI video"
+      }
     }
   }
 }

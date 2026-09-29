@@ -1,9 +1,12 @@
 // Per-browser preferences kept in cookies so the server renders the right language/theme (no flash).
-export const LOCALES = ["az", "ru", "en"] as const;
+export const LOCALES = ["az", "ru", "en", "fa"] as const;
 export type Locale = (typeof LOCALES)[number];
+// Persian is a preview for the platform owner (shown only to platform admins; written right to left)
+export const PREVIEW_LOCALES: readonly Locale[] = ["fa"];
+export const RTL_LOCALES: readonly string[] = ["fa"];
 export const DEFAULT_LOCALE: Locale = "az";
 export const LOCALE_COOKIE = "NEXT_LOCALE";
-export const LOCALE_LABELS: Record<Locale, string> = { az: "Azərbaycan", ru: "Русский", en: "English" };
+export const LOCALE_LABELS: Record<Locale, string> = { az: "Azərbaycan", ru: "Русский", en: "English", fa: "فارسی" };
 
 // Ids kept from the first themes so saved choices still work: graphite = Aurora, daylight = Pearl
 export const THEMES = ["midnight", "graphite", "daylight", "sage"] as const;

@@ -18,7 +18,8 @@ export function formatCount(n: number | null | undefined): string {
   const abs = Math.abs(n);
   if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(abs >= 10_000_000 ? 0 : 1).replace(/\.0$/, "")}M`;
   if (abs >= 100_000) return `${Math.round(n / 1000)}K`;
-  return n.toLocaleString("en-US").replaceAll(",", " ");
+  // Narrow no-break space between thousands: a "number separator" for bidi, so 18 650 stays in order in Persian (right to left)
+  return n.toLocaleString("en-US").replaceAll(",", "\u202F");
 }
 
 /** Counts up from 0 to the value once, so a fresh number feels alive (skipped with reduced motion). */
@@ -124,7 +125,7 @@ function Card({ c, tenantId }: { c: ChannelCard; tenantId: string }) {
           </div>
           <p className="truncate text-xs text-muted">
             {brand?.name ?? c.channel}
-            {c.extra.username ? ` · @${c.extra.username}` : c.extra.handle ? ` · ${c.extra.handle}` : ""}
+            {c.extra.username ? <> · <bdi>@{c.extra.username}</bdi></> : c.extra.handle ? <> · <bdi>{c.extra.handle}</bdi></> : null}
           </p>
         </div>
         <span

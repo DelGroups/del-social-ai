@@ -41,7 +41,7 @@ export async function Shell({
             ))}
           </nav>
           <div className="ml-auto flex flex-wrap items-center gap-3 text-sm">
-            <PrefsSwitcher locale={locale} theme={theme} compact />
+            <PrefsSwitcher locale={locale} theme={theme} compact preview={me.is_platform_admin} />
             {me.is_platform_admin && (
               <Link href="/platform" className="text-muted hover:text-text">
                 {t("home.platform")}

@@ -17,11 +17,13 @@ import { ThumbStudio } from "./thumb-studio";
 
 type Detail = { video: YtVideo; drafts: YtDraft[]; thumbnails: YtThumb[] };
 
-export function VideoStudio({ tenantId, videoId, canWork }: { tenantId: string; videoId: string; canWork: boolean }) {
+export function VideoStudio({ tenantId, videoId, canWork, initialTab = "thumbs" }: {
+  tenantId: string; videoId: string; canWork: boolean; initialTab?: "thumbs" | "kit";
+}) {
   const t = useTranslations("yt");
   const { data, load: loadDash } = useDashboard(tenantId);
   const [d, setD] = useState<Detail | null>(null);
-  const [tab, setTab] = useState<"thumbs" | "kit">("thumbs");
+  const [tab, setTab] = useState<"thumbs" | "kit">(initialTab);
   const [missing, setMissing] = useState(false);
   const load = useCallback(async () => {
     try {
