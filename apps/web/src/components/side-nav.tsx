@@ -104,7 +104,7 @@ export function SideNav({
   tenantId: string;
   items: NavItem[];
   plan: PlanStatus | null;
-  prefs: { locale: string; theme: string };
+  prefs: { locale: string; theme: string; preview?: boolean };
   children: ReactNode;
 }) {
   const t = useTranslations();
@@ -138,7 +138,7 @@ export function SideNav({
       <div className="mt-auto space-y-3">
         <PackageCard tenantId={tenantId} plan={plan} />
         <CreditsCard tenantId={tenantId} plan={plan} />
-        <PrefsSwitcher locale={prefs.locale} theme={prefs.theme} preview={me.is_platform_admin} />
+        <PrefsSwitcher locale={prefs.locale} theme={prefs.theme} preview={prefs.preview ?? me.is_platform_admin} />
         <div className="space-y-1 border-t border-border pt-3 text-xs">
           <p className="truncate px-1 text-muted" title={me.email}>{me.email}</p>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1">

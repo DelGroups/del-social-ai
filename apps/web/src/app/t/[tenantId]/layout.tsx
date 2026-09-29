@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { PlanBar } from "@/components/plan-bar";
 import { SideNav } from "@/components/side-nav";
 import { apiGet, requireMe } from "@/lib/server-api";
-import { DEFAULT_THEME, THEME_COOKIE, isTheme } from "@/lib/prefs";
+import { DEFAULT_THEME, THEME_COOKIE, isTheme, previewAllowed } from "@/lib/prefs";
 import type { LiveInfo, PlanStatus } from "@/lib/types";
 
 export default async function TenantLayout({
@@ -28,7 +28,8 @@ export default async function TenantLayout({
   const youtube = plan?.addons?.find((a) => a.addon_id === "youtube" && a.active);
   const social = plan?.plan != null || !youtube; // a YouTube-only company sees only its studio
   const themeCookie = (await cookies()).get(THEME_COOKIE)?.value;
-  const prefs = { locale: await getLocale(), theme: isTheme(themeCookie) ? themeCookie : DEFAULT_THEME };
+  const prefs = { locale: await getLocale(), theme: isTheme(themeCookie) ? themeCookie : DEFAULT_THEME,
+    preview: previewAllowed(me.is_platform_admin, tenantId) };
   return (
     <SideNav
       me={me}

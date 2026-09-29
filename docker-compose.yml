@@ -147,6 +147,7 @@ services:
     restart: unless-stopped
     environment:
       API_INTERNAL_URL: http://api:8000 # server-side calls stay inside Docker
+      PREVIEW_LOCALE_TENANTS: ${PREVIEW_LOCALE_TENANTS:-} # companies that see the Persian preview (comma-separated ids)
     expose:
       - "3000"
     depends_on:

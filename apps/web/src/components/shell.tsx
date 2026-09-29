@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { DEFAULT_THEME, THEME_COOKIE, isTheme } from "@/lib/prefs";
+import { DEFAULT_THEME, THEME_COOKIE, isTheme, previewAllowed } from "@/lib/prefs";
 import type { Me } from "@/lib/types";
 
 import { SignOutButton, TenantSwitcher } from "./client";
@@ -41,7 +41,7 @@ export async function Shell({
             ))}
           </nav>
           <div className="ml-auto flex flex-wrap items-center gap-3 text-sm">
-            <PrefsSwitcher locale={locale} theme={theme} compact preview={me.is_platform_admin} />
+            <PrefsSwitcher locale={locale} theme={theme} compact preview={previewAllowed(me.is_platform_admin, tenantId)} />
             {me.is_platform_admin && (
               <Link href="/platform" className="text-muted hover:text-text">
                 {t("home.platform")}

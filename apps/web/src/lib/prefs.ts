@@ -4,6 +4,13 @@ export type Locale = (typeof LOCALES)[number];
 // Persian is a preview for the platform owner (shown only to platform admins; written right to left)
 export const PREVIEW_LOCALES: readonly Locale[] = ["fa"];
 export const RTL_LOCALES: readonly string[] = ["fa"];
+
+/** Server only: may this person see the preview languages in this company? */
+export function previewAllowed(isPlatformAdmin: boolean, tenantId?: string): boolean {
+  if (isPlatformAdmin) return true;
+  const list = (process.env.PREVIEW_LOCALE_TENANTS ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  return !!tenantId && list.includes(tenantId);
+}
 export const DEFAULT_LOCALE: Locale = "az";
 export const LOCALE_COOKIE = "NEXT_LOCALE";
 export const LOCALE_LABELS: Record<Locale, string> = { az: "Azərbaycan", ru: "Русский", en: "English", fa: "فارسی" };
