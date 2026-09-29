@@ -12,6 +12,7 @@ export default async function YoutubeLayout({ children, params }: { children: Re
         tabs={[
           { href: base, label: t("tabs.overview"), exact: true },
           { href: `${base}/videos`, label: t("tabs.videos") },
+          { href: `${base}/lab`, label: t("tabs.lab") },
           { href: `${base}/ideas`, label: t("tabs.ideas") },
           { href: `${base}/comments`, label: t("tabs.comments") },
           { href: `${base}/reports`, label: t("tabs.reports") },

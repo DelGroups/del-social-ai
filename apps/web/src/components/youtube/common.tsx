@@ -156,9 +156,11 @@ export function NotConnected({ tenantId, configured }: { tenantId: string; confi
 }
 
 /** Wraps a studio page: shows the right empty state until the add-on and a channel are there. */
-export function StudioGate({ tenantId, data, children }: { tenantId: string; data: YtDashboard | null; children: ReactNode }) {
+export function StudioGate({ tenantId, data, children, requireChannel = true }: {
+  tenantId: string; data: YtDashboard | null; children: ReactNode; requireChannel?: boolean;
+}) {
   if (!data) return <div className="wf-skeleton h-40 rounded-2xl" />;
   if (!data.addon.active) return <NoAddon tenantId={tenantId} />;
-  if (!data.connection) return <NotConnected tenantId={tenantId} configured={data.google_configured} />;
+  if (requireChannel && !data.connection) return <NotConnected tenantId={tenantId} configured={data.google_configured} />;
   return <>{children}</>;
 }

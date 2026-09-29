@@ -1162,7 +1162,14 @@
       "video_gen": "AI ilə video yaratma",
       "purchase": "Kredit alındı",
       "refund": "Geri qaytarma (iş alınmadı)",
-      "grant": "Kredit verildi"
+      "grant": "Kredit verildi",
+      "lab_transcribe": "Mətnə çevirmə",
+      "lab_cut": "Səssizlik kəsimi",
+      "lab_subtitles": "Altyazı",
+      "lab_captions": "YouTube altyazısı",
+      "lab_shorts": "Shorts",
+      "lab_export": "İxrac",
+      "lab_generate": "AI video"
     }
   },
   "yt": {
@@ -1172,7 +1179,8 @@
       "ideas": "İdeyalar",
       "comments": "Şərhlər",
       "reports": "Hesabatlar",
-      "settings": "Kanal ayarları"
+      "settings": "Kanal ayarları",
+      "lab": "Video laboratoriya"
     },
     "credits": "kredit",
     "cost": "{n} kr",
@@ -1466,6 +1474,134 @@
     "videoTab": {
       "thumbs": "Thumbnail-lar",
       "kit": "Başlıq və təsvir"
+    },
+    "lab": {
+      "dropTitle": "Videonu bura atın",
+      "dropHint": "MP4, MOV, MKV və ya WEBM · 4 GB və 90 dəqiqəyə qədər · hissə-hissə yüklənir, zəif internetdə də",
+      "choose": "Video seç",
+      "uploading": "Yüklənir… {pct}%",
+      "uploadFailed": "Yükləmə alınmadı. Yenidən cəhd edin.",
+      "error": "Nəsə alınmadı. Yenidən cəhd edin.",
+      "tool": {
+        "transcribe": "Mətnə çevir",
+        "cut": "Səssizlikləri kəs",
+        "subtitles": "Altyazı",
+        "captions": "YouTube altyazısı",
+        "shorts": "Shorts düzəlt",
+        "export": "Kəs və ixrac et",
+        "upload": "YouTube-a göndər",
+        "generate": "AI video"
+      },
+      "toolHint": {
+        "transcribe": "Danışıq vaxtları ilə mətnə çevrilir: altyazı, Shorts və fəsillər üçün lazımdır.",
+        "cut": "Fasilələr və boş anlar kəsilir, səs YouTube üçün bərabərləşdirilir. Altyazı da kəsimə uyğunlaşır.",
+        "subtitles": "Altyazı şəklin üzərinə yazılır — öz şrift və rənglərinizlə, istəsəniz tərcümə ilə.",
+        "shorts": "Komanda tək başına anlaşılan ən yaxşı anları seçir; hər biri altyazı və başlıqla şaquli Shorts olur.",
+        "export": "Əvvəlini və sonunu kəsin, sürəti və çərçivəni (şaquli, kvadrat) dəyişin, səsi bərabərləşdirin.",
+        "upload": "Bu videonu kanalınıza yükləyir. Başqasını seçməsəniz gizli qalır."
+      },
+      "run": {
+        "transcribe": "Mətnə çevir",
+        "cut": "Səssizlikləri kəs",
+        "subtitles": "Altyazı əlavə et",
+        "shorts": "Shorts düzəlt",
+        "export": "İxrac et",
+        "upload": "YouTube-a yüklə"
+      },
+      "needTranscript": "Əvvəlcə videonu mətnə çevirin",
+      "autoLanguage": "Dili özü tapsın",
+      "lang": {
+        "az": "Azərbaycan",
+        "ru": "Rus",
+        "en": "İngilis",
+        "tr": "Türk"
+      },
+      "level": {
+        "gentle": "Yumşaq",
+        "normal": "Normal",
+        "tight": "Sıx"
+      },
+      "noTranslate": "Orijinal dildə",
+      "translateTo": "{lang} dilinə tərcümə",
+      "font": {
+        "bold": "Qalın",
+        "condensed": "Sıx",
+        "wide": "Enli",
+        "tech": "Texno",
+        "elegant": "Zərif",
+        "rounded": "Yumru"
+      },
+      "pos": {
+        "bottom": "Aşağı",
+        "middle": "Orta",
+        "top": "Yuxarı"
+      },
+      "size": {
+        "s": "Kiçik",
+        "m": "Orta",
+        "l": "Böyük"
+      },
+      "box": "Yazının arxasında tünd fon",
+      "caps": "BÖYÜK HƏRF",
+      "shortsCount": "{n} Shorts",
+      "hookText": "Yuxarıda başlıq",
+      "frame": {
+        "original": "Orijinal çərçivə",
+        "landscape": "16:9",
+        "vertical_blur": "Şaquli 9:16, bulanıq kənarlar",
+        "vertical_center": "Şaquli 9:16, mərkəzdən kəsilmiş",
+        "square": "Kvadrat 1:1"
+      },
+      "start": "Başlanğıc (san)",
+      "end": "Son (san, maks {max})",
+      "withSubs": "Altyazı ilə",
+      "ytTitle": "Başlıq",
+      "ytDescription": "Təsvir",
+      "privacy": {
+        "private": "Gizli",
+        "unlisted": "Siyahıda olmasın",
+        "public": "Açıq"
+      },
+      "scheduleHint": "İstəyə görə: YouTube nə vaxt açıq etsin",
+      "aiDisclosure": "Bu video AI ilə hazırlanıb: qaydalara görə YouTube-a bildiriləcək.",
+      "genTitle": "AI ilə video hazırla",
+      "genHint": "Öz sözlərinizlə təsvir edin; komanda səhnələri yazır, model klipləri hazırlayır. Yalnız kredit ödənir.",
+      "idea": "məs. Qırmızı SUV günəş doğarkən qarlı dağ yolu ilə qalxır, sonra donmuş gölün kənarında dayanır",
+      "style": "Üslub",
+      "styles": {
+        "cinematic": "Kino",
+        "realistic": "Real",
+        "documentary": "Sənədli",
+        "anime": "Anime",
+        "3d": "3D animasiya",
+        "product": "Məhsul reklamı",
+        "retro": "Retro film",
+        "drone": "Dron"
+      },
+      "perSecond": "saniyəyə {n} kredit",
+      "withSound": "səsli",
+      "seconds": "{n} saniyə",
+      "scenes": "{n} səhnə",
+      "captions": "Ekranda yazı",
+      "startImage": "Fotodan başla (istəyə görə):",
+      "generate": "Videonu hazırla",
+      "space": "Laboratoriya yeri: {used} / {total}",
+      "kept": "fayllar 14 gün saxlanılır",
+      "queued": "növbədə",
+      "library": "Videolarınız",
+      "empty": "Hələ video yoxdur. Yükləyin və ya AI ilə hazırlayın.",
+      "stillUploading": "Yükləmə bitməyib",
+      "kind": {
+        "upload": "Yüklənən",
+        "render": "Nəticə",
+        "generated": "AI video"
+      },
+      "hasText": "mətn ✓",
+      "doneShort": "hazırdır",
+      "work": "Üzərində işlə",
+      "download": "Yüklə",
+      "delete": "Sil",
+      "deleteConfirm": "Bu video laboratoriyadan silinsin?"
     }
   }
 }

@@ -57,3 +57,14 @@ everything Google's APIs allow.
 Thumbnail A/B testing ("Test & compare"), end screens, cards and Community posts: the module
 prepares them and the YouTuber sets them in YouTube Studio. Custom thumbnails need a
 phone-verified channel.
+
+### Video lab (how it runs)
+- Uploads arrive in 8 MB chunks (resumable), up to 4 GB and 90 minutes; lab files are deleted after
+  14 days and each company has 12 GB of lab space (one small server disk is shared).
+- FFmpeg runs niced and one job at a time for the whole server, so the panel and API stay fast.
+- Transcription: Whisper on fal.ai, reached through a signed link that expires in two hours.
+- AI video models are configuration (`VIDEO_MODELS_JSON`), with credits per second per model
+  (proposal: fast 2, standard 4, premium with sound 9). Videos made with AI are uploaded to YouTube
+  with its "altered or synthetic content" flag set, as YouTube's rules ask.
+- Credits (proposal): transcription 1 per started 10 minutes; cutting, subtitles and exports 1 per
+  started minute; Shorts 1 to choose the moments plus 1 per Short. A failed job refunds itself.

@@ -1162,7 +1162,14 @@
       "video_gen": "AI video generation",
       "purchase": "Credits bought",
       "refund": "Refund (the job failed)",
-      "grant": "Credits given"
+      "grant": "Credits given",
+      "lab_transcribe": "Transcription",
+      "lab_cut": "Silence cut",
+      "lab_subtitles": "Subtitles",
+      "lab_captions": "Captions to YouTube",
+      "lab_shorts": "Shorts",
+      "lab_export": "Export",
+      "lab_generate": "AI video"
     }
   },
   "yt": {
@@ -1172,7 +1179,8 @@
       "ideas": "Ideas",
       "comments": "Comments",
       "reports": "Reports",
-      "settings": "Channel settings"
+      "settings": "Channel settings",
+      "lab": "Video lab"
     },
     "credits": "credits",
     "cost": "{n} cr",
@@ -1466,6 +1474,134 @@
     "videoTab": {
       "thumbs": "Thumbnails",
       "kit": "Title & description"
+    },
+    "lab": {
+      "dropTitle": "Drop a video here",
+      "dropHint": "MP4, MOV, MKV or WEBM · up to 4 GB and 90 minutes · uploaded in parts, safe on a slow connection",
+      "choose": "Choose a video",
+      "uploading": "Uploading… {pct}%",
+      "uploadFailed": "The upload failed. Please try again.",
+      "error": "Something went wrong. Please try again.",
+      "tool": {
+        "transcribe": "Transcribe",
+        "cut": "Remove silences",
+        "subtitles": "Subtitles",
+        "captions": "Captions to YouTube",
+        "shorts": "Make Shorts",
+        "export": "Trim & export",
+        "upload": "Send to YouTube",
+        "generate": "AI video"
+      },
+      "toolHint": {
+        "transcribe": "The speech becomes text with times: needed for subtitles, Shorts, chapters.",
+        "cut": "Pauses and dead air are cut out and the sound is levelled for YouTube. Subtitles follow the cut.",
+        "subtitles": "Subtitles burned into the picture, in your fonts and colours, optionally translated.",
+        "shorts": "The team picks the best moments that stand on their own; each becomes a vertical Short with subtitles and a headline.",
+        "export": "Trim the start and end, change speed and frame (vertical, square), level the sound.",
+        "upload": "Uploads this video to your channel. It stays private unless you choose otherwise."
+      },
+      "run": {
+        "transcribe": "Transcribe",
+        "cut": "Cut silences",
+        "subtitles": "Add subtitles",
+        "shorts": "Make Shorts",
+        "export": "Export",
+        "upload": "Upload to YouTube"
+      },
+      "needTranscript": "Transcribe the video first",
+      "autoLanguage": "Detect the language",
+      "lang": {
+        "az": "Azerbaijani",
+        "ru": "Russian",
+        "en": "English",
+        "tr": "Turkish"
+      },
+      "level": {
+        "gentle": "Gentle",
+        "normal": "Normal",
+        "tight": "Tight"
+      },
+      "noTranslate": "In the original language",
+      "translateTo": "Translated to {lang}",
+      "font": {
+        "bold": "Bold",
+        "condensed": "Condensed",
+        "wide": "Wide",
+        "tech": "Tech",
+        "elegant": "Elegant",
+        "rounded": "Rounded"
+      },
+      "pos": {
+        "bottom": "Bottom",
+        "middle": "Middle",
+        "top": "Top"
+      },
+      "size": {
+        "s": "Small",
+        "m": "Medium",
+        "l": "Large"
+      },
+      "box": "Dark box behind the text",
+      "caps": "CAPITALS",
+      "shortsCount": "{n} Shorts",
+      "hookText": "Headline at the top",
+      "frame": {
+        "original": "Original frame",
+        "landscape": "16:9",
+        "vertical_blur": "Vertical 9:16, blurred sides",
+        "vertical_center": "Vertical 9:16, cropped centre",
+        "square": "Square 1:1"
+      },
+      "start": "Start (s)",
+      "end": "End (s, max {max})",
+      "withSubs": "With subtitles",
+      "ytTitle": "Title",
+      "ytDescription": "Description",
+      "privacy": {
+        "private": "Private",
+        "unlisted": "Unlisted",
+        "public": "Public"
+      },
+      "scheduleHint": "Optional: when YouTube makes it public",
+      "aiDisclosure": "This video was made with AI: YouTube will be told so, as its rules ask.",
+      "genTitle": "Make a video with AI",
+      "genHint": "Describe it in your words; the team writes the scenes and the model makes the clips. Pay only credits.",
+      "idea": "e.g. A red SUV drives up a snowy mountain road at sunrise, then stops by a frozen lake",
+      "style": "Style",
+      "styles": {
+        "cinematic": "Cinematic",
+        "realistic": "Realistic",
+        "documentary": "Documentary",
+        "anime": "Anime",
+        "3d": "3D animation",
+        "product": "Product ad",
+        "retro": "Retro film",
+        "drone": "Drone"
+      },
+      "perSecond": "{n} credits / second",
+      "withSound": "with sound",
+      "seconds": "{n} seconds",
+      "scenes": "{n} scene(s)",
+      "captions": "Text on screen",
+      "startImage": "Start from a photo (optional):",
+      "generate": "Make the video",
+      "space": "Lab space: {used} of {total}",
+      "kept": "files are kept for 14 days",
+      "queued": "waiting",
+      "library": "Your videos",
+      "empty": "No videos yet. Upload one or make one with AI.",
+      "stillUploading": "Upload not finished",
+      "kind": {
+        "upload": "Upload",
+        "render": "Result",
+        "generated": "AI video"
+      },
+      "hasText": "text ✓",
+      "doneShort": "done",
+      "work": "Work on it",
+      "download": "Download",
+      "delete": "Delete",
+      "deleteConfirm": "Delete this video from the lab?"
     }
   }
 }
