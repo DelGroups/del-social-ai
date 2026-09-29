@@ -9,6 +9,7 @@ const daysLeft = (iso: string) => Math.max(0, Math.ceil((Date.parse(iso) - Date.
 
 export async function PlanBar({ tenantId, plan }: { tenantId: string; plan: PlanStatus | null }) {
   if (!plan || plan.state === "ok") return null; // the sidebar card shows the package; this bar only warns
+  if (!plan.plan && plan.addons?.some((a) => a.active)) return null; // a YouTube-only company has no social package on purpose
   const t = await getTranslations("plan");
   const href = `/t/${tenantId}/plan`;
   const { posts } = plan;
