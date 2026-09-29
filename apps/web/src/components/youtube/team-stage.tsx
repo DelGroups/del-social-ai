@@ -15,10 +15,10 @@ import { YT_AGENTS } from "./team";
 type Member = { agent: string; working: boolean; last_at: string | null };
 type Room = { messages: { role: string; agent: string | null; text: string }[]; roster: Member[]; lead_busy: boolean };
 
-function Node({ agent, working, label, sub }: { agent: string; working: boolean; label: string; sub: string }) {
+function Node({ agent, working, label, sub, stacked = false }: { agent: string; working: boolean; label: string; sub: string; stacked?: boolean }) {
   const a = YT_AGENTS[agent] ?? YT_AGENTS.yt_lead;
   return (
-    <div className={`wf-node relative flex items-center gap-2.5 overflow-hidden px-3 py-2.5 ${working ? "wf-live" : ""}`}
+    <div className={`wf-node relative flex overflow-hidden ${stacked ? "flex-col items-center gap-1.5 px-2 py-3 text-center" : "items-center gap-2.5 px-3 py-2.5"} ${working ? "wf-live" : ""}`}
       style={{ ["--c" as string]: a.color, borderColor: working ? a.color : "var(--node-line)" } as CSSProperties}>
       {working && <span className="wf-sweep pointer-events-none absolute inset-0" />}
       <span className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-full text-white ${working ? "wf-icon-live" : ""}`}
@@ -28,8 +28,8 @@ function Node({ agent, working, label, sub }: { agent: string; working: boolean;
         </svg>
       </span>
       <span className="relative min-w-0">
-        <span className="block truncate text-[13px] font-semibold" style={{ color: "var(--stage-text)" }}>{label}</span>
-        <span className="flex items-center gap-1 truncate text-[11px]" style={{ color: working ? a.color : "var(--stage-muted)" }}>
+        <span className={`block text-[13px] font-semibold leading-tight ${stacked ? "" : "truncate"}`} style={{ color: "var(--stage-text)" }}>{label}</span>
+        <span className={`mt-0.5 flex items-center gap-1 text-[11px] leading-tight ${stacked ? "justify-center" : "truncate"}`} style={{ color: working ? a.color : "var(--stage-muted)" }}>
           {working && <span className="wf-dot inline-block h-1.5 w-1.5 rounded-full" style={{ background: a.color }} />}
           {sub}
         </span>
@@ -91,7 +91,7 @@ export function TeamStage({ tenantId, canWork }: { tenantId: string; canWork: bo
         <Node agent="yt_lead" working={room.lead_busy} label={t("names.yt_lead")} sub={room.lead_busy ? t("thinking") : t("roles.yt_lead")} />
       </div>
       {/* The links: a trunk from the manager to a bus, and one drop to every member; light runs along them while work goes on */}
-      <div className="relative hidden h-6 md:block" aria-hidden="true">
+      <div className="relative hidden h-6 md:block" aria-hidden="true" dir="ltr">
         <span className={`absolute left-1/2 top-0 h-3 w-0.5 -translate-x-1/2 ${anyWorking ? "ls-wire-live" : "ls-wire"}`} style={{ ["--accent" as string]: "var(--flow)" } as CSSProperties} />
         <span className={`absolute left-[7%] right-[7%] top-3 h-0.5 ${anyWorking ? "ls-wire-live" : "ls-wire"}`} style={{ ["--accent" as string]: "var(--flow)" } as CSSProperties} />
         {team.map((m, i) => (
@@ -99,9 +99,9 @@ export function TeamStage({ tenantId, canWork }: { tenantId: string; canWork: bo
             style={{ left: `${7 + (86 / (team.length - 1)) * i}%`, ["--accent" as string]: YT_AGENTS[m.agent]?.color } as CSSProperties} />
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:grid-cols-7">
         {team.map((m) => (
-          <Node key={m.agent} agent={m.agent} working={m.working} label={t(`names.${m.agent}`)} sub={m.working ? t("working") : t(`roles.${m.agent}`)} />
+          <Node key={m.agent} agent={m.agent} working={m.working} label={t(`names.${m.agent}`)} sub={m.working ? t("working") : t("ready")} stacked />
         ))}
       </div>
 
