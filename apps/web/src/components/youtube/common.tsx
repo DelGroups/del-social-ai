@@ -2,7 +2,7 @@
 
 // Pieces shared by the YouTube Studio pages: loading the dashboard, the credit pill, report text,
 // "costs N credits" buttons and the empty states (no add-on, no channel).
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
 
@@ -11,14 +11,15 @@ import { ApiError, api } from "@/lib/client-api";
 import type { YtDashboard, YtReport } from "@/lib/youtube";
 
 export function useDashboard(tenantId: string) {
+  const locale = useLocale(); // reports come translated into the panel's language
   const [data, setData] = useState<YtDashboard | null>(null);
   const load = useCallback(async () => {
     try {
-      setData(await api<YtDashboard>(`/tenants/${tenantId}/youtube`));
+      setData(await api<YtDashboard>(`/tenants/${tenantId}/youtube?lang=${locale}`));
     } catch {
       /* keep the last view */
     }
-  }, [tenantId]);
+  }, [tenantId, locale]);
   useEffect(() => {
     load();
   }, [load]);

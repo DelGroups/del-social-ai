@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 from redis.asyncio import Redis
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
 from del_social.billing import credits
 from del_social.connections import stats
@@ -28,6 +29,7 @@ from del_social.core.deps import (
     get_http,
     get_redis,
     get_vault,
+    get_vault_optional,
     get_youtube,
     get_youtube_optional,
     require_permission,
@@ -36,11 +38,11 @@ from del_social.core.vault import TokenVault
 from del_social.llm import LLM
 from del_social.media import images
 from del_social.media.fal import FalClient
-from del_social.models import ChannelStat, YtCompetitor, YtDraft, YtIdea, YtReply, YtReport, YtThumbnail, YtVideo
+from del_social.models import ChannelStat, YtChat, YtCompetitor, YtDraft, YtIdea, YtReply, YtReport, YtThumbnail, YtVideo
 from del_social.routes.media import get_analyst, get_fal
 from del_social.team import lead
 from del_social.tenants.permissions import Permission
-from del_social.youtube import channel, comments, ideas, kit, render, reports, sync, thumbs
+from del_social.youtube import channel, comments, i18n, ideas, kit, render, reports, sync, team, thumbs
 from del_social.youtube.channel import Settings, Studio
 
 router = APIRouter(prefix="/tenants/{tenant_id}/youtube", tags=["youtube"])
@@ -75,8 +77,19 @@ async def once(redis: Redis, key: str, seconds: int, message: str) -> None:
         raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, message)
 
 
-def _report(r: YtReport) -> dict[str, Any]:
-    return {"report_id": r.report_id, "kind": r.kind, "status": r.status, "output": r.output, "input": r.input,
+async def _localize_reports(llm: LLM | None, tenant_id: uuid.UUID, rows: list[YtReport], lang: str | None) -> dict[uuid.UUID, Any]:
+    """Each report's output in the reader's language (translated once, then cached on the row)."""
+    results = await i18n.localize_many(llm, tenant_id, [r.output for r in rows], lang)
+    shown = {}
+    for r, (out, changed) in zip(rows, results):
+        if changed:
+            flag_modified(r, "output")  # the cached translation was added inside the JSON value
+        shown[r.report_id] = out
+    return shown
+
+
+def _report(r: YtReport, output: Any = None) -> dict[str, Any]:
+    return {"report_id": r.report_id, "kind": r.kind, "status": r.status, "output": output if output is not None else r.output, "input": r.input,
             "sources": r.sources, "credits": r.credits, "error": r.error, "created_at": r.created_at, "finished_at": r.finished_at}
 
 
@@ -95,8 +108,8 @@ def _thumb(t: YtThumbnail, tenant_id: uuid.UUID) -> dict[str, Any]:
 
 
 @router.get("")
-async def dashboard(ctx: TenantContext = Depends(can_view), db: AsyncSession = Depends(get_db),
-                    yt: YouTubeClient | None = Depends(get_youtube_optional)) -> dict[str, Any]:
+async def dashboard(lang: str | None = None, ctx: TenantContext = Depends(can_view), db: AsyncSession = Depends(get_db),
+                    yt: YouTubeClient | None = Depends(get_youtube_optional), llm: LLM | None = Depends(get_analyst)) -> dict[str, Any]:
     b = await credits.balance(db)
     out: dict[str, Any] = {
         "addon": {"active": b.active, "total": b.total if b.active else 0, "monthly_left": b.monthly_left, "purchased": max(0, b.purchased),
@@ -115,11 +128,10 @@ async def dashboard(ctx: TenantContext = Depends(can_view), db: AsyncSession = D
                       "videos": last.posts if last else None, "growth_7d": stats.growth(rows, 7), "growth_30d": stats.growth(rows, 30),
                       "series": [{"day": r.day, "subscribers": r.followers, "views": r.views} for r in reversed(rows)]}
     out["settings"] = (await channel.settings_of(db, conn.connection_id)).model_dump()
-    latest = {}
-    for kind in ("pulse", "daily", "review", "ideas"):
-        r = await reports.latest(db, conn.connection_id, kind)
-        latest[kind] = _report(r) if r else None
-    out["latest"] = latest
+    found = {kind: await reports.latest(db, conn.connection_id, kind) for kind in ("pulse", "daily", "review", "ideas")}
+    rows = [r for r in found.values() if r is not None]
+    shown = await _localize_reports(llm, ctx.tenant_id, rows, lang)
+    out["latest"] = {kind: _report(r, shown.get(r.report_id)) if r else None for kind, r in found.items()}
     out["counts"] = {
         "videos": await db.scalar(select(func.count()).where(YtVideo.connection_id == conn.connection_id)) or 0,
         "replies_waiting": await db.scalar(select(func.count()).where(YtReply.connection_id == conn.connection_id,
@@ -184,12 +196,15 @@ def _draft(d: YtDraft) -> dict[str, Any]:
 
 
 @router.get("/reports")
-async def list_reports(kind: str | None = None, ctx: TenantContext = Depends(can_view), db: AsyncSession = Depends(get_db)) -> list[dict[str, Any]]:
+async def list_reports(kind: str | None = None, lang: str | None = None, ctx: TenantContext = Depends(can_view),
+                       db: AsyncSession = Depends(get_db), llm: LLM | None = Depends(get_analyst)) -> list[dict[str, Any]]:
     st = await studio_of(ctx, db)
     q = select(YtReport).where(YtReport.connection_id == st.connection_id)
     if kind:
         q = q.where(YtReport.kind == kind)
-    return [_report(r) for r in (await db.scalars(q.order_by(YtReport.created_at.desc()).limit(40))).all()]
+    rows = list((await db.scalars(q.order_by(YtReport.created_at.desc()).limit(40))).all())
+    shown = await _localize_reports(llm, ctx.tenant_id, rows[:8], lang)  # the newest ones; older ones on the next views
+    return [_report(r, shown.get(r.report_id)) for r in rows]
 
 
 @router.post("/reports/{kind}", status_code=status.HTTP_202_ACCEPTED)
@@ -227,11 +242,19 @@ async def run_ideas(ctx: TenantContext = Depends(can_work), db: AsyncSession = D
 
 
 @router.get("/ideas")
-async def list_ideas(ctx: TenantContext = Depends(can_view), db: AsyncSession = Depends(get_db)) -> list[dict[str, Any]]:
+async def list_ideas(lang: str | None = None, ctx: TenantContext = Depends(can_view), db: AsyncSession = Depends(get_db),
+                     llm: LLM | None = Depends(get_analyst)) -> list[dict[str, Any]]:
     st = await studio_of(ctx, db)
-    rows = (await db.scalars(select(YtIdea).where(YtIdea.connection_id == st.connection_id, YtIdea.status != "dismissed")
-                             .order_by(YtIdea.created_at.desc()).limit(60))).all()
-    return [{"idea_id": i.idea_id, "title": i.title, "status": i.status, "created_at": i.created_at, **i.data} for i in rows]
+    rows = list((await db.scalars(select(YtIdea).where(YtIdea.connection_id == st.connection_id, YtIdea.status != "dismissed")
+                                  .order_by(YtIdea.created_at.desc()).limit(60))).all())
+    results = await i18n.localize_many(llm, ctx.tenant_id, [i.data for i in rows], lang)
+    out = []
+    for i, (data, changed) in zip(rows, results):
+        if changed:
+            flag_modified(i, "data")
+        out.append({"idea_id": i.idea_id, "title": i.title, "status": i.status, "created_at": i.created_at,
+                    **{k: v for k, v in (data or {}).items() if k != "_i18n"}})
+    return out
 
 
 class IdeaStatus(BaseModel):
@@ -593,3 +616,39 @@ async def dismiss_reply(reply_id: uuid.UUID, ctx: TenantContext = Depends(can_wo
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found")
     r.status = "dismissed"
     return {"status": r.status}
+
+
+# --- the team: chat with the Channel Manager ---
+
+
+@router.get("/team")
+async def team_room(ctx: TenantContext = Depends(can_view), db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
+    st = await studio_of(ctx, db)
+    rows = list(reversed((await db.scalars(select(YtChat).order_by(YtChat.created_at.desc()).limit(80))).all()))
+    return {
+        "messages": [{k: getattr(m, k) for k in ("message_id", "role", "agent", "text", "payload", "created_at")} for m in rows],
+        "roster": await team.roster(db, st.connection_id),
+        "lead_busy": team.is_busy(ctx.tenant_id),
+    }
+
+
+class ChatIn(BaseModel):
+    text: str = Field(min_length=1, max_length=2000)
+
+
+@router.post("/team/chat", status_code=status.HTTP_202_ACCEPTED)
+async def team_chat(body: ChatIn, ctx: TenantContext = Depends(can_work), db: AsyncSession = Depends(get_db),
+                    engine: AsyncEngine = Depends(get_engine), llm: LLM | None = Depends(get_analyst),
+                    yt: YouTubeClient | None = Depends(get_youtube_optional), vault: TokenVault | None = Depends(get_vault_optional),
+                    http: httpx.AsyncClient = Depends(get_http), fal: FalClient | None = Depends(get_fal)) -> dict[str, str]:
+    await studio_of(ctx, db)
+    if team.is_busy(ctx.tenant_id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "The manager is still answering the last message")
+    async with AsyncSession(engine) as own, own.begin():  # committed before the manager reads the conversation
+        await set_tenant(own, ctx.tenant_id)
+        own.add(YtChat(message_id=uuid.uuid4(), tenant_id=ctx.tenant_id, role="user", text=body.text.strip(), author=ctx.account.account_id))
+    crew = team.Crew(engine=engine, settings=get_settings(), tenant_id=ctx.tenant_id, llm=llm, yt=yt, vault=vault, http=http, fal=fal,
+                     by=ctx.account.account_id)
+    team._busy.add(ctx.tenant_id)  # busy from now, so a quick second message waits
+    lead.spawn(team.handle, crew=crew, message=body.text.strip())
+    return {"status": "thinking"}

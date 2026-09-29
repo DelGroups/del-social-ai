@@ -1,7 +1,7 @@
 "use client";
 
 // Reports: the deep review laid out by area, and the history of pulses and daily reports.
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
 import { api } from "@/lib/client-api";
@@ -66,6 +66,7 @@ function Review({ r }: { r: YtReport }) {
 
 export function YtReports({ tenantId, canWork }: { tenantId: string; canWork: boolean; canManage?: boolean }) {
   const t = useTranslations("yt");
+  const locale = useLocale();
   const { data } = useDashboard(tenantId);
   const [kind, setKind] = useState<"review" | "daily" | "pulse">("review");
   const [rows, setRows] = useState<YtReport[] | null>(null);
@@ -73,11 +74,11 @@ export function YtReports({ tenantId, canWork }: { tenantId: string; canWork: bo
   const base = `/tenants/${tenantId}/youtube/reports`;
   const load = useCallback(async () => {
     try {
-      setRows(await api<YtReport[]>(`${base}?kind=${kind}`));
+      setRows(await api<YtReport[]>(`${base}?kind=${kind}&lang=${locale}`));
     } catch {
       setRows([]);
     }
-  }, [base, kind]);
+  }, [base, kind, locale]);
   useEffect(() => {
     if (data?.connection && data.addon.active) load();
   }, [data?.connection, data?.addon.active, load]);

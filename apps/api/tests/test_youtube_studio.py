@@ -224,6 +224,23 @@ class FakeStudioLLM:
         elif output is agents.Replies:
             out = agents.Replies(replies=[agents.ReplyDraft(index=0, reply="Təşəkkürlər! Qiyməti videoda deyirik.", skip=False),
                                           agents.ReplyDraft(index=1, reply="", skip=True)])
+        elif output is agents.LeadTurn:
+            msg = user.split("<message>")[1]
+            actions = []
+            if "təhlil" in msg:
+                actions.append(agents.LeadAction(type="review"))
+            if "mətn" in msg:
+                actions.append(agents.LeadAction(type="kit", video_id="v1", notes="kia"))
+            if "yoxdur" in msg:
+                actions.append(agents.LeadAction(type="kit", video_id="nope"))
+            if "rəqib" in msg:
+                actions.append(agents.LeadAction(type="add_competitors", channels=["@rivalcars"]))
+            out = agents.LeadTurn(reply="Oldu, komandaya tapşırdım.", actions=actions)
+        elif output is agents.TranslatedSegments:
+            lang = user.split("<language>")[1].split("<")[0]
+            lines = user.split("<segments>\n")[1].split("\n</segments>")[0].split("\n")
+            out = agents.TranslatedSegments(segments=[agents.SegmentText(index=int(x.split(":", 1)[0]), text=f"[{lang}]{x.split(':', 1)[1]}")
+                                                      for x in lines])
         else:
             raise AssertionError(output)
         return LLMResult(out, "fake", Usage(10, 5), Decimal("0.01"), 1, uuid.uuid4().hex)
@@ -445,3 +462,48 @@ def test_kit_pieces():
     assert kit.stamp(3725) == "1:02:05"
     assert ideas.parse_channel("https://www.youtube.com/@autobaku/videos") == ("handle", "autobaku")
     assert ideas.parse_channel("youtube.com/channel/UC1234567890123456789012") == ("id", "UC1234567890123456789012")
+
+
+async def test_reports_follow_the_panel_language(client, app_engine, tenants, studio):
+    s = studio
+    now = datetime(2026, 9, 28, 6, 0, tzinfo=UTC)
+    await worker.tick_tenant(engine=app_engine, llm=s.llm, yt=s.yt, vault=s.vault, http=s.http, tenant_id=tenants["a"], now=now)
+    first = (await client.get(f"{s.base}/reports?kind=pulse", headers=s.owner)).json()[0]
+    assert first["output"]["headline"] == "İlk ölçü götürüldü"  # no earlier snapshot: a fact from code, no model
+    assert not any(a == "yt_reporter" and "<kind>pulse" in u for a, u in s.llm.users)
+
+    calls = len(s.llm.users)
+    ru = (await client.get(f"{s.base}?lang=ru", headers=s.owner)).json()["latest"]["daily"]["output"]
+    assert ru["headline"].startswith("[ru]") and ru["lang"] == "ru"
+    assert ru["actions"][0].startswith("[ru]") and ru["highlights"] == ["+500"]  # numbers alone are never sent
+    assert len(s.llm.users) == calls + 2  # the daily report and the pulse (in Azerbaijani) were translated
+    again = (await client.get(f"{s.base}?lang=ru", headers=s.owner)).json()["latest"]["daily"]["output"]
+    assert again == ru and len(s.llm.users) == calls + 2  # cached on the row
+    az = (await client.get(f"{s.base}?lang=az", headers=s.owner)).json()["latest"]["daily"]["output"]
+    assert not az["headline"].startswith("[")  # the original language needs nothing
+
+
+async def test_manager_hands_work_to_the_team(client, app_engine, tenants, studio):
+    s = studio
+    await client.post(f"{s.base}/sync", headers={**s.owner, **O})
+    start = await balance(app_engine, tenants["a"])
+    r = await client.post(f"{s.base}/team/chat", json={"text": "Kanalı təhlil et və Kia videosu üçün mətn yaz"}, headers={**s.owner, **O})
+    assert r.status_code == 202
+    await lead.settle()
+    room = (await client.get(f"{s.base}/team", headers=s.owner)).json()
+    said = [(m["agent"], m["text"]) for m in room["messages"]]
+    assert said[0] == (None, "Kanalı təhlil et və Kia videosu üçün mətn yaz")
+    assert said[1] == ("yt_lead", "Oldu, komandaya tapşırdım.")
+    agents_done = {m["agent"]: m for m in room["messages"] if m["payload"]}
+    assert agents_done["yt_reviewer"]["payload"]["link"] == "reports" and agents_done["yt_reviewer"]["text"].startswith("Hazırdır")
+    assert agents_done["yt_metadata"]["payload"] == {"link": "video", "video_id": "v1", "tab": "kit"}
+    assert await balance(app_engine, tenants["a"]) == start - credits.COST["review"] - credits.COST["metadata"]
+    ctx = [u for a, u in s.llm.users if a == "yt_lead"][0]
+    assert '"video_id": "v1"' in ctx and "<credits>" in ctx and "<reply_language>az" in ctx
+    assert {x["agent"] for x in room["roster"]} >= {"yt_lead", "yt_reviewer", "yt_thumbnail", "yt_editor"}
+
+    # A video that isn't on the channel is refused by code; competitors are checked on YouTube
+    await client.post(f"{s.base}/team/chat", json={"text": "Bu video yoxdur, rəqib də əlavə et"}, headers={**s.owner, **O})
+    await lead.settle()
+    texts_ = [m["text"] for m in (await client.get(f"{s.base}/team", headers=s.owner)).json()["messages"]]
+    assert "Bu videonu kanalda tapa bilmədim." in texts_ and any("Rival Cars" in t for t in texts_)

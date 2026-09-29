@@ -27,6 +27,7 @@ from del_social.models.team import AgentEvent, ChatMessage, DailyReport, Task
 from del_social.models.tenant import Tenant
 from del_social.models.tenant_secret import TenantSecret
 from del_social.models.youtube import (
+    YtChat,
     YtCompetitor,
     YtDraft,
     YtIdea,
@@ -75,6 +76,7 @@ __all__ = [
     "Tenant",
     "TenantAddon",
     "TenantSecret",
+    "YtChat",
     "YtCompetitor",
     "YtDraft",
     "YtIdea",

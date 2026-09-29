@@ -178,6 +178,21 @@ class YtReply(Base):
     created_at: Mapped[datetime] = _now()
 
 
+class YtChat(Base):
+    """A message between the owner and the YouTube team (role user | agent). RLS: tenant."""
+
+    __tablename__ = "yt_chat"
+
+    message_id: Mapped[uuid.UUID] = _id()
+    tenant_id: Mapped[uuid.UUID] = _tenant()
+    role: Mapped[str] = mapped_column(Text)
+    agent: Mapped[str | None] = mapped_column(Text)
+    text: Mapped[str] = mapped_column(Text)
+    payload: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    author: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("accounts.account_id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = _now()
+
+
 class YtMedia(Base):
     """A video file in the lab (upload, render or AI clip). Deleted after expires_at. RLS: tenant."""
 
