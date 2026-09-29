@@ -1661,7 +1661,9 @@
         "yt_thumbnail": "Thumbnails in many styles",
         "yt_replies": "Reply drafts for comments",
         "yt_editor": "Cuts, subtitles, Shorts, AI video"
-      }
+      },
+      "live": "Your YouTube team · live",
+      "openTeam": "Full chat"
     }
   }
 }

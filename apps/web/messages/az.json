@@ -1661,7 +1661,9 @@
         "yt_thumbnail": "Müxtəlif üslublu thumbnail-lar",
         "yt_replies": "Şərhlərə cavab qaralamaları",
         "yt_editor": "Montaj, altyazı, Shorts, AI video"
-      }
+      },
+      "live": "YouTube komandanız · canlı",
+      "openTeam": "Bütün söhbət"
     }
   }
 }
