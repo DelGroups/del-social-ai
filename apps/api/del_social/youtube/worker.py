@@ -82,6 +82,13 @@ async def tick_tenant(*, engine: AsyncEngine, llm: LLM | None, yt: YouTubeClient
 
 
 async def tick(*, engine: AsyncEngine, llm: LLM | None, yt: YouTubeClient, vault: TokenVault, http: httpx.AsyncClient) -> None:
+    from del_social.core.config import get_settings
+    from del_social.youtube.lab import jobs
+
+    try:
+        await jobs.cleanup(engine, get_settings().media_root)  # lab files older than 14 days
+    except Exception:
+        log.exception("lab cleanup failed")
     async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
         ids = [r[0] for r in (await db.execute(text("SELECT tenant_id FROM addon_tenants('youtube')"))).all()]
     for tenant_id in ids:

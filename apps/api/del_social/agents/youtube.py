@@ -172,3 +172,51 @@ class Replies(BaseModel):
 async def replies(llm: LLM, tenant_id: uuid.UUID, context: str) -> LLMResult[Replies]:
     return await llm.structured(tenant_id=tenant_id, prompt=load_prompt("yt_replies"), user=context, output=Replies,
                                 tier=Tier.FAST, max_tokens=4000)
+
+
+# --- video lab ---
+
+
+class ShortPick(BaseModel):
+    first: int = Field(description="Index of the first segment of the moment in <segments>")
+    last: int = Field(description="Index of the last segment (inclusive)")
+    hook: str = Field(description="Headline shown at the top of the Short, at most 6 words, in the video's language")
+    title: str = Field(description="A title for the Short, at most 70 characters, in the video's language")
+    why: str = Field(description="One sentence: why this moment works as a Short")
+
+
+class ShortPicks(BaseModel):
+    shorts: list[ShortPick] = Field(description="The best self-contained moments, best first")
+
+
+async def shorts(llm: LLM, tenant_id: uuid.UUID, context: str) -> LLMResult[ShortPicks]:
+    return await llm.structured(tenant_id=tenant_id, prompt=load_prompt("yt_shorts"), user=context, output=ShortPicks,
+                                tier=Tier.DEFAULT, max_tokens=4000)
+
+
+class Scene(BaseModel):
+    prompt: str = Field(description="English prompt for the video model: subject, action, setting, camera, light, style")
+    caption: str = Field(description="What this scene says on screen, in the creator's language; may be empty")
+
+
+class VideoPlan(BaseModel):
+    scenes: list[Scene] = Field(description="1 scene for a single clip, otherwise the number asked for")
+
+
+async def video_plan(llm: LLM, tenant_id: uuid.UUID, context: str) -> LLMResult[VideoPlan]:
+    return await llm.structured(tenant_id=tenant_id, prompt=load_prompt("yt_video_prompt"), user=context, output=VideoPlan,
+                                tier=Tier.DEFAULT, max_tokens=4000)
+
+
+class SegmentText(BaseModel):
+    index: int
+    text: str
+
+
+class TranslatedSegments(BaseModel):
+    segments: list[SegmentText]
+
+
+async def translate_segments(llm: LLM, tenant_id: uuid.UUID, context: str) -> LLMResult[TranslatedSegments]:
+    return await llm.structured(tenant_id=tenant_id, prompt=load_prompt("yt_subtitles"), user=context, output=TranslatedSegments,
+                                tier=Tier.DEFAULT, max_tokens=16000)

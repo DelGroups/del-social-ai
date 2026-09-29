@@ -18,6 +18,7 @@ from del_social.routes import (
     channels,
     connections,
     daily,
+    lab,
     evals,
     media,
     plan,
@@ -103,6 +104,8 @@ app.include_router(platform.router)
 app.include_router(connections.router)
 app.include_router(channels.router)
 app.include_router(youtube.router)
+app.include_router(lab.router)
+app.include_router(lab.public_router)
 app.include_router(brand.router)
 app.include_router(usage.router)
 app.include_router(evals.router)

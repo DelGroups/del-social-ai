@@ -242,6 +242,51 @@ class YouTubeClient:
         d = await self.data("GET", "search", creds, UNITS["search"], kind="search", params=params)
         return [i["id"]["videoId"] for i in d.get("items") or [] if i.get("id", {}).get("videoId")]
 
+    async def upload_video(self, creds: Credentials, path: Any, meta: dict[str, Any], progress: Any = None) -> str:
+        """Resumable upload (8 MB chunks, resumes after a dropped chunk). Returns the new video id. 1600 units."""
+        import asyncio
+
+        self.meter.spend(UNITS["upload"], "update")
+        size = path.stat().st_size
+        token = await self.access_token(creds)
+        try:
+            r = await self._http.post(f"{UPLOAD}/videos", params={"uploadType": "resumable", "part": "snippet,status"}, json=meta,
+                                      headers={"Authorization": f"Bearer {token}", "X-Upload-Content-Type": "video/*",
+                                               "X-Upload-Content-Length": str(size)}, timeout=60.0)
+        except httpx.HTTPError:
+            raise YouTubeError("YouTube could not be reached") from None
+        if r.status_code >= 400 or "location" not in r.headers:
+            raise YouTubeError(f"YouTube refused the upload ({r.status_code})", r.status_code, "uploadStart")
+        url, offset, chunk, retries = r.headers["location"], 0, 8 * 1024 * 1024, 0
+
+        def read(at: int) -> bytes:
+            with open(path, "rb") as f:
+                f.seek(at)
+                return f.read(chunk)
+
+        while True:
+            data = await asyncio.to_thread(read, offset)
+            end = offset + len(data) - 1
+            token = await self.access_token(creds)
+            try:
+                r = await self._http.put(url, content=data, timeout=600.0,
+                                         headers={"Authorization": f"Bearer {token}", "Content-Range": f"bytes {offset}-{end}/{size}"})
+            except httpx.HTTPError:
+                retries += 1
+                if retries > 5:
+                    raise YouTubeError("The upload to YouTube kept failing") from None
+                await asyncio.sleep(2 * retries)
+                continue
+            if r.status_code in (200, 201):
+                return r.json()["id"]
+            if r.status_code == 308:
+                rng = r.headers.get("range")  # "bytes=0-12345": what YouTube has
+                offset = int(rng.split("-")[1]) + 1 if rng else 0
+                if progress:
+                    await progress(min(99, int(offset / size * 100)))
+                continue
+            raise YouTubeError(f"YouTube stopped the upload ({r.status_code})", r.status_code, "upload")
+
     # --- captions ---
 
     async def captions(self, creds: Credentials, video_id: str) -> list[dict[str, Any]]:
