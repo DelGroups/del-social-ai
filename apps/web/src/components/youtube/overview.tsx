@@ -13,6 +13,7 @@ import type { YtReport, YtVideo } from "@/lib/youtube";
 import { duration } from "@/lib/youtube";
 
 import { CostButton, CreditPill, ReportBody, StudioGate, errorText, useDashboard, usePoll } from "./common";
+import { TeamStage } from "./team-stage";
 
 export function VideoCard({ v, tenantId }: { v: YtVideo; tenantId: string }) {
   const t = useTranslations("yt");
@@ -131,6 +132,8 @@ export function YtOverview({ tenantId, canWork }: { tenantId: string; canWork: b
               <Sparkline points={(data.channel?.series ?? []).map((p) => ({ day: p.day, followers: p.subscribers }))} color="#FF3B3B" />
             </div>
           </section>
+
+          <TeamStage tenantId={tenantId} canWork={canWork} />
 
           {error && <p className="rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>}
 
