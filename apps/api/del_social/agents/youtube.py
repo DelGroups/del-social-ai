@@ -174,6 +174,27 @@ async def replies(llm: LLM, tenant_id: uuid.UUID, context: str) -> LLMResult[Rep
                                 tier=Tier.FAST, max_tokens=4000)
 
 
+# --- the channel manager ---
+
+
+class LeadAction(BaseModel):
+    type: Literal["sync", "pulse", "daily", "review", "ideas", "kit", "thumbnails", "comments", "add_competitors"]
+    video_id: str | None = Field(default=None, description="kit, thumbnails: id from <videos>")
+    notes: str | None = Field(default=None, description="kit: keywords or wishes; thumbnails: the owner's wishes")
+    ai_backgrounds: bool | None = Field(default=None, description="thumbnails: true only when the owner asks for new AI images")
+    channels: list[str] | None = Field(default=None, description="add_competitors: @handles or links the owner gave")
+
+
+class LeadTurn(BaseModel):
+    reply: str = Field(description="What you say to the owner, in <reply_language>")
+    actions: list[LeadAction] = Field(description="Work to start now; empty when none")
+
+
+async def lead(llm: LLM, tenant_id: uuid.UUID, context: str) -> LLMResult[LeadTurn]:
+    return await llm.structured(tenant_id=tenant_id, prompt=load_prompt("yt_lead"), user=context, output=LeadTurn,
+                                tier=Tier.DEFAULT, max_tokens=3000)
+
+
 # --- video lab ---
 
 
@@ -217,6 +238,8 @@ class TranslatedSegments(BaseModel):
     segments: list[SegmentText]
 
 
-async def translate_segments(llm: LLM, tenant_id: uuid.UUID, context: str) -> LLMResult[TranslatedSegments]:
-    return await llm.structured(tenant_id=tenant_id, prompt=load_prompt("yt_subtitles"), user=context, output=TranslatedSegments,
-                                tier=Tier.DEFAULT, max_tokens=16000)
+async def translate_segments(llm: LLM, tenant_id: uuid.UUID, context: str, prompt: str = "yt_subtitles") -> LLMResult[TranslatedSegments]:
+    """Subtitles (default model) or report text (yt_translate, fast model)."""
+    tier = Tier.FAST if prompt == "yt_translate" else Tier.DEFAULT
+    return await llm.structured(tenant_id=tenant_id, prompt=load_prompt(prompt), user=context, output=TranslatedSegments,
+                                tier=tier, max_tokens=16000)

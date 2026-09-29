@@ -147,9 +147,9 @@ async def run_ideas(*, engine: AsyncEngine, llm: LLM, yt: YouTubeClient, vault: 
             await set_tenant(db, tenant_id)
             for idea in out.ideas:
                 db.add(YtIdea(idea_id=uuid.uuid4(), tenant_id=tenant_id, connection_id=studio.connection_id, report_id=report_id,
-                              title=idea.title, data=idea.model_dump(exclude={"title"})))
+                              title=idea.title, data=idea.model_dump(exclude={"title"}) | {"lang": lang}))
         cost = (result.cost_usd or 0) + (notes.cost_usd or 0)
-        await reports.finish(engine, tenant_id, report_id, status="done", output=out.model_dump(),
+        await reports.finish(engine, tenant_id, report_id, status="done", output=out.model_dump() | {"lang": lang},
                              input={"trending": trending, "competitors": evidence}, cost_usd=cost,
                              sources=[{"title": src.title, "url": src.url} for src in notes.sources])
     except Exception as e:  # noqa: BLE001

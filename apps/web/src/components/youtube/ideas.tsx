@@ -1,7 +1,7 @@
 "use client";
 
 // Ideas board: video ideas with their evidence; keep the good ones, mark what was made, drop the rest.
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
 import { api } from "@/lib/client-api";
@@ -12,6 +12,7 @@ import { CostButton, StudioGate, errorText, useDashboard, usePoll } from "./comm
 
 export function YtIdeas({ tenantId, canWork }: { tenantId: string; canWork: boolean; canManage?: boolean }) {
   const t = useTranslations("yt");
+  const locale = useLocale();
   const { data, load: loadDash } = useDashboard(tenantId);
   const [ideas, setIdeas] = useState<YtIdea[] | null>(null);
   const [tab, setTab] = useState<"new" | "saved" | "used">("new");
@@ -19,11 +20,11 @@ export function YtIdeas({ tenantId, canWork }: { tenantId: string; canWork: bool
   const base = `/tenants/${tenantId}/youtube`;
   const load = useCallback(async () => {
     try {
-      setIdeas(await api<YtIdea[]>(`${base}/ideas`));
+      setIdeas(await api<YtIdea[]>(`${base}/ideas?lang=${locale}`));
     } catch {
       setIdeas([]);
     }
-  }, [base]);
+  }, [base, locale]);
   useEffect(() => {
     if (data?.connection && data.addon.active) load();
   }, [data?.connection, data?.addon.active, load]);

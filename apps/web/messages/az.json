@@ -1194,7 +1194,8 @@
       "comments": "Şərhlər",
       "reports": "Hesabatlar",
       "settings": "Kanal ayarları",
-      "lab": "Video laboratoriya"
+      "lab": "Video laboratoriya",
+      "team": "Komanda"
     },
     "credits": "kredit",
     "cost": "{n} kr",
@@ -1617,6 +1618,50 @@
       "delete": "Sil",
       "deleteConfirm": "Bu video laboratoriyadan silinsin?",
       "pickPhoto": "Foto seç"
+    },
+    "team": {
+      "chat": "Kanal meneceri ilə söhbət",
+      "thinking": "Düşünür…",
+      "leadHint": "Nə lazımdır deyin, komandaya tapşırım.",
+      "empty": "Kanal menecerinizə salam deyin. Hesabat, ideya, thumbnail və ya video üçün mətn istəyin — komanda işi görüb burada xəbər verəcək.",
+      "placeholder": "Menecerə yazın… (istənilən dildə)",
+      "send": "Göndər",
+      "roster": "Komanda",
+      "working": "işləyir",
+      "ready": "hazırdır",
+      "error": "Nəsə alınmadı. Yenidən cəhd edin.",
+      "open": {
+        "reports": "Hesabatı aç",
+        "ideas": "İdeyaları aç",
+        "comments": "Şərhləri aç",
+        "video": "Videonu aç"
+      },
+      "suggest": {
+        "s1": "Kanal necədir?",
+        "s2": "Kanalımı təhlil et",
+        "s3": "Yeni video ideyaları tap",
+        "s4": "Yeni şərhlərə cavab hazırla"
+      },
+      "names": {
+        "yt_lead": "Kanal meneceri",
+        "yt_reporter": "Analitik",
+        "yt_reviewer": "Strateq",
+        "yt_ideas": "İdeya prodüseri",
+        "yt_metadata": "SEO kopirayter",
+        "yt_thumbnail": "Thumbnail dizayneri",
+        "yt_replies": "İcma meneceri",
+        "yt_editor": "Video montajçı"
+      },
+      "roles": {
+        "yt_lead": "Planlayır və işi bölür",
+        "yt_reporter": "Nəbz və gündəlik hesabatlar",
+        "yt_reviewer": "Dərin kanal təhlili",
+        "yt_ideas": "Trendlər, rəqiblər, ideyalar",
+        "yt_metadata": "Başlıq, təsvir, teqlər",
+        "yt_thumbnail": "Müxtəlif üslublu thumbnail-lar",
+        "yt_replies": "Şərhlərə cavab qaralamaları",
+        "yt_editor": "Montaj, altyazı, Shorts, AI video"
+      }
     }
   }
 }

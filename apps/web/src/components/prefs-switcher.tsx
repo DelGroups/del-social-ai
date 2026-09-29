@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { LOCALES, LOCALE_COOKIE, type Locale, THEMES, THEME_COOKIE, type Theme, setPrefCookie } from "@/lib/prefs";
+import { LOCALES, LOCALE_COOKIE, type Locale, PREVIEW_LOCALES, THEMES, THEME_COOKIE, type Theme, setPrefCookie } from "@/lib/prefs";
 
 // What each theme looks like, for its preview (mirrors globals.css)
 const LOOK: Record<Theme, { bg: string; surface: string; text: string; accent: string; radius: number; glow?: string }> = {
@@ -43,7 +43,9 @@ function Preview({ theme, size = "md" }: { theme: Theme; size?: "sm" | "md" }) {
   );
 }
 
-export function PrefsSwitcher({ locale, theme: initial, compact = false }: { locale: string; theme: string; compact?: boolean }) {
+export function PrefsSwitcher({ locale, theme: initial, compact = false, preview = false }: {
+  locale: string; theme: string; compact?: boolean; preview?: boolean; // preview: also the languages still being tried out
+}) {
   const t = useTranslations();
   const router = useRouter();
   const [theme, setTheme] = useState<Theme>((THEMES as readonly string[]).includes(initial) ? (initial as Theme) : "midnight");
@@ -72,13 +74,15 @@ export function PrefsSwitcher({ locale, theme: initial, compact = false }: { loc
   function pickLocale(l: Locale) {
     if (l === locale) return;
     setPrefCookie(LOCALE_COOKIE, l);
-    router.refresh();
+    // The writing direction changes with Persian: reload the whole page so every part lays out again
+    if (l === "fa" || locale === "fa") window.location.reload();
+    else router.refresh();
   }
 
   return (
     <div ref={box} className="relative flex items-center gap-2">
       <div className="flex rounded-md bg-bg p-0.5 text-[11px] font-semibold" role="group" aria-label={t("common.language")}>
-        {LOCALES.map((l) => (
+        {LOCALES.filter((l) => preview || !PREVIEW_LOCALES.includes(l) || l === locale).map((l) => (
           <button
             key={l}
             type="button"

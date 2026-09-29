@@ -143,7 +143,7 @@ export function YtSettingsPage({ tenantId, canManage }: { tenantId: string; canW
                   {r.avatar ? <img src={r.avatar} alt="" className="h-8 w-8 rounded-full" /> : <span className="h-8 w-8 rounded-full bg-surface" />}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{r.title}</p>
-                    <p className="text-xs text-muted">{r.handle} · {formatCount(r.subscribers)} {t("subscribers")}</p>
+                    <p className="text-xs text-muted"><bdi>{r.handle}</bdi> · {formatCount(r.subscribers)} {t("subscribers")}</p>
                   </div>
                   {canManage && (
                     <button type="button" onClick={async () => { await api(`${base}/competitors/${r.competitor_id}`, { method: "DELETE" }); loadRivals(); }}

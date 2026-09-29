@@ -254,3 +254,7 @@ button.bg-accent, a.bg-accent { box-shadow: var(--btn-shadow); border-radius: va
   [class*="ch-"] { animation: none !important; }
   .ch-draw { stroke-dashoffset: 0; }
 }
+
+/* Persian (preview, right to left): every theme keeps its colours and shapes, with Vazirmatn for the letters */
+html[lang="fa"][data-theme] { --font-body: var(--font-vazirmatn); --font-head: var(--font-vazirmatn); --head-tracking: 0; }
+html[lang="fa"] .tabular-nums { font-feature-settings: "tnum"; }

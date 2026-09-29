@@ -104,7 +104,7 @@ export function SideNav({
   tenantId: string;
   items: NavItem[];
   plan: PlanStatus | null;
-  prefs: { locale: string; theme: string };
+  prefs: { locale: string; theme: string; preview?: boolean };
   children: ReactNode;
 }) {
   const t = useTranslations();
@@ -138,7 +138,7 @@ export function SideNav({
       <div className="mt-auto space-y-3">
         <PackageCard tenantId={tenantId} plan={plan} />
         <CreditsCard tenantId={tenantId} plan={plan} />
-        <PrefsSwitcher locale={prefs.locale} theme={prefs.theme} />
+        <PrefsSwitcher locale={prefs.locale} theme={prefs.theme} preview={prefs.preview ?? me.is_platform_admin} />
         <div className="space-y-1 border-t border-border pt-3 text-xs">
           <p className="truncate px-1 text-muted" title={me.email}>{me.email}</p>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1">
@@ -153,7 +153,7 @@ export function SideNav({
 
   return (
     <div className="min-h-screen lg:grid lg:grid-cols-[252px_minmax(0,1fr)]">
-      <aside className="sticky top-0 hidden h-screen overflow-y-auto border-r border-border bg-surface lg:block">{panel}</aside>
+      <aside className="sticky top-0 hidden h-screen overflow-y-auto border-r border-border bg-surface lg:block rtl:border-l rtl:border-r-0">{panel}</aside>
       <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-surface px-4 py-3 lg:hidden">
         <button type="button" onClick={() => setOpen(true)} className="rounded-md border border-border px-2 py-1 text-sm" aria-label={t("tenant.menu")}>
           ☰
@@ -168,7 +168,7 @@ export function SideNav({
       {open && (
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true">
           <button type="button" className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} aria-label={t("common.close")} />
-          <div className="absolute inset-y-0 left-0 w-72 overflow-y-auto bg-surface shadow-xl">{panel}</div>
+          <div className="absolute inset-y-0 left-0 w-72 overflow-y-auto bg-surface shadow-xl rtl:left-auto rtl:right-0">{panel}</div>
         </div>
       )}
       <main className="mx-auto w-full max-w-6xl px-4 py-6 lg:px-8">{children}</main>

@@ -98,7 +98,7 @@ export function YtOverview({ tenantId, canWork }: { tenantId: string; canWork: b
                   {data.connection.avatar && <img src={data.connection.avatar} alt="" className="h-6 w-6 rounded-full" />}
                   <h1 className="truncate text-xl font-semibold">{data.connection.name}</h1>
                 </div>
-                <p className="text-sm text-muted">{data.connection.handle}</p>
+                <p className="text-sm text-muted"><bdi>{data.connection.handle}</bdi></p>
                 {data.connection.status !== "active" && <p className="mt-1 text-sm text-danger">{data.connection.last_error}</p>}
               </div>
               <div className="flex basis-full flex-wrap items-center gap-2 sm:basis-auto">

@@ -28,6 +28,12 @@ from del_social.youtube.channel import Studio, creds, load, report_language
 log = logging.getLogger(__name__)
 
 THUMB_BYTES = 400_000
+FIRST_PULSE = {
+    "az": {"headline": "İlk ölçü götürüldü", "summary": "Kanal indicə qoşuldu: videoların baxış sayı yadda saxlanıldı. Növbəti nəbz bu rəqəmlərlə müqayisə edib son saatlarda nə dəyişdiyini göstərəcək.", "highlights": [], "actions": []},
+    "ru": {"headline": "Первый замер сделан", "summary": "Канал только что подключён: просмотры видео сохранены. Следующий пульс сравнит с ними и покажет, что изменилось за последние часы.", "highlights": [], "actions": []},
+    "en": {"headline": "First measurement taken", "summary": "The channel was just connected: its videos' view counts are saved. The next pulse compares with them and shows what changed in the last hours.", "highlights": [], "actions": []},
+    "fa": {"headline": "اولین اندازه‌گیری انجام شد", "summary": "کانال همین حالا وصل شد و تعداد بازدید ویدیوها ذخیره شد. نبض بعدی با همین اعداد مقایسه می‌کند و نشان می‌دهد در چند ساعت اخیر چه تغییری کرده است.", "highlights": [], "actions": []},
+}
 
 
 def dumps(v: Any) -> str:
@@ -79,10 +85,15 @@ async def run_pulse(*, engine: AsyncEngine, llm: LLM, yt: YouTubeClient, vault: 
             await set_tenant(db, tenant_id)
             facts = await numbers.last_hours(db, studio.connection_id, hours, now)
             lang = await report_language(db, studio.settings)
+        if facts["videos_compared"] == 0:
+            # No earlier snapshot to compare with yet (first pulse after connecting): say so, don't ask a model
+            await finish(engine, tenant_id, report_id, status="done", input=facts, output=FIRST_PULSE[lang] | {"lang": lang})
+            return
         text = (f"<report_language>{lang}</report_language>\n<kind>pulse</kind>\n<channel>\n{dumps(studio.channel_block())}\n</channel>\n"
                 f"<facts>\n{dumps(facts)}\n</facts>")
         result = await agents.report(llm, tenant_id, text)
-        await finish(engine, tenant_id, report_id, status="done", input=facts, output=result.output.model_dump(), cost_usd=result.cost_usd)
+        await finish(engine, tenant_id, report_id, status="done", input=facts, output=result.output.model_dump() | {"lang": lang},
+                     cost_usd=result.cost_usd)
     except Exception as e:  # noqa: BLE001 — a report never breaks the loop
         await _fail(engine, tenant_id, report_id, e)
 
@@ -105,7 +116,8 @@ async def run_daily(*, engine: AsyncEngine, llm: LLM, yt: YouTubeClient, vault: 
         text = (f"<report_language>{lang}</report_language>\n<kind>daily</kind>\n<channel>\n{dumps(studio.channel_block())}\n</channel>\n"
                 f"<facts>\n{dumps(facts)}\n</facts>")
         result = await agents.report(llm, tenant_id, text)
-        await finish(engine, tenant_id, report_id, status="done", input=facts, output=result.output.model_dump(), cost_usd=result.cost_usd)
+        await finish(engine, tenant_id, report_id, status="done", input=facts, output=result.output.model_dump() | {"lang": lang},
+                     cost_usd=result.cost_usd)
     except Exception as e:  # noqa: BLE001
         await _fail(engine, tenant_id, report_id, e)
 
@@ -170,7 +182,8 @@ async def run_review(*, engine: AsyncEngine, llm: LLM, yt: YouTubeClient, vault:
             f"<thumbnails>{dumps([v.title for v in shown][:len(images)])}</thumbnails>"
         )
         result = await agents.review(llm, tenant_id, text, images)
-        await finish(engine, tenant_id, report_id, status="done", input=facts, output=result.output.model_dump(), cost_usd=result.cost_usd)
+        await finish(engine, tenant_id, report_id, status="done", input=facts, output=result.output.model_dump() | {"lang": lang},
+                     cost_usd=result.cost_usd)
     except Exception as e:  # noqa: BLE001
         await _fail(engine, tenant_id, report_id, e)
 
