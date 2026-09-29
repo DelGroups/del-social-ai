@@ -21,6 +21,7 @@ const ICONS = {
   posts: "M4 5h16v14H4zM4 9h16M9 9v10",
   photos: "M4 5h16v14H4zm4 4.5a1.5 1.5 0 1 0 0-.01M20 15l-5-5L6 19",
   reports: "M4 20V10m6 10V4m6 16v-7m4 7H2",
+  youtube: "M3 7.5A3.5 3.5 0 0 1 6.5 4h11A3.5 3.5 0 0 1 21 7.5v9a3.5 3.5 0 0 1-3.5 3.5h-11A3.5 3.5 0 0 1 3 16.5zM10 9v6l5-3z",
   settings: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6m7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14.5 3h-4l-.4 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2l.4 2.6h4l.4-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2",
 } as const;
 
@@ -32,9 +33,27 @@ function Icon({ name }: { name: keyof typeof ICONS }) {
   );
 }
 
+function CreditsCard({ tenantId, plan }: { tenantId: string; plan: PlanStatus | null }) {
+  const t = useTranslations("addons");
+  const yt = plan?.addons?.find((a) => a.addon_id === "youtube" && a.active);
+  if (!yt) return null;
+  const pct = yt.monthly_credits ? Math.round((yt.monthly_left / yt.monthly_credits) * 100) : 0;
+  return (
+    <Link href={`/t/${tenantId}/plan`} className="block space-y-1.5 rounded-lg border border-border bg-bg p-3 text-xs transition hover:border-accent">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="font-semibold">YouTube Studio</span>
+        <span className="tabular-nums text-text">{yt.total}</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-surface"><div className="h-full rounded-full bg-[#FF0000]" style={{ width: `${pct}%` }} /></div>
+      <p className="text-muted">{t("total")}</p>
+    </Link>
+  );
+}
+
 function PackageCard({ tenantId, plan }: { tenantId: string; plan: PlanStatus | null }) {
   const t = useTranslations("plan");
   if (!plan) return null;
+  if (!plan.plan && plan.addons?.some((a) => a.active)) return null; // YouTube-only: the credits card says it all
   const href = `/t/${tenantId}/plan`;
   const posts = plan.posts;
   const pct = posts.limit ? Math.min(100, Math.round((posts.used / posts.limit) * 100)) : 100;
@@ -118,6 +137,7 @@ export function SideNav({
       </nav>
       <div className="mt-auto space-y-3">
         <PackageCard tenantId={tenantId} plan={plan} />
+        <CreditsCard tenantId={tenantId} plan={plan} />
         <PrefsSwitcher locale={prefs.locale} theme={prefs.theme} />
         <div className="space-y-1 border-t border-border pt-3 text-xs">
           <p className="truncate px-1 text-muted" title={me.email}>{me.email}</p>

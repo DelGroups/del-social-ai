@@ -25,6 +25,7 @@ from del_social.connections.base import ChannelAdapter, ChannelError, Identity
 from del_social.connections.meta import MetaClient
 from del_social.connections.service import credentials, record_check, save_connection
 from del_social.connections.telegram import TelegramAdapter
+from del_social.connections.youtube import YouTubeClient, YouTubeError, channel_identity
 from del_social.core.config import get_settings
 from del_social.core.db import set_tenant
 from del_social.core.deps import (
@@ -36,6 +37,8 @@ from del_social.core.deps import (
     get_redis,
     get_vault,
     get_vault_optional,
+    get_youtube,
+    get_youtube_optional,
     require_permission,
 )
 from del_social.core.sessions import SESSION_COOKIE, resolve_session
@@ -120,8 +123,9 @@ def _out(conn: Connection) -> ConnectionOut:
 def _adapters(
     http: httpx.AsyncClient = Depends(get_http),
     meta: MetaClient | None = Depends(get_meta_optional),
+    yt: YouTubeClient | None = Depends(get_youtube_optional),
 ) -> dict[Channel, ChannelAdapter]:
-    return build_adapters(http, meta)
+    return build_adapters(http, meta, yt)
 
 
 async def _get_connection(db: AsyncSession, connection_id: uuid.UUID) -> Connection:
@@ -138,6 +142,7 @@ async def list_connections(
     adapters: dict[Channel, ChannelAdapter] = Depends(_adapters),
     vault: TokenVault | None = Depends(get_vault_optional),
     meta: MetaClient | None = Depends(get_meta_optional),
+    yt: YouTubeClient | None = Depends(get_youtube_optional),
 ) -> list[ChannelOut]:
     rows = (await db.scalars(select(Connection).order_by(Connection.created_at))).all()
     result = []
@@ -150,7 +155,8 @@ async def list_connections(
                 channel=channel,
                 connect_method=adapter.connect_method,
                 available=adapter.available,
-                configured=adapter.available and vault is not None and (meta is not None or not needs_meta),
+                configured=adapter.available and vault is not None and (meta is not None or not needs_meta)
+                and (yt is not None or channel != Channel.YOUTUBE),
                 capabilities={k: getattr(caps, k) for k in ("publish", "comments", "messages", "insights")},
                 connections=[_out(c) for c in rows if c.channel == channel.value],
             )
@@ -377,3 +383,88 @@ async def meta_pick(
         )
     await redis.delete(_pick_key(pick))
     return [_out(c) for c in saved]
+
+
+# --- Google (YouTube channels, ADR 012) ---
+
+
+def google_redirect_uri() -> str:
+    return f"{get_settings().app_base_url}/api/connections/google/callback"
+
+
+def _google_state_key(state: str) -> str:
+    return f"google_oauth:state:{state}"
+
+
+@router.post("/google/start", response_model=StartOut)
+async def google_start(
+    ctx: TenantContext = Depends(can_manage),
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis),
+    yt: YouTubeClient = Depends(get_youtube),
+    vault: TokenVault = Depends(get_vault),
+) -> StartOut:
+    from del_social.billing import credits
+
+    await credits.require_addon(db)  # say it before the Google dialog, not after it
+    state = secrets.token_urlsafe(24)
+    await redis.set(
+        _google_state_key(state),
+        json.dumps({"tenant_id": str(ctx.tenant_id), "account_id": str(ctx.account.account_id)}),
+        ex=STATE_TTL,
+    )
+    return StartOut(url=yt.oauth.authorize_url(state=state, redirect_uri=google_redirect_uri()))
+
+
+@callback_router.get("/connections/google/callback", include_in_schema=False)
+async def google_callback(
+    request: Request,
+    state: str = "",
+    code: str = "",
+    error: str = "",
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis),
+    yt: YouTubeClient | None = Depends(get_youtube_optional),
+    vault: TokenVault | None = Depends(get_vault_optional),
+) -> RedirectResponse:
+    """Google sends the browser here. Always answers with a redirect back to the panel."""
+    from del_social.billing.quota import QuotaError
+    from del_social.connections.base import Credentials
+
+    raw = await redis.getdel(_google_state_key(state)) if state else None  # single use
+    if raw is None:
+        return RedirectResponse("/?google=expired", status_code=303)
+    started = json.loads(raw)
+    tenant_id = uuid.UUID(started["tenant_id"])
+    back = f"/t/{tenant_id}/connections"
+
+    token = request.cookies.get(SESSION_COOKIE)
+    account_id = await resolve_session(db, token) if token else None
+    if account_id is None or str(account_id) != started["account_id"]:
+        return RedirectResponse(f"{back}?google=session", status_code=303)
+    await set_tenant(db, tenant_id)
+    role = await db.scalar(select(Membership.role).where(Membership.account_id == account_id))
+    if role is None or not has_permission(role, Permission.MANAGE_CONNECTIONS):
+        return RedirectResponse(f"{back}?google=forbidden", status_code=303)
+    if error or not code:
+        return RedirectResponse(f"{back}?google=cancelled", status_code=303)
+    if yt is None or vault is None:
+        return RedirectResponse(f"{back}?google=error", status_code=303)
+    try:
+        tokens = await yt.oauth.exchange_code(code, google_redirect_uri())
+        refresh = tokens.get("refresh_token")
+        if not refresh:
+            return RedirectResponse(f"{back}?google=norefresh", status_code=303)
+        granted = set((tokens.get("scope") or "").split())
+        channel = await yt.my_channel(Credentials(external_id="", token=refresh))
+    except YouTubeError as e:
+        log.warning("google oauth failed for tenant %s: %s", tenant_id, e)
+        return RedirectResponse(f"{back}?google={'nochannel' if e.reason == 'noChannel' else 'error'}", status_code=303)
+    identity = channel_identity(channel)
+    identity.details["scopes"] = sorted(s.rsplit("/", 1)[-1] for s in granted)
+    try:
+        await save_connection(db, vault, tenant_id=tenant_id, channel=Channel.YOUTUBE, identity=identity,
+                              token=refresh, connected_by=account_id)
+    except QuotaError as e:
+        return RedirectResponse(f"{back}?google={e.code}", status_code=303)
+    return RedirectResponse(f"/t/{tenant_id}/youtube?connected=1", status_code=303)

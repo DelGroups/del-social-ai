@@ -106,7 +106,8 @@ async def allowance(db: AsyncSession, now: datetime | None = None) -> Allowance:
         )) or 0
         drafts = await db.scalar(select(func.count()).where(Post.created_at >= start, Post.created_at < end)) or 0
     scheduled = await db.scalar(select(func.count()).where(Post.status == "scheduled")) or 0
-    channels = await db.scalar(select(func.count()).select_from(Connection)) or 0
+    # A YouTube channel belongs to the YouTube Studio add-on, not to the package (ADR 012)
+    channels = await db.scalar(select(func.count()).where(Connection.channel != "youtube")) or 0
     members = await db.scalar(select(func.count()).select_from(Membership)) or 0
     pending = await db.scalar(select(func.count()).where(
         Invitation.accepted_at.is_(None), Invitation.revoked_at.is_(None), Invitation.expires_at > now

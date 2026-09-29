@@ -16,7 +16,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from del_social.core.db import set_account, set_tenant
 from del_social.core.deps import CurrentAccount, get_db, require_platform_admin
 from del_social.core.security import new_token
-from del_social.models import MemberRole, PasswordReset, Plan, PlanRequest, Subscription, Tenant
+from del_social.billing import credits
+from del_social.models import (
+    Addon,
+    CreditPack,
+    MemberRole,
+    PasswordReset,
+    Plan,
+    PlanRequest,
+    PurchaseRequest,
+    Subscription,
+    Tenant,
+    TenantAddon,
+)
 from del_social.tenants.service import (
     PASSWORD_RESET_TTL,
     app_link,
@@ -34,8 +46,9 @@ MONTH = timedelta(days=30)
 class TenantCreateIn(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     owner_email: str = Field(max_length=254)
-    plan_id: str = Field(default="basic", max_length=40)
+    plan_id: str | None = Field(default="basic", max_length=40)  # None = no social package (YouTube Studio only)
     months: int | None = Field(default=1, ge=1, le=36)  # None = no end date
+    addons: list[str] = Field(default_factory=list, max_length=5)
 
 
 class TenantCreatedOut(BaseModel):
@@ -65,7 +78,10 @@ async def create_tenant(
     await set_tenant(db, tenant_id)  # RLS: the new row must match the context
     db.add(Tenant(tenant_id=tenant_id, name=body.name.strip()))
     await db.flush()
-    await _assign(db, tenant_id, body.plan_id, body.months, 0, "Created with the company", admin.account_id)
+    if body.plan_id:
+        await _assign(db, tenant_id, body.plan_id, body.months, 0, "Created with the company", admin.account_id)
+    for addon_id in body.addons:
+        await _set_addon(db, tenant_id, addon_id, True, body.months, "Created with the company", admin.account_id)
     invitation, url = await create_invitation(
         db, tenant_id, owner_email, MemberRole.OWNER, invited_by=admin.account_id
     )
@@ -204,3 +220,107 @@ async def assign_plan(
     sub = await _assign(db, tenant_id, body.plan_id, body.months, body.extra_video_credits, body.note.strip(), admin.account_id)
     return SubscriptionOut(plan_id=sub.plan_id, starts_at=sub.starts_at, expires_at=sub.expires_at,
                            extra_video_credits=sub.extra_video_credits)
+
+
+async def _set_addon(
+    db: AsyncSession, tenant_id: uuid.UUID, addon_id: str, active: bool, months: int | None, note: str, by: uuid.UUID,
+) -> TenantAddon | None:
+    """Turn an add-on on (a new monthly window from now) or off. Tenant context must be set."""
+    addon = await db.get(Addon, addon_id)
+    if addon is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such add-on")
+    for old in (await db.scalars(select(TenantAddon).where(TenantAddon.addon_id == addon_id, TenantAddon.status == "active"))).all():
+        old.status = "ended"
+    await db.flush()
+    row = None
+    if active:
+        now = datetime.now(UTC)
+        row = TenantAddon(tenant_addon_id=uuid.uuid4(), tenant_id=tenant_id, addon_id=addon_id, status="active", starts_at=now,
+                          expires_at=now + MONTH * months if months else None, note=note, created_by=by)
+        db.add(row)
+    for req in (await db.scalars(select(PurchaseRequest).where(PurchaseRequest.status == "open", PurchaseRequest.kind == "addon"))).all():
+        req.status = "done"
+    await db.flush()
+    return row
+
+
+class AddonIn(BaseModel):
+    active: bool
+    months: int | None = Field(default=1, ge=1, le=36)
+    note: str = Field(default="", max_length=500)
+
+
+class AddonOut(BaseModel):
+    addon_id: str
+    active: bool
+    starts_at: datetime | None
+    expires_at: datetime | None
+
+
+@router.put("/tenants/{tenant_id}/addons/{addon_id}", response_model=AddonOut)
+async def set_addon(
+    tenant_id: uuid.UUID, addon_id: str, body: AddonIn,
+    admin: CurrentAccount = Depends(require_platform_admin), db: AsyncSession = Depends(get_db),
+) -> AddonOut:
+    await set_tenant(db, tenant_id)
+    if await db.get(Tenant, tenant_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such company")
+    row = await _set_addon(db, tenant_id, addon_id, body.active, body.months, body.note.strip(), admin.account_id)
+    return AddonOut(addon_id=addon_id, active=row is not None, starts_at=row.starts_at if row else None,
+                    expires_at=row.expires_at if row else None)
+
+
+class CreditsIn(BaseModel):
+    credits: int | None = Field(default=None, ge=1, le=100_000)
+    pack_id: str | None = Field(default=None, max_length=40)  # or a pack from the catalog
+    addon_id: str = Field(default="youtube", max_length=40)
+    note: str = Field(default="", max_length=500)
+
+
+class CreditsOut(BaseModel):
+    granted: int
+    total: int
+
+
+@router.post("/tenants/{tenant_id}/credits", response_model=CreditsOut, status_code=status.HTTP_201_CREATED)
+async def grant_credits(
+    tenant_id: uuid.UUID, body: CreditsIn,
+    admin: CurrentAccount = Depends(require_platform_admin), db: AsyncSession = Depends(get_db),
+) -> CreditsOut:
+    """Credits the company bought (paid outside the app until phase 5). They never expire."""
+    await set_tenant(db, tenant_id)
+    if await db.get(Tenant, tenant_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No such company")
+    amount, note = body.credits, body.note.strip()
+    if body.pack_id:
+        pack = await db.get(CreditPack, body.pack_id)
+        if pack is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "No such credit pack")
+        amount, note = pack.credits, note or f"Pack {pack.pack_id} ({pack.price_azn} AZN)"
+    if not amount:
+        raise HTTPException(422, "Give a number of credits or a pack")
+    await credits.grant(db, tenant_id, amount, "purchase", admin.account_id, note, body.addon_id)
+    for req in (await db.scalars(select(PurchaseRequest).where(PurchaseRequest.status == "open", PurchaseRequest.kind == "credits"))).all():
+        req.status = "done"
+    await db.flush()
+    return CreditsOut(granted=amount, total=(await credits.balance(db, body.addon_id)).total)
+
+
+class AddonOverview(BaseModel):
+    tenant_id: uuid.UUID
+    addon_id: str
+    status: str
+    starts_at: datetime
+    expires_at: datetime | None
+    purchased_balance: int
+    monthly_spent: int
+    open_requests: int
+
+
+@router.get("/addons", response_model=list[AddonOverview])
+async def list_addons(
+    admin: CurrentAccount = Depends(require_platform_admin), db: AsyncSession = Depends(get_db)
+) -> list[AddonOverview]:
+    await set_account(db, admin.account_id)
+    rows = (await db.execute(text("SELECT * FROM platform_addon_overview()"))).mappings().all()
+    return [AddonOverview(**r) for r in rows]

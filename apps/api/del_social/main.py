@@ -15,8 +15,10 @@ from del_social.billing.quota import QuotaError
 from del_social.routes import (
     auth,
     brand,
+    channels,
     connections,
     daily,
+    lab,
     evals,
     media,
     plan,
@@ -27,6 +29,7 @@ from del_social.routes import (
     team,
     tenants,
     usage,
+    youtube,
 )
 
 settings = get_settings()
@@ -47,6 +50,16 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     meta, vault = deps.get_meta_optional(http), deps._vault()
     if settings.scheduler_enabled and meta is not None and vault is not None and not settings.meta_paused:
         tasks.append(asyncio.create_task(scheduler.loop(engine=deps._engine(), settings=settings, meta=meta, vault=vault)))
+    if settings.scheduler_enabled and vault is not None:
+        from del_social.connections import stats
+
+        readers = stats.meta_readers(meta) | stats.youtube_readers(deps.get_youtube_optional())
+        tasks.append(asyncio.create_task(stats.loop(engine=deps._engine(), vault=vault, readers=readers)))
+    if settings.scheduler_enabled and vault is not None and (yt := deps.get_youtube_optional()) is not None:
+        from del_social.youtube import worker
+
+        studio_llm = build_llm(settings, deps._engine(), http) if settings.anthropic_api_key else None
+        tasks.append(asyncio.create_task(worker.loop(engine=deps._engine(), llm=studio_llm, yt=yt, vault=vault, http=http)))
     if settings.scheduler_enabled and settings.anthropic_api_key:
         llm = build_llm(settings, deps._engine(), http)
         tasks.append(asyncio.create_task(daily.loop(engine=deps._engine(), http=http, llm=llm, meta=meta, vault=vault)))
@@ -89,6 +102,10 @@ app.include_router(strategy.router)
 app.include_router(tenants.router)
 app.include_router(platform.router)
 app.include_router(connections.router)
+app.include_router(channels.router)
+app.include_router(youtube.router)
+app.include_router(lab.router)
+app.include_router(lab.public_router)
 app.include_router(brand.router)
 app.include_router(usage.router)
 app.include_router(evals.router)

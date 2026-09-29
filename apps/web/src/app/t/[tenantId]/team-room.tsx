@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ApprovalCard } from "@/components/approval-card";
 import { GoalRow, MeetingCard } from "@/components/meeting-card";
+import { ChannelCards } from "@/components/channel-cards";
 import { BriefingCard, MarketCard } from "@/components/report-cards";
 import { AGENT_COLOR } from "@/lib/agents";
 import { ApiError, api } from "@/lib/client-api";
@@ -133,6 +134,8 @@ export function TeamRoom({ tenantId, canAct }: { tenantId: string; canAct: boole
 
   return (
     <div className="space-y-4">
+      <ChannelCards tenantId={tenantId} />
+
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {kpis.map(([label, value, tone]) => (
           <div key={label} className={`rounded-lg border bg-surface px-3 py-2 ${tone === "accent" ? "border-accent" : "border-border"}`}>

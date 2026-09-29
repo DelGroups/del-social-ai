@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
 from del_social.connections.meta import MetaClient
+from del_social.connections.youtube import GoogleOAuth, QuotaMeter, YouTubeClient
 from del_social.core.config import get_settings
 from del_social.core.db import make_engine, set_tenant
 from del_social.core.rate_limit import RateLimiter
@@ -105,6 +106,25 @@ def get_meta(meta: MetaClient | None = Depends(get_meta_optional)) -> MetaClient
     if meta is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "The Meta app is not configured")
     return meta
+
+
+@lru_cache
+def _youtube() -> YouTubeClient | None:
+    # One client for the process: it holds the access-token cache and today's quota count
+    s = get_settings()
+    if not s.google_configured:
+        return None
+    return YouTubeClient(_http(), GoogleOAuth(_http(), s.google_client_id, s.google_client_secret), QuotaMeter(s.youtube_daily_units))
+
+
+def get_youtube_optional() -> YouTubeClient | None:
+    return _youtube()
+
+
+def get_youtube(yt: YouTubeClient | None = Depends(get_youtube_optional)) -> YouTubeClient:
+    if yt is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Google sign-in is not configured on this server")
+    return yt
 
 
 def get_rate_limiter(redis: Redis = Depends(get_redis)) -> RateLimiter:

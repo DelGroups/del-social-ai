@@ -13,10 +13,10 @@ export default async function ConnectionsPage({
   searchParams,
 }: {
   params: Promise<{ tenantId: string }>;
-  searchParams: Promise<{ meta?: string; pick?: string }>;
+  searchParams: Promise<{ meta?: string; pick?: string; google?: string }>;
 }) {
   const { tenantId } = await params;
-  const { meta, pick } = await searchParams;
+  const { meta, pick, google } = await searchParams;
   const me = await requireMe();
   const membership = me.memberships.find((m) => m.tenant_id === tenantId);
   if (!membership) redirect("/");
@@ -40,6 +40,7 @@ export default async function ConnectionsPage({
         manage={manage}
         channels={channels.data ?? []}
         notice={meta && meta !== "pick" ? meta : null}
+        googleNotice={google ?? null}
         pick={choosing ? { id: pick, pages: pages.data } : null}
       />
       <PageSetup tenantId={tenantId} channels={channels.data ?? []} profile={profile.data?.data ?? null} manage={manage} />

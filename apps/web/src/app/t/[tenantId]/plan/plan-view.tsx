@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { AddonPanel } from "@/components/addon-panel";
 import { Alert, Card } from "@/components/ui";
 import { ApiError, api } from "@/lib/client-api";
 import { formatDate } from "@/lib/prefs";
@@ -83,10 +84,15 @@ export function PlanView({ tenantId, initial, canBuy }: { tenantId: string; init
     }
   }
 
+  const youtubeOnly = !current && plan.addons.some((a) => a.active);
+  const addons = plan.addons.map((a) => (
+    <AddonPanel key={a.addon_id} tenantId={tenantId} addon={a} canBuy={canBuy} onChange={(p) => { setPlan(p); router.refresh(); }} />
+  ));
   const days = plan.expires_at ? Math.max(0, Math.ceil((Date.parse(plan.expires_at) - Date.now()) / 86_400_000)) : null;
 
   return (
     <div className="space-y-6">
+      {youtubeOnly && addons}
       {current ? (
         <Card>
           <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
@@ -118,7 +124,7 @@ export function PlanView({ tenantId, initial, canBuy }: { tenantId: string; init
             <Bar label={t("meter.users")} meter={plan.users} />
           </div>
         </Card>
-      ) : (
+      ) : youtubeOnly ? null : (
         <Alert tone="error">{t("banner.none")}</Alert>
       )}
 
@@ -169,6 +175,13 @@ export function PlanView({ tenantId, initial, canBuy }: { tenantId: string; init
         </div>
         <p className="text-xs text-muted">{canBuy ? t("paymentNote") : t("ownerOnly")}</p>
       </section>
+
+      {!youtubeOnly && addons.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold">{t("addonsTitle")}</h2>
+          {addons}
+        </section>
+      )}
     </div>
   );
 }

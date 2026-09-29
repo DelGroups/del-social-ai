@@ -342,6 +342,7 @@ export type PlanStatus = {
   video: Meter;
   catalog: PlanInfo[];
   open_request: { plan_id: string; created_at: string } | null;
+  addons: AddonStatus[];
 };
 
 export const canBuyPlan = (role: Role) => role === "owner";
@@ -494,4 +495,45 @@ export type DailyFull = DailyRow & {
   input: { own?: CollectedAccount | null; competitors?: CollectedAccount[]; facts?: Record<string, unknown> };
   output: (MarketReportData | BriefingData | MeetingData) | null;
   sources: { title: string; url: string }[];
+};
+
+export type ChannelCard = {
+  connection_id: string;
+  channel: string;
+  name: string;
+  status: string;
+  paused: boolean;
+  avatar: string | null;
+  url: string | null;
+  day: string | null;
+  collected_at: string | null;
+  followers: number | null;
+  posts: number | null;
+  views: number | null;
+  likes: number | null;
+  comments: number | null;
+  recent: number | null;
+  engagement_rate: number | null;
+  growth_7d: number | null;
+  growth_30d: number | null;
+  series: { day: string; followers: number | null }[];
+  extra: { username?: string; handle?: string; [k: string]: unknown };
+};
+
+export type AddonStatus = {
+  addon_id: string;
+  name: string;
+  price_azn: string;
+  monthly_credits: number;
+  active: boolean;
+  starts_at: string | null;
+  expires_at: string | null;
+  period_end: string | null;
+  monthly_left: number;
+  purchased: number;
+  total: number;
+  packs: { pack_id: string; credits: number; price_azn: string }[];
+  history: { delta: number; reason: string; created_at: string }[];
+  open_request: string | null;
+  costs: Record<string, number>;
 };
