@@ -189,9 +189,8 @@ function Editor({ tenantId, thumb, video, channelName, costs, canWork, onSaved }
             <div className="flex flex-wrap gap-2">
               {Object.entries(PALETTES).map(([name, [text, emph, band]]) => (
                 <button key={name} type="button" onClick={() => change({ palette: name })} title={name}
-                  className={`flex h-8 w-12 overflow-hidden rounded-md border-2 ${spec.palette === name ? "border-accent" : "border-transparent"}`}>
-                  <span className="flex-1" style={{ background: band }} /><span className="flex-1" style={{ background: emph }} /><span className="flex-1" style={{ background: text }} />
-                </button>
+                  className={`h-8 w-12 rounded-md border-2 ${spec.palette === name ? "border-accent" : "border-border"}`}
+                  style={{ background: `linear-gradient(90deg, ${band} 0 34%, ${emph} 34% 67%, ${text} 67% 100%)` }} />
               ))}
             </div>
           </div>

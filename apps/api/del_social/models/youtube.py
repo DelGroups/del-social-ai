@@ -176,3 +176,49 @@ class YtReply(Base):
     status: Mapped[str] = mapped_column(Text, server_default="new")
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = _now()
+
+
+class YtMedia(Base):
+    """A video file in the lab (upload, render or AI clip). Deleted after expires_at. RLS: tenant."""
+
+    __tablename__ = "yt_media"
+
+    media_id: Mapped[uuid.UUID] = _id()
+    tenant_id: Mapped[uuid.UUID] = _tenant()
+    kind: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(Text, server_default="uploading")
+    title: Mapped[str] = mapped_column(Text, server_default="")
+    filename: Mapped[str] = mapped_column(Text)
+    bytes: Mapped[int] = mapped_column(BigInteger, server_default="0")
+    expected_bytes: Mapped[int | None] = mapped_column(BigInteger)
+    duration_s: Mapped[float | None] = mapped_column()
+    width: Mapped[int | None] = mapped_column(Integer)
+    height: Mapped[int | None] = mapped_column(Integer)
+    has_audio: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
+    transcript: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    source_media_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("yt_media.media_id", ondelete="SET NULL"))
+    youtube_video_id: Mapped[str | None] = mapped_column(Text)
+    error: Mapped[str | None] = mapped_column(Text)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("accounts.account_id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = _now()
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now() + interval '14 days'"))
+
+
+class YtJob(Base):
+    """One piece of lab work (transcribe, cut, subtitles, shorts, export, generate, upload). RLS: tenant."""
+
+    __tablename__ = "yt_jobs"
+
+    job_id: Mapped[uuid.UUID] = _id()
+    tenant_id: Mapped[uuid.UUID] = _tenant()
+    media_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("yt_media.media_id", ondelete="CASCADE"))
+    kind: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(Text, server_default="queued")
+    progress: Mapped[int] = mapped_column(Integer, server_default="0")
+    options: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))
+    result: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    credits: Mapped[int] = mapped_column(Integer, server_default="0")
+    error: Mapped[str | None] = mapped_column(Text)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("accounts.account_id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = _now()
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

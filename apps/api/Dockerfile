@@ -7,6 +7,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+# FFmpeg: the YouTube video lab cuts, subtitles and renders with it (ADR 012)
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
+
 # Dependencies first for layer caching
 COPY pyproject.toml ./
 RUN mkdir del_social && touch del_social/__init__.py \

@@ -101,7 +101,7 @@ export function YtOverview({ tenantId, canWork }: { tenantId: string; canWork: b
                 <p className="text-sm text-muted">{data.connection.handle}</p>
                 {data.connection.status !== "active" && <p className="mt-1 text-sm text-danger">{data.connection.last_error}</p>}
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex basis-full flex-wrap items-center gap-2 sm:basis-auto">
                 <CreditPill total={data.addon.total} />
                 {canWork && (
                   <CostButton variant="ghost" busy={busy === "sync"} onClick={() => act("sync", "/sync")}>{t("sync")}</CostButton>
