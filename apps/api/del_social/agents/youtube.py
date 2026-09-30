@@ -161,7 +161,8 @@ async def thumbnail_concepts(llm: LLM, tenant_id: uuid.UUID, context: str, image
 
 class ReplyDraft(BaseModel):
     index: int = Field(description="The comment's index in <comments>")
-    reply: str = Field(description="The reply, in the commenter's language; empty when skip is true")
+    language: str = Field(default="", description="The language the comment is written in, e.g. English, Russian, Portuguese")
+    reply: str = Field(description="The reply, written in exactly that language; empty when skip is true")
     skip: bool = Field(description="True for spam, abuse or comments that need no answer")
     needs_owner: bool = Field(default=False, description="True when the creator should read this reply before it is sent")
 
@@ -172,7 +173,7 @@ class Replies(BaseModel):
 
 async def replies(llm: LLM, tenant_id: uuid.UUID, context: str) -> LLMResult[Replies]:
     return await llm.structured(tenant_id=tenant_id, prompt=load_prompt("yt_replies"), user=context, output=Replies,
-                                tier=Tier.FAST, max_tokens=4000)
+                                tier=Tier.DEFAULT, max_tokens=4000)  # replies go out in public: the stronger model
 
 
 # --- the channel manager ---

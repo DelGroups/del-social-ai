@@ -60,6 +60,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
         studio_llm = build_llm(settings, deps._engine(), http) if settings.anthropic_api_key else None
         tasks.append(asyncio.create_task(worker.loop(engine=deps._engine(), llm=studio_llm, yt=yt, vault=vault, http=http)))
+        tasks.append(asyncio.create_task(worker.reply_loop(engine=deps._engine(), llm=studio_llm, yt=yt, vault=vault)))
     if settings.scheduler_enabled and settings.anthropic_api_key:
         llm = build_llm(settings, deps._engine(), http)
         tasks.append(asyncio.create_task(daily.loop(engine=deps._engine(), http=http, llm=llm, meta=meta, vault=vault)))

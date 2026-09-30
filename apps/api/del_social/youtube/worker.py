@@ -2,7 +2,8 @@
 
 Every 10 minutes: videos are synced every 3 hours, the pulse runs at the owner's rhythm (every 3, 6
 or 12 hours), the daily report once a day at the owner's hour (Baku time), and new comments are
-fetched every 2 hours (every 30 minutes when the team answers them by itself, see autoreply.py). All of it is free for the company (cheap models, few API units); the costly
+fetched every 2 hours in manual mode. When the team answers comments by itself (autoreply.py), a separate
+round runs every minute (reply_loop): automatic mode checks every minute, approval mode every 5 minutes. All of it is free for the company (cheap models, few API units); the costly
 work (review, ideas, thumbnails, video) only runs when a person asks and pays credits.
 """
 import asyncio
@@ -28,8 +29,11 @@ log = logging.getLogger(__name__)
 CHECK_SECONDS = 600
 SYNC_EVERY = timedelta(hours=3)
 COMMENTS_EVERY = timedelta(hours=2)
-COMMENTS_EVERY_AUTO = timedelta(minutes=30)
+REPLY_EVERY = {"auto": timedelta(minutes=1), "approval": timedelta(minutes=5)}
+REPLY_SLOW = timedelta(minutes=5)  # automatic mode once more than half of the day's YouTube API units are used
+REPLY_SECONDS = 60
 _last_comments: dict[uuid.UUID, datetime] = {}
+NEVER = datetime.min.replace(tzinfo=UTC)
 
 
 async def _mark(engine: AsyncEngine, studio: Studio, error: str | None) -> None:
@@ -69,15 +73,10 @@ async def tick_tenant(*, engine: AsyncEngine, llm: LLM | None, yt: YouTubeClient
             rid = await reports.create(engine, studio, "daily", now=now)
             await reports.run_daily(engine=engine, llm=llm, yt=yt, vault=vault, tenant_id=tenant_id, report_id=rid)
             done.append("daily")
-        every = COMMENTS_EVERY if s.reply_mode == "manual" else COMMENTS_EVERY_AUTO
-        if now - _last_comments.get(studio.connection_id, datetime.min.replace(tzinfo=UTC)) >= every:
+        if s.reply_mode == "manual" and now - _last_comments.get(studio.connection_id, NEVER) >= COMMENTS_EVERY:
             _last_comments[studio.connection_id] = now
             await comments.fetch(engine, yt, vault, studio)
             done.append("comments")
-            r = await autoreply.run(engine, llm, yt, vault, studio, now)
-            if r.drafted or r.sent:
-                done.append("replies")
-                await tell(engine, tenant_id, r)
         if studio.connection.status != ConnectionStatus.ACTIVE.value:
             await _mark(engine, studio, None)
     except YouTubeError as e:
@@ -85,6 +84,48 @@ async def tick_tenant(*, engine: AsyncEngine, llm: LLM | None, yt: YouTubeClient
             await _mark(engine, studio, str(e))
         log.warning("youtube round for %s: %s", tenant_id, e)
     return done
+
+
+async def reply_round(*, engine: AsyncEngine, llm: LLM | None, yt: YouTubeClient, vault: TokenVault, tenant_id: uuid.UUID,
+                      now: datetime | None = None) -> list[str]:
+    """New comments answered (auto) or drafted (approval) soon after they are written, at any hour."""
+    now = now or datetime.now(UTC)
+    studio = await load(engine, tenant_id)
+    if studio is None or llm is None or studio.settings.reply_mode == "manual":
+        return []
+    every = REPLY_EVERY[studio.settings.reply_mode]
+    if yt.meter.used > yt.meter.daily / 2:
+        every = max(every, REPLY_SLOW)
+    if now - _last_comments.get(studio.connection_id, NEVER) < every - timedelta(seconds=5):
+        return []
+    _last_comments[studio.connection_id] = now
+    try:
+        await comments.fetch(engine, yt, vault, studio)
+        r = await autoreply.run(engine, llm, yt, vault, studio, now)
+    except YouTubeError as e:
+        if e.auth:
+            await _mark(engine, studio, str(e))
+        log.warning("youtube replies for %s: %s", tenant_id, e)
+        return ["comments"]
+    if r.drafted or r.sent:
+        await tell(engine, tenant_id, r)
+        return ["comments", "replies"]
+    return ["comments"]
+
+
+async def reply_loop(*, engine: AsyncEngine, llm: LLM | None, yt: YouTubeClient, vault: TokenVault) -> None:
+    while True:
+        try:
+            async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
+                ids = [r[0] for r in (await db.execute(text("SELECT tenant_id FROM addon_tenants('youtube')"))).all()]
+            for tenant_id in ids:
+                try:
+                    await reply_round(engine=engine, llm=llm, yt=yt, vault=vault, tenant_id=uuid.UUID(str(tenant_id)))
+                except Exception:
+                    log.exception("youtube replies failed for %s", tenant_id)
+        except Exception:
+            log.exception("youtube replies round failed")
+        await asyncio.sleep(REPLY_SECONDS)
 
 
 async def tell(engine: AsyncEngine, tenant_id: uuid.UUID, r: autoreply.Result) -> None:

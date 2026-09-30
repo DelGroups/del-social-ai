@@ -159,7 +159,7 @@ export type YtComment = {
   status: "new" | "drafted" | "sent" | "dismissed";
   sent_at: string | null;
   sent_by: "person" | "agent" | null;
-  hold: "check" | "link" | "old" | "limit" | "error" | null;
+  hold: "check" | "language" | "link" | "old" | "limit" | "error" | null;
 };
 
 export type YtCompetitor = {
