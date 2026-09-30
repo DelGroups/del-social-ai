@@ -518,14 +518,17 @@ async def test_comment_modes_approval_and_automatic(client, app_engine, admin, t
     """manual: nothing by itself; approval: drafts wait for a person; auto: safe drafts go out, the rest are held."""
     s = studio
     now = datetime(2026, 9, 28, 6, 0, tzinfo=UTC)  # the comments are a day old
-    tick = lambda at: worker.tick_tenant(engine=app_engine, llm=s.llm, yt=s.yt, vault=s.vault, http=s.http,  # noqa: E731
+    tick = lambda at: worker.reply_round(engine=app_engine, llm=s.llm, yt=s.yt, vault=s.vault,  # noqa: E731
                                          tenant_id=tenants["a"], now=at)
     mode = await client.put(f"{s.base}/comments/mode", json={"mode": "auto"}, headers={**s.owner, **O})
     assert mode.status_code == 200 and mode.json() == {"mode": "auto"}
 
     # auto, but the agent asks for a look: drafted, held, nothing sent, the team chat says so
     s.llm.reply_check = True
+    start = await balance(app_engine, tenants["a"])
     assert "replies" in await tick(now)
+    assert await tick(now + timedelta(seconds=30)) == []  # the next check is a minute later
+    assert await balance(app_engine, tenants["a"]) == start - 1  # the first automatic comment opens a block of 20
     c = {x["comment_id"]: x for x in (await client.get(f"{s.base}/comments", headers=s.owner)).json()}
     assert list(c) == ["c1"] and c["c1"]["status"] == "drafted" and c["c1"]["hold"] == "check" and s.fake.replies == []
     chat = (await client.get(f"{s.base}/team", headers=s.owner)).json()["messages"]
@@ -540,7 +543,7 @@ async def test_comment_modes_approval_and_automatic(client, app_engine, admin, t
     # a new comment in auto mode, no look asked: code sends it; spam is never answered
     await admin.execute("DELETE FROM yt_replies")
     s.llm.reply_check = False
-    assert "replies" in await tick(now + timedelta(minutes=31))  # every 30 minutes in automatic mode
+    assert "replies" in await tick(now + timedelta(minutes=1))  # every minute in automatic mode
     assert [x["snippet"] for x in s.fake.replies[1:]] == [{"parentId": "c1", "textOriginal": "Təşəkkürlər! Qiyməti videoda deyirik."}]
     sent = (await client.get(f"{s.base}/comments?state=sent", headers=s.owner)).json()
     assert sent[0]["sent_by"] == "agent"
@@ -573,3 +576,13 @@ def test_automatic_reply_checks():
         assert autoreply.hold_reason(YtReply(draft=d, **ok), now, 0) == "link", d
     assert autoreply.hold_reason(YtReply(draft="Sağ olun!", published_at=now - timedelta(days=8), hold=None), now, 0) == "old"
     assert autoreply.hold_reason(YtReply(draft="Sağ olun!", **ok), now, autoreply.DAY_LIMIT) == "limit"
+
+
+def test_reply_language_check():
+    from del_social.youtube.comments import same_language, script
+
+    assert script("Esse carro é sensacional. 👏") == "latin" and script("Какая цена?") == "cyrillic" and script("👏👏") is None
+    assert script("甘先进") == "cjk" and script("این ماشین عالیه") == "arabic"
+    assert same_language("Какая цена?", "Спасибо!") and not same_language("Какая цена?", "Təşəkkürlər!")
+    assert not same_language("甘先进", "Thanks!") and same_language("👏👏", "Thanks!")
+    assert not same_language("این ماشین عالیه", "Təşəkkür edirik!")

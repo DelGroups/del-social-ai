@@ -1294,13 +1294,14 @@
       "approval": "Sizin təsdiqinizlə",
       "approvalHint": "İcma meneceri hər yeni şərhə özü cavab qaralaması yazır; siz baxıb «Göndər» basırsınız.",
       "auto": "Avtomatik",
-      "autoHint": "İcma meneceri özü cavab verir. Əmin olmadığı, link və ya əlaqə olan, bir həftədən köhnə şərhlərə və gündə 30-dan artıq cavablar sizi gözləyir.",
-      "cost": "Qaralamalar hər 20 şərh üçün {n} kreditdir. Yeni şərhlər hər 30 dəqiqədən bir yoxlanılır.",
+      "autoHint": "İcma meneceri yeni şərhlərə təxminən bir dəqiqə ərzində, hər şərhin öz dilində özü cavab verir. Əmin olmadığı, link və ya əlaqə olan və gündə 50-dən artıq cavablar sizi gözləyir.",
+      "cost": "Yeni şərhlər gecə-gündüz avtomatik rejimdə hər dəqiqə, təsdiqlə hər 5 dəqiqədən bir yoxlanılır. Hər 20 cavablanan şərh üçün {n} kredit.",
       "saved": "Yadda saxlanıldı",
       "managersOnly": "Bunu yalnız sahib və ya admin dəyişə bilər."
     },
     "hold": {
       "check": "Agent sizin baxmağınızı istəyir",
+      "language": "Cavab şərhin dilində deyil",
       "link": "Link və ya əlaqə var",
       "old": "Şərh bir həftədən köhnədir",
       "limit": "Gündəlik avtomatik cavab limiti doldu",

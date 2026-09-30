@@ -132,7 +132,7 @@ export function YtComments({ tenantId, canWork, canManage = false }: { tenantId:
               <CostButton variant="ghost" busy={busy === "refresh"} onClick={() => run("refresh", () => api(`${base}/refresh`, { method: "POST" }))}>
                 {t("checkComments")}
               </CostButton>
-              <CostButton cost={data?.addon.costs.comments} busy={busy === "draft"} disabled={undrafted.length === 0}
+              <CostButton cost={data?.addon.costs.comments} busy={busy === "draft"} disabled={undrafted.length === 0 && picked.size === 0}
                 onClick={() => run("draft", () => api(`${base}/draft`, { method: "POST", body: {
                   reply_ids: (picked.size ? [...picked] : undrafted.map((r) => r.reply_id)).slice(0, 20),
                 } }))}>
@@ -149,7 +149,7 @@ export function YtComments({ tenantId, canWork, canManage = false }: { tenantId:
             {rows.map((c) => (
               <li key={c.reply_id} className="space-y-2 rounded-xl border border-border bg-surface p-4">
                 <div className="flex items-start gap-3">
-                  {state === "open" && c.status === "new" && canWork && (
+                  {state === "open" && canWork && (
                     <input type="checkbox" checked={picked.has(c.reply_id)} onChange={() => toggle(c.reply_id)} className="mt-1" aria-label={c.author} />
                   )}
                   <div className="min-w-0 flex-1">

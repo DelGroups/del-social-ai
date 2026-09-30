@@ -4,11 +4,13 @@ Comments are other people's words: the drafting agent reads them as data and hol
 is code: a person presses Send, or, in the owner's automatic mode, autoreply.py sends the drafts that
 pass its checks (CLAUDE.md principles 5 and 6).
 """
+import math
+import re
 import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
@@ -23,6 +25,26 @@ from del_social.youtube import reports
 from del_social.youtube.channel import Studio, creds, load
 
 BATCH = 20
+_SCRIPTS = {"arabic": re.compile(r"[؀-ۿ]"), "cyrillic": re.compile(r"[Ѐ-ӿ]"),
+            "cjk": re.compile(r"[぀-ヿ一-鿿가-힯]"), "latin": re.compile(r"[A-Za-zÀ-ɏ]")}
+
+
+def script(text: str) -> str | None:
+    """The writing system most of the text is in (None for emoji, numbers, links only)."""
+    counts = {k: len(p.findall(re.sub(r"https?://\S+|@\S+", "", text or ""))) for k, p in _SCRIPTS.items()}
+    best = max(counts, key=lambda k: counts[k])
+    return best if counts[best] >= 2 else None
+
+
+def same_language(comment: str, reply: str) -> bool:
+    """Code's check that the reply is at least written in the comment's script (Russian → Cyrillic, Persian → Arabic…)."""
+    c = script(comment)
+    return c is None or script(reply) in (c, None)
+
+
+def reply_context(studio: Studio) -> dict[str, Any]:
+    """The channel as the replies agent sees it: no channel languages, a reply follows the commenter's language."""
+    return {k: v for k, v in studio.channel_block().items() if k not in ("languages", "country")}
 
 
 def _ts(v: str | None) -> datetime | None:
@@ -62,8 +84,12 @@ async def fetch(engine: AsyncEngine, yt: YouTubeClient, vault: TokenVault, studi
     return added
 
 
-async def draft(engine: AsyncEngine, llm: LLM, studio: Studio, ids: list[uuid.UUID], by: uuid.UUID | None) -> int:
-    """Reply drafts for up to 20 comments (1 credit). Returns how many drafts were written."""
+async def draft(engine: AsyncEngine, llm: LLM, studio: Studio, ids: list[uuid.UUID], by: uuid.UUID | None, auto: bool = False) -> int:
+    """Reply drafts for up to 20 comments. Returns how many drafts were written.
+
+    Asked by a person: 1 credit per call. Automatic (auto=True, one comment at a time as they arrive):
+    1 credit per 20 comments, counted over all the channel's automatic drafts, so answering each comment
+    at once costs the same as answering them in batches of 20."""
     async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
         await set_tenant(db, studio.tenant_id)
         rows = list((await db.scalars(select(YtReply).where(YtReply.reply_id.in_(ids[:BATCH]), YtReply.status.in_(("new", "drafted"))))).all())
@@ -73,9 +99,19 @@ async def draft(engine: AsyncEngine, llm: LLM, studio: Studio, ids: list[uuid.UU
         titles = {v.video_id: v.title for v in (await db.scalars(select(YtVideo).where(
             YtVideo.video_id.in_([r.video_id for r in rows if r.video_id])))).all()}
         ref = uuid.uuid4()
-        await credits.spend(db, studio.tenant_id, credits.COST["comments"], "comments", ref, by)
-    listing: list[dict[str, Any]] = [{"index": i, "video": titles.get(r.video_id or "", ""), "comment": r.text} for i, r in enumerate(rows)]
-    text = (f"<channel>\n{reports.dumps(studio.channel_block())}\n</channel>\n"
+        if auto:
+            done = await db.scalar(select(func.count()).where(YtReply.connection_id == studio.connection_id, YtReply.drafted_by == "agent")) or 0
+            cost = credits.COST["comments"] * (math.ceil((done + len(rows)) / BATCH) - math.ceil(done / BATCH))
+            for r in rows:
+                r.drafted_by = "agent"
+        else:
+            cost = credits.COST["comments"]
+        if cost:
+            await credits.spend(db, studio.tenant_id, cost, "comments", ref, by)
+        else:
+            await credits.require_addon(db)
+    listing: list[dict[str, Any]] = [{"index": i, "comment": r.text, "video": titles.get(r.video_id or "", "")} for i, r in enumerate(rows)]
+    text = (f"<channel>\n{reports.dumps(reply_context(studio))}\n</channel>\n"
             f"<comments>\n{reports.dumps(listing)}\n</comments>")
     try:
         out = (await agents.replies(llm, studio.tenant_id, text)).output
@@ -83,6 +119,8 @@ async def draft(engine: AsyncEngine, llm: LLM, studio: Studio, ids: list[uuid.UU
         async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
             await set_tenant(db, studio.tenant_id)
             await credits.refund(db, studio.tenant_id, ref)
+            for r in rows if auto else []:
+                (await db.get(YtReply, r.reply_id)).drafted_by = None  # not paid for, not counted
         raise
     written = 0
     async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
@@ -93,7 +131,9 @@ async def draft(engine: AsyncEngine, llm: LLM, studio: Studio, ids: list[uuid.UU
                 if d.skip or not d.reply.strip():
                     r.status, r.draft, r.hold = "dismissed", "", None
                 else:
-                    r.status, r.draft, r.hold = "drafted", d.reply.strip()[:1500], "check" if d.needs_owner else None
+                    reply = d.reply.strip()[:1500]
+                    hold = "check" if d.needs_owner else None if same_language(r.text, reply) else "language"
+                    r.status, r.draft, r.hold = "drafted", reply, hold
                     written += 1
     return written
 

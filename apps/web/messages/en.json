@@ -1294,13 +1294,14 @@
       "approval": "With your approval",
       "approvalHint": "The community manager drafts a reply to every new comment by itself; you check it and press Send.",
       "auto": "Automatic",
-      "autoHint": "The community manager answers by itself. Replies it is unsure about, with links or contacts, to comments older than a week, or over 30 a day wait for you.",
-      "cost": "Drafts cost {n} credit per 20 comments. New comments are checked every 30 minutes.",
+      "autoHint": "The community manager answers new comments by itself within about a minute, in each comment's language. Replies it is unsure about, with links or contacts, or over 50 a day wait for you.",
+      "cost": "New comments are checked every minute in automatic mode and every 5 minutes with approval, day and night. {n} credit per 20 answered comments.",
       "saved": "Saved",
       "managersOnly": "Only the owner or an admin can change this."
     },
     "hold": {
       "check": "The agent wants you to look",
+      "language": "The reply is not in the comment's language",
       "link": "Has a link or contact",
       "old": "Comment older than a week",
       "limit": "Daily limit of automatic replies reached",

@@ -80,3 +80,14 @@ phone-verified channel.
 - Comments are checked every 30 minutes in approval and automatic mode (2 hours in manual). Drafts
   cost the usual 1 credit per 20 comments; with no credits nothing is drafted or sent. Every reply
   records who sent it (person or agent), and the community manager reports in the team chat.
+
+## Revision: instant replies in the commenter's language (2026-09-30)
+- Replies were written in the channel's language (Azerbaijani) because the agent saw the channel's
+  languages. The replies agent (prompt v3, now the stronger model) no longer sees them, first names
+  the comment's language and then writes in it; code holds any reply whose script differs from the
+  comment's (hold = language), so a wrong-language reply is never sent by itself.
+- YouTube has no push for new comments, so a separate round runs every minute, day and night:
+  automatic mode checks every minute (every 5 once half of the day's API units are used), approval
+  mode every 5 minutes. Only comments from the last 7 days are drafted by themselves.
+- Credits: 1 per 20 comments answered automatically, counted across rounds (`drafted_by = agent`),
+  so answering each comment at once costs the same as batches of 20. Daily cap raised to 50.
