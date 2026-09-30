@@ -320,8 +320,8 @@ class YouTubeClient:
     # --- comments ---
 
     async def comment_threads(self, creds: Credentials, *, channel_id: str | None = None, video_id: str | None = None,
-                              limit: int = 50) -> list[dict[str, Any]]:
-        params = {"part": "snippet", "maxResults": str(min(100, limit)), "order": "time", "textFormat": "plainText"}
+                              limit: int = 50, replies: bool = False) -> list[dict[str, Any]]:
+        params = {"part": "snippet,replies" if replies else "snippet", "maxResults": str(min(100, limit)), "order": "time", "textFormat": "plainText"}
         if video_id:
             params["videoId"] = video_id
         else:

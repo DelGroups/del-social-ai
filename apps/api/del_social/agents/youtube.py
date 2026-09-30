@@ -163,6 +163,7 @@ class ReplyDraft(BaseModel):
     index: int = Field(description="The comment's index in <comments>")
     reply: str = Field(description="The reply, in the commenter's language; empty when skip is true")
     skip: bool = Field(description="True for spam, abuse or comments that need no answer")
+    needs_owner: bool = Field(default=False, description="True when the creator should read this reply before it is sent")
 
 
 class Replies(BaseModel):

@@ -68,3 +68,15 @@ phone-verified channel.
   with its "altered or synthetic content" flag set, as YouTube's rules ask.
 - Credits (proposal): transcription 1 per started 10 minutes; cutting, subtitles and exports 1 per
   started minute; Shorts 1 to choose the moments plus 1 per Short. A failed job refunds itself.
+
+## Revision: who answers comments (2026-09-30)
+- The owner picks one of three modes on the Comments tab: **manual** (default; drafts only when a
+  person asks), **approval** (the community manager drafts replies to new comments by itself, a
+  person sends), **automatic** (it also sends the replies that pass the checks).
+- The checks are code (`youtube/autoreply.py`): the agent did not ask for a look (`needs_owner`:
+  complaints, money, deals, personal topics, unsure), no link, phone or e-mail in the reply, the
+  comment is at most 7 days old, at most 30 automatic replies a day. A reply that fails waits for a
+  person with the reason shown. Threads the creator already answered in YouTube are never answered.
+- Comments are checked every 30 minutes in approval and automatic mode (2 hours in manual). Drafts
+  cost the usual 1 credit per 20 comments; with no credits nothing is drafted or sent. Every reply
+  records who sent it (person or agent), and the community manager reports in the team chat.

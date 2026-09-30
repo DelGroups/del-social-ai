@@ -2,7 +2,7 @@
 
 Every 10 minutes: videos are synced every 3 hours, the pulse runs at the owner's rhythm (every 3, 6
 or 12 hours), the daily report once a day at the owner's hour (Baku time), and new comments are
-fetched every 2 hours. All of it is free for the company (cheap models, few API units); the costly
+fetched every 2 hours (every 30 minutes when the team answers them by itself, see autoreply.py). All of it is free for the company (cheap models, few API units); the costly
 work (review, ideas, thumbnails, video) only runs when a person asks and pays credits.
 """
 import asyncio
@@ -20,7 +20,7 @@ from del_social.core.vault import TokenVault
 from del_social.llm import LLM
 from del_social.models import Connection, ConnectionStatus, YtReply, YtVideo
 from del_social.team import timing
-from del_social.youtube import comments, reports, sync
+from del_social.youtube import autoreply, comments, reports, sync, team
 from del_social.youtube.channel import Studio, load
 
 log = logging.getLogger(__name__)
@@ -28,6 +28,7 @@ log = logging.getLogger(__name__)
 CHECK_SECONDS = 600
 SYNC_EVERY = timedelta(hours=3)
 COMMENTS_EVERY = timedelta(hours=2)
+COMMENTS_EVERY_AUTO = timedelta(minutes=30)
 _last_comments: dict[uuid.UUID, datetime] = {}
 
 
@@ -68,10 +69,15 @@ async def tick_tenant(*, engine: AsyncEngine, llm: LLM | None, yt: YouTubeClient
             rid = await reports.create(engine, studio, "daily", now=now)
             await reports.run_daily(engine=engine, llm=llm, yt=yt, vault=vault, tenant_id=tenant_id, report_id=rid)
             done.append("daily")
-        if now - _last_comments.get(studio.connection_id, datetime.min.replace(tzinfo=UTC)) >= COMMENTS_EVERY:
+        every = COMMENTS_EVERY if s.reply_mode == "manual" else COMMENTS_EVERY_AUTO
+        if now - _last_comments.get(studio.connection_id, datetime.min.replace(tzinfo=UTC)) >= every:
             _last_comments[studio.connection_id] = now
             await comments.fetch(engine, yt, vault, studio)
             done.append("comments")
+            r = await autoreply.run(engine, llm, yt, vault, studio, now)
+            if r.drafted or r.sent:
+                done.append("replies")
+                await tell(engine, tenant_id, r)
         if studio.connection.status != ConnectionStatus.ACTIVE.value:
             await _mark(engine, studio, None)
     except YouTubeError as e:
@@ -79,6 +85,16 @@ async def tick_tenant(*, engine: AsyncEngine, llm: LLM | None, yt: YouTubeClient
             await _mark(engine, studio, str(e))
         log.warning("youtube round for %s: %s", tenant_id, e)
     return done
+
+
+async def tell(engine: AsyncEngine, tenant_id: uuid.UUID, r: autoreply.Result) -> None:
+    """The community manager tells the owner in the team chat what it did with the comments."""
+    lang = await team.lang_of(engine, tenant_id)
+    if r.sent:
+        text = team.say_text("auto_sent", lang, sent=r.sent) + (team.say_text("auto_held", lang, held=r.held) if r.held else "")
+    else:
+        text = team.say_text("done_comments", lang, n=r.drafted)
+    await team.say(engine, tenant_id, "yt_replies", text, {"link": "comments"})
 
 
 async def tick(*, engine: AsyncEngine, llm: LLM | None, yt: YouTubeClient, vault: TokenVault, http: httpx.AsyncClient) -> None:

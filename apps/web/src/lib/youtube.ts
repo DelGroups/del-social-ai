@@ -24,7 +24,10 @@ export type YtSettings = {
   report_language: "auto" | "az" | "ru" | "en" | "fa";
   links: string;
   competitors: string[];
+  reply_mode: YtReplyMode;
 };
+
+export type YtReplyMode = "manual" | "approval" | "auto";
 
 export type YtDashboard = {
   addon: { active: boolean; total: number; monthly_left: number; purchased: number; period_end: string | null; costs: Record<string, number> };
@@ -154,6 +157,9 @@ export type YtComment = {
   published_at: string | null;
   draft: string;
   status: "new" | "drafted" | "sent" | "dismissed";
+  sent_at: string | null;
+  sent_by: "person" | "agent" | null;
+  hold: "check" | "link" | "old" | "limit" | "error" | null;
 };
 
 export type YtCompetitor = {

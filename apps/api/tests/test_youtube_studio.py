@@ -84,6 +84,7 @@ class FakeYT:
         self.thumbnail_sets: list[str] = []
         self.replies: list[dict] = []
         self.comments_posted: list[dict] = []
+        self.answered: set[str] = set()  # threads the creator already replied to in YouTube itself
         self.fal_fail = False
 
     def items(self):
@@ -143,7 +144,8 @@ class FakeYT:
         if path == "captions/cap1":
             return httpx.Response(200, text=SRT)
         if path == "commentThreads" and r.method == "GET":
-            return httpx.Response(200, json={"items": [
+            return httpx.Response(200, json={"items": [t | ({"replies": {"comments": [{"snippet": {"authorChannelId": {"value": CH}}}]}}
+                                                            if t["id"] in self.answered else {}) for t in [
                 {"id": "c1", "snippet": {"videoId": "v1", "totalReplyCount": 0, "canReply": True, "topLevelComment": {"snippet": {
                     "authorDisplayName": "Elvin", "textDisplay": "Bu maşının qiyməti nə qədərdir?", "publishedAt": "2026-09-27T10:00:00Z",
                     "authorChannelId": {"value": "UCsomeone"}}}}},
@@ -153,7 +155,7 @@ class FakeYT:
                 {"id": "c3", "snippet": {"videoId": "v1", "totalReplyCount": 0, "canReply": True, "topLevelComment": {"snippet": {
                     "authorDisplayName": "Auto Baku", "textDisplay": "Our own", "publishedAt": "2026-09-27T11:00:00Z",
                     "authorChannelId": {"value": CH}}}}},
-            ]})
+            ]]})
         if path == "commentThreads" and r.method == "POST":
             self.comments_posted.append(json.loads(r.content))
             return httpx.Response(200, json={"id": "new"})
@@ -188,6 +190,7 @@ class FakeStudioLLM:
         self.users: list[tuple[str, str]] = []
         self.images: list[int] = []
         self.fail_review = False
+        self.reply_check = False  # the replies agent asks the creator to look first
 
     async def structured(self, *, tenant_id, prompt, user, output, tier, max_tokens, effort=None, images=None):
         self.users.append((prompt.agent, user))
@@ -222,8 +225,10 @@ class FakeStudioLLM:
                 agents.ThumbConcept(text="5 fakt", emphasis="5", layout="center_big", palette="red_white", background_prompt="a car", why="w"),
                 agents.ThumbConcept(text="Qiymət nə qədər?", emphasis="", layout="bottom_bar", palette="dark_gold", background_prompt="a car", why="w")])
         elif output is agents.Replies:
-            out = agents.Replies(replies=[agents.ReplyDraft(index=0, reply="Təşəkkürlər! Qiyməti videoda deyirik.", skip=False),
-                                          agents.ReplyDraft(index=1, reply="", skip=True)])
+            real, spam = (0, 1) if user.find("Bu maşının") < user.find("IGNORE") else (1, 0)  # whatever order they come in
+            out = agents.Replies(replies=[agents.ReplyDraft(index=real, reply="Təşəkkürlər! Qiyməti videoda deyirik.", skip=False,
+                                                              needs_owner=self.reply_check),
+                                          agents.ReplyDraft(index=spam, reply="", skip=True)])
         elif output is agents.LeadTurn:
             msg = user.split("<message>")[1]
             actions = []
@@ -507,3 +512,64 @@ async def test_manager_hands_work_to_the_team(client, app_engine, tenants, studi
     await lead.settle()
     texts_ = [m["text"] for m in (await client.get(f"{s.base}/team", headers=s.owner)).json()["messages"]]
     assert "Bu videonu kanalda tapa bilmədim." in texts_ and any("Rival Cars" in t for t in texts_)
+
+
+async def test_comment_modes_approval_and_automatic(client, app_engine, admin, tenants, studio):
+    """manual: nothing by itself; approval: drafts wait for a person; auto: safe drafts go out, the rest are held."""
+    s = studio
+    now = datetime(2026, 9, 28, 6, 0, tzinfo=UTC)  # the comments are a day old
+    tick = lambda at: worker.tick_tenant(engine=app_engine, llm=s.llm, yt=s.yt, vault=s.vault, http=s.http,  # noqa: E731
+                                         tenant_id=tenants["a"], now=at)
+    mode = await client.put(f"{s.base}/comments/mode", json={"mode": "auto"}, headers={**s.owner, **O})
+    assert mode.status_code == 200 and mode.json() == {"mode": "auto"}
+
+    # auto, but the agent asks for a look: drafted, held, nothing sent, the team chat says so
+    s.llm.reply_check = True
+    assert "replies" in await tick(now)
+    c = {x["comment_id"]: x for x in (await client.get(f"{s.base}/comments", headers=s.owner)).json()}
+    assert list(c) == ["c1"] and c["c1"]["status"] == "drafted" and c["c1"]["hold"] == "check" and s.fake.replies == []
+    chat = (await client.get(f"{s.base}/team", headers=s.owner)).json()["messages"]
+    assert chat[-1]["agent"] == "yt_replies" and chat[-1]["payload"] == {"link": "comments"}
+
+    # a person sends it: marked as sent by a person
+    r = await client.post(f"{s.base}/comments/{c['c1']['reply_id']}/send", json={"text": "Sağ olun!"}, headers={**s.owner, **O})
+    assert r.status_code == 200
+    sent = (await client.get(f"{s.base}/comments?state=sent", headers=s.owner)).json()
+    assert sent[0]["sent_by"] == "person" and sent[0]["hold"] is None
+
+    # a new comment in auto mode, no look asked: code sends it; spam is never answered
+    await admin.execute("DELETE FROM yt_replies")
+    s.llm.reply_check = False
+    assert "replies" in await tick(now + timedelta(minutes=31))  # every 30 minutes in automatic mode
+    assert [x["snippet"] for x in s.fake.replies[1:]] == [{"parentId": "c1", "textOriginal": "Təşəkkürlər! Qiyməti videoda deyirik."}]
+    sent = (await client.get(f"{s.base}/comments?state=sent", headers=s.owner)).json()
+    assert sent[0]["sent_by"] == "agent"
+    assert (await client.get(f"{s.base}/comments?state=dismissed", headers=s.owner)).json()[0]["comment_id"] == "c2"
+    assert "1" in (await client.get(f"{s.base}/team", headers=s.owner)).json()["messages"][-1]["text"]
+
+    # approval mode drafts by itself and never sends
+    await admin.execute("DELETE FROM yt_replies")
+    assert (await client.put(f"{s.base}/comments/mode", json={"mode": "approval"}, headers={**s.owner, **O})).status_code == 200
+    before = len(s.fake.replies)
+    await tick(now + timedelta(hours=2))
+    c = {x["comment_id"]: x for x in (await client.get(f"{s.base}/comments", headers=s.owner)).json()}
+    assert c["c1"]["status"] == "drafted" and c["c1"]["hold"] is None and len(s.fake.replies) == before
+
+    # the creator answered c1 in YouTube itself: the open draft is dropped, never answered twice
+    s.fake.answered.add("c1")
+    await tick(now + timedelta(hours=3))
+    assert (await client.get(f"{s.base}/comments", headers=s.owner)).json() == []
+
+
+def test_automatic_reply_checks():
+    from del_social.models import YtReply
+    from del_social.youtube import autoreply
+
+    now = datetime(2026, 9, 30, tzinfo=UTC)
+    ok = dict(published_at=now - timedelta(days=1), hold=None)
+    assert autoreply.hold_reason(YtReply(draft="Sağ olun!", **ok), now, 0) is None
+    assert autoreply.hold_reason(YtReply(draft="Sağ olun!", published_at=now, hold="check"), now, 0) == "check"
+    for d in ("Baxın: https://x.az", "www.site.com-da", "Yazın: +994 50 123 45 67", "del-groups.com saytında", "mail a@b.az"):
+        assert autoreply.hold_reason(YtReply(draft=d, **ok), now, 0) == "link", d
+    assert autoreply.hold_reason(YtReply(draft="Sağ olun!", published_at=now - timedelta(days=8), hold=None), now, 0) == "old"
+    assert autoreply.hold_reason(YtReply(draft="Sağ olun!", **ok), now, autoreply.DAY_LIMIT) == "limit"
