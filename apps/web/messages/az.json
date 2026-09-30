@@ -1287,6 +1287,29 @@
     "checkComments": "Yeni şərhləri yoxla",
     "draftReplies": "Cavab qaralamaları ({n})",
     "noComments": "Burada heç nə yoxdur.",
+    "replyMode": {
+      "title": "Şərhlərə kim cavab verir",
+      "manual": "Əl ilə",
+      "manualHint": "Heç nə özü baş vermir: qaralamaları siz istəyir və göndərirsiniz.",
+      "approval": "Sizin təsdiqinizlə",
+      "approvalHint": "İcma meneceri hər yeni şərhə özü cavab qaralaması yazır; siz baxıb «Göndər» basırsınız.",
+      "auto": "Avtomatik",
+      "autoHint": "İcma meneceri özü cavab verir. Əmin olmadığı, link və ya əlaqə olan, bir həftədən köhnə şərhlərə və gündə 30-dan artıq cavablar sizi gözləyir.",
+      "cost": "Qaralamalar hər 20 şərh üçün {n} kreditdir. Yeni şərhlər hər 30 dəqiqədən bir yoxlanılır.",
+      "saved": "Yadda saxlanıldı",
+      "managersOnly": "Bunu yalnız sahib və ya admin dəyişə bilər."
+    },
+    "hold": {
+      "check": "Agent sizin baxmağınızı istəyir",
+      "link": "Link və ya əlaqə var",
+      "old": "Şərh bir həftədən köhnədir",
+      "limit": "Gündəlik avtomatik cavab limiti doldu",
+      "error": "YouTube qəbul etmədi — özünüz göndərin"
+    },
+    "sentBy": {
+      "agent": "Agent cavab verdi",
+      "person": "İnsan cavab verdi"
+    },
     "send": "Cavabı göndər",
     "skip": "Keç",
     "topActions": "İlk nə etməli",

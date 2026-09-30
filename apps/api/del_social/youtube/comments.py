@@ -1,7 +1,8 @@
-"""Comments under the channel's videos: fetched, reply drafts written, sent only when the owner approves.
+"""Comments under the channel's videos: fetched, reply drafts written, and sent.
 
-Comments are other people's words: the drafting agent reads them as data and holds no tools; sending
-is a separate, explicit action by a person (CLAUDE.md principles 5 and 6).
+Comments are other people's words: the drafting agent reads them as data and holds no tools. Sending
+is code: a person presses Send, or, in the owner's automatic mode, autoreply.py sends the drafts that
+pass its checks (CLAUDE.md principles 5 and 6).
 """
 import uuid
 from datetime import UTC, datetime
@@ -33,16 +34,24 @@ def _ts(v: str | None) -> datetime | None:
 
 async def fetch(engine: AsyncEngine, yt: YouTubeClient, vault: TokenVault, studio: Studio) -> int:
     """New top-level comments without a reply from the channel. Returns how many were added."""
-    threads = await yt.comment_threads(creds(vault, studio), channel_id=studio.connection.external_id, limit=100)
+    own = studio.connection.external_id
+    threads = await yt.comment_threads(creds(vault, studio), channel_id=own, limit=100, replies=True)
     added = 0
     async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
         await set_tenant(db, studio.tenant_id)
         for t in threads:
             sn = t.get("snippet") or {}
             top = ((sn.get("topLevelComment") or {}).get("snippet")) or {}
-            if top.get("authorChannelId", {}).get("value") == studio.connection.external_id:
+            if top.get("authorChannelId", {}).get("value") == own:
                 continue  # the channel's own comment
-            if sn.get("totalReplyCount", 0) and sn.get("canReply") is False:
+            if sn.get("canReply") is False:
+                continue
+            answered = any(((c.get("snippet") or {}).get("authorChannelId") or {}).get("value") == own
+                           for c in (t.get("replies") or {}).get("comments") or [])
+            if answered:  # the creator already replied in YouTube itself: never answer twice
+                row = await db.scalar(select(YtReply).where(YtReply.connection_id == studio.connection_id, YtReply.comment_id == t["id"]))
+                if row is not None and row.status in ("new", "drafted"):
+                    row.status = "dismissed"
                 continue
             res = await db.execute(insert(YtReply).values(
                 tenant_id=studio.tenant_id, connection_id=studio.connection_id, comment_id=t["id"],
@@ -82,15 +91,16 @@ async def draft(engine: AsyncEngine, llm: LLM, studio: Studio, ids: list[uuid.UU
             if 0 <= d.index < len(rows):
                 r = await db.get(YtReply, rows[d.index].reply_id)
                 if d.skip or not d.reply.strip():
-                    r.status, r.draft = "dismissed", ""
+                    r.status, r.draft, r.hold = "dismissed", "", None
                 else:
-                    r.status, r.draft = "drafted", d.reply.strip()[:1500]
+                    r.status, r.draft, r.hold = "drafted", d.reply.strip()[:1500], "check" if d.needs_owner else None
                     written += 1
     return written
 
 
-async def send(engine: AsyncEngine, yt: YouTubeClient, vault: TokenVault, tenant_id: uuid.UUID, reply_id: uuid.UUID, text: str) -> None:
-    """The owner approved this reply: post it under the comment."""
+async def send(engine: AsyncEngine, yt: YouTubeClient, vault: TokenVault, tenant_id: uuid.UUID, reply_id: uuid.UUID, text: str,
+               by: str = "person") -> None:
+    """Post the reply under the comment: a person approved it, or (by="agent") it passed the automatic checks."""
     studio = await load(engine, tenant_id)
     async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
         await set_tenant(db, tenant_id)
@@ -99,4 +109,4 @@ async def send(engine: AsyncEngine, yt: YouTubeClient, vault: TokenVault, tenant
     async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
         await set_tenant(db, tenant_id)
         r = await db.get(YtReply, reply_id)
-        r.status, r.draft, r.sent_at = "sent", text.strip(), datetime.now(UTC)
+        r.status, r.draft, r.sent_at, r.sent_by, r.hold = "sent", text.strip(), datetime.now(UTC), by, None

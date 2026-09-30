@@ -31,6 +31,9 @@ class Settings(BaseModel):
     report_language: Literal["auto", "az", "ru", "en", "fa"] = "auto"
     links: str = Field(default="", max_length=1000)  # always kept at the end of descriptions
     competitors: list[str] = Field(default_factory=list, max_length=15)  # handles or channel ids
+    # Comments: manual = drafts only when a person asks; approval = the team drafts new comments by itself and
+    # a person sends; auto = the team also sends the safe replies itself (the rest wait for a person)
+    reply_mode: Literal["manual", "approval", "auto"] = "manual"
 
 
 @dataclass(frozen=True)

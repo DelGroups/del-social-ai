@@ -1287,6 +1287,29 @@
     "checkComments": "Check for new comments",
     "draftReplies": "Draft replies ({n})",
     "noComments": "Nothing here.",
+    "replyMode": {
+      "title": "Who answers the comments",
+      "manual": "Manual",
+      "manualHint": "Nothing happens by itself: you ask for drafts and send them.",
+      "approval": "With your approval",
+      "approvalHint": "The community manager drafts a reply to every new comment by itself; you check it and press Send.",
+      "auto": "Automatic",
+      "autoHint": "The community manager answers by itself. Replies it is unsure about, with links or contacts, to comments older than a week, or over 30 a day wait for you.",
+      "cost": "Drafts cost {n} credit per 20 comments. New comments are checked every 30 minutes.",
+      "saved": "Saved",
+      "managersOnly": "Only the owner or an admin can change this."
+    },
+    "hold": {
+      "check": "The agent wants you to look",
+      "link": "Has a link or contact",
+      "old": "Comment older than a week",
+      "limit": "Daily limit of automatic replies reached",
+      "error": "YouTube did not accept it — send it yourself"
+    },
+    "sentBy": {
+      "agent": "Answered by the agent",
+      "person": "Answered by a person"
+    },
     "send": "Send reply",
     "skip": "Skip",
     "topActions": "What to do first",

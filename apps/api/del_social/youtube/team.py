@@ -52,6 +52,10 @@ MSG: dict[str, dict[str, str]] = {
                       "ru": "Написаны черновики ответов на {n} комментариев. Проверьте и отправьте во вкладке «Комментарии».",
                       "en": "Reply drafts written for {n} comments. Check and send them in the Comments tab.",
                       "fa": "برای {n} کامنت پیش‌نویس جواب نوشته شد. در بخش کامنت‌ها ببینید و بفرستید."},
+    "auto_sent": {"az": "{sent} şərhə özüm cavab verdim.", "ru": "Я сам ответил на {sent} комментариев.", "en": "I answered {sent} comments myself.",
+                  "fa": "به {sent} کامنت خودم جواب دادم."},
+    "auto_held": {"az": " {held} cavab sizin baxışınızı gözləyir (Şərhlər bölməsi).", "ru": " {held} ответов ждут вашей проверки (вкладка «Комментарии»).",
+                  "en": " {held} replies wait for your look in the Comments tab.", "fa": " {held} جواب منتظر بررسی شما در بخش کامنت‌هاست."},
     "no_comments": {"az": "Cavab gözləyən yeni şərh yoxdur.", "ru": "Новых комментариев без ответа нет.", "en": "No new comments are waiting.",
                     "fa": "کامنت تازه‌ای منتظر جواب نیست."},
     "done_sync": {"az": "Kanal yeniləndi: {videos} video.", "ru": "Канал обновлён: {videos} видео.", "en": "Channel refreshed: {videos} videos.",
@@ -110,7 +114,7 @@ async def say(engine: AsyncEngine, tenant_id: uuid.UUID, agent: str, text: str, 
         db.add(YtChat(message_id=uuid.uuid4(), tenant_id=tenant_id, role="agent", agent=agent, text=text[:4000], payload=payload))
 
 
-async def _lang(engine: AsyncEngine, tenant_id: uuid.UUID) -> str:
+async def lang_of(engine: AsyncEngine, tenant_id: uuid.UUID) -> str:
     """The language the owner writes to the team in (their latest message), else the channel's report language."""
     async with AsyncSession(engine, expire_on_commit=False) as db, db.begin():
         await set_tenant(db, tenant_id)
@@ -138,7 +142,7 @@ async def context(crew: Crew, message: str) -> str:
         waiting = await db.scalar(select(YtReply.reply_id).where(YtReply.connection_id == studio.connection_id, YtReply.status == "new").limit(1))
         new_ideas = len((await db.scalars(select(YtIdea.idea_id).where(YtIdea.connection_id == studio.connection_id, YtIdea.status == "new"))).all())
         history = list(reversed((await db.scalars(select(YtChat).order_by(YtChat.created_at.desc()).limit(HISTORY + 1))).all()))[:-1]
-    reply_lang = texts.detect(message) or await _lang(crew.engine, crew.tenant_id)
+    reply_lang = texts.detect(message) or await lang_of(crew.engine, crew.tenant_id)
     dump = reports.dumps
     return (
         f"<reply_language>{reply_lang}</reply_language>\n"
@@ -160,7 +164,7 @@ async def handle(crew: Crew, message: str) -> None:
     """Background: the manager answers the owner's message and starts the work it chose."""
     _busy.add(crew.tenant_id)
     try:
-        lang = texts.detect(message) or await _lang(crew.engine, crew.tenant_id)
+        lang = texts.detect(message) or await lang_of(crew.engine, crew.tenant_id)
         if crew.llm is None:
             await say(crew.engine, crew.tenant_id, "yt_lead", MSG["no_ai"][lang])
             return

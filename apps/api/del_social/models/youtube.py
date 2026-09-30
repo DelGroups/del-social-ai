@@ -175,6 +175,8 @@ class YtReply(Base):
     draft: Mapped[str] = mapped_column(Text, server_default="")
     status: Mapped[str] = mapped_column(Text, server_default="new")
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    sent_by: Mapped[str | None] = mapped_column(Text)  # person | agent
+    hold: Mapped[str | None] = mapped_column(Text)  # why it waits for a person: check | link | old | limit
     created_at: Mapped[datetime] = _now()
 
 

@@ -42,7 +42,7 @@ from del_social.models import ChannelStat, YtChat, YtCompetitor, YtDraft, YtIdea
 from del_social.routes.media import get_analyst, get_fal
 from del_social.team import lead
 from del_social.tenants.permissions import Permission
-from del_social.youtube import channel, comments, i18n, ideas, kit, render, reports, sync, team, thumbs
+from del_social.youtube import autoreply, channel, comments, i18n, ideas, kit, render, reports, sync, team, thumbs
 from del_social.youtube.channel import Settings, Studio
 
 router = APIRouter(prefix="/tenants/{tenant_id}/youtube", tags=["youtube"])
@@ -563,20 +563,35 @@ async def list_comments(state: Literal["open", "sent", "dismissed"] = "open", ct
     rows = (await db.scalars(select(YtReply).where(YtReply.connection_id == st.connection_id, YtReply.status.in_(statuses))
                              .order_by(YtReply.published_at.desc().nullslast()).limit(100))).all()
     titles = {v.video_id: v.title for v in await sync.videos_of(db, st)}
-    return [{k: getattr(r, k) for k in ("reply_id", "comment_id", "video_id", "author", "text", "published_at", "draft", "status", "sent_at")}
+    return [{k: getattr(r, k) for k in ("reply_id", "comment_id", "video_id", "author", "text", "published_at", "draft", "status", "sent_at",
+                                        "sent_by", "hold")}
             | {"video_title": titles.get(r.video_id or "", "")} for r in rows]
 
 
 @router.post("/comments/refresh")
 async def refresh_comments(ctx: TenantContext = Depends(can_work), db: AsyncSession = Depends(get_db), engine: AsyncEngine = Depends(get_engine),
                            yt: YouTubeClient = Depends(get_youtube), vault: TokenVault = Depends(get_vault),
-                           redis: Redis = Depends(get_redis)) -> dict[str, int]:
+                           redis: Redis = Depends(get_redis), llm: LLM | None = Depends(get_analyst)) -> dict[str, int]:
     st = await studio_of(ctx, db)
     await once(redis, f"yt:comments:{st.connection_id}", 120, "Checked a moment ago; try again in two minutes")
     try:
-        return {"added": await comments.fetch(engine, yt, vault, st)}
+        added = await comments.fetch(engine, yt, vault, st)
+        r = await autoreply.run(engine, llm, yt, vault, st)  # nothing in manual mode
+        return {"added": added, "drafted": r.drafted, "sent": r.sent, "held": r.held}
     except YouTubeError as e:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e)) from None
+
+
+class ModeIn(BaseModel):
+    mode: Literal["manual", "approval", "auto"]
+
+
+@router.put("/comments/mode")
+async def set_reply_mode(body: ModeIn, ctx: TenantContext = Depends(can_manage), db: AsyncSession = Depends(get_db)) -> dict[str, str]:
+    """How the team answers comments: manual, drafts for approval, or automatic (see youtube/autoreply.py)."""
+    st = await studio_of(ctx, db)
+    await channel.save_settings(db, ctx.tenant_id, st.connection_id, st.settings.model_copy(update={"reply_mode": body.mode}))
+    return {"mode": body.mode}
 
 
 class DraftIn(BaseModel):
